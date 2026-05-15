@@ -17,3 +17,5 @@
 第一版 MMIO 外设是 `periph/rv32i_timer.v`。D-cache 默认把 `0x4000_0000` MMIO 区间作为 uncached bypass，避免外设寄存器被缓存。`timer_irq` 已经接入 pipeline CSR/trap 逻辑，可以通过 `mstatus.MIE`、`mie.MTIE` 和 `mip.MTIP` 形成 machine timer interrupt。
 
 当前也新增了最小 TX-only UART：`periph/rv32i_uart.v`。外部 MMIO 端口可通过 `periph/rv32i_mmio_periph_mux.v` 分发到 timer 和 UART，其中 timer 默认在 `0x4000_0000`，UART 默认在 `0x4000_1000`。
+
+AHB-Lite 总线路径放在 `bus/rv32i_mem_bus_ahb.v`，它复用 simple I/D request 边界，在内部通过 `rv32i_simple_to_ahb`、`rv32i_ahb_lite_decoder` 和 `rv32i_ahb_to_simple` 访问 ROM/SRAM/MMIO。对应顶层 wrapper 是 `top/rv32i_cached_system_ahb_top.v`。

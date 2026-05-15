@@ -34,6 +34,11 @@ rv32i_cached_system_top
   - ROM, SRAM, MMIO slaves
   - D-priority arbitration
   - decode error responses.
+- AHB-Lite bus path:
+  - simple-to-AHB master bridge
+  - AHB-Lite decoder
+  - AHB-to-simple slave bridge
+  - opt-in cached system AHB top wrapper.
 - Cached system top wrapper.
 - MMIO timer peripheral with `mtime`, `mtimecmp`, `ctrl`, and `timer_irq`.
 - Machine timer interrupt flow through CSR/trap and `mret`.
@@ -47,7 +52,7 @@ rv32i_cached_system_top
 
 Detailed status is tracked in `docs/VERIFICATION_MATRIX.md`.
 
-User-confirmed VCS PASS has been reported for all directed tests currently listed in `docs/VERIFICATION_MATRIX.md`, including UART MMIO.
+User-confirmed VCS PASS has been reported for all directed tests currently listed in `docs/VERIFICATION_MATRIX.md`, including UART MMIO and the AHB-Lite path.
 
 ## Active Design Assumptions
 
@@ -62,11 +67,11 @@ User-confirmed VCS PASS has been reported for all directed tests currently liste
 
 ## Next Candidate Work
 
-1. Add simple-bus-to-AHB-lite adapter.
-2. Add simple-bus-to-AXI-lite adapter.
-3. Add optional misaligned load/store traps.
-4. Add UART RX/FIFO/interrupt if needed.
-5. Expand CSR instruction coverage if needed.
+1. Add simple-bus-to-AXI-lite adapter.
+2. Add optional misaligned load/store traps.
+3. Add UART RX/FIFO/interrupt if needed.
+4. Expand CSR instruction coverage if needed.
+5. Consider a true multi-master AHB matrix if the project needs parallel slave access.
 
 ## Context Rules
 

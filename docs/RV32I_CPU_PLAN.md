@@ -207,6 +207,8 @@ I 侧 bus decode error 也已接入 pipeline trap/CSR：unmapped instruction fet
 
 当前已经新增最小 TX-only UART MMIO：`rtl/periph/rv32i_uart.v`，并新增 `rtl/periph/rv32i_mmio_periph_mux.v`，把 `0x4000_0000` 分给 timer、`0x4000_1000` 分给 UART。说明文档见 `docs/RV32I_UART.md`，独立 testbench 为 `sim/testcases/rv32i_uart_tb.sv`，cached system 集成 testbench 为 `sim/testcases/rv32i_cached_uart_tb.sv`。这两个 UART testbench 已经通过 VCS。
 
+当前已经新增第一版 AHB-Lite 总线路径：`rtl/bus/rv32i_simple_to_ahb.v`、`rtl/bus/rv32i_ahb_to_simple.v`、`rtl/bus/rv32i_ahb_lite_decoder.v`、`rtl/bus/rv32i_mem_bus_ahb.v`，并新增 `rtl/top/rv32i_cached_system_ahb_top.v`。说明文档见 `docs/RV32I_AHB.md`，独立 testbench 为 `sim/testcases/rv32i_mem_bus_ahb_tb.sv`，cached system 集成 testbench 为 `sim/testcases/rv32i_cached_system_ahb_top_tb.sv`。这两个 AHB testbench 已由用户在 VCS 上确认 PASS。
+
 ## 阶段 5：面试材料整理
 
 输出材料：

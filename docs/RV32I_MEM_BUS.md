@@ -319,6 +319,6 @@ make sim TB_FILE=./testcases/rv32i_cached_system_top_tb.sv TOP_NAME=rv32i_cached
 
 后续自然演进方向：
 
-1. 做 `simple_bus_to_ahb_lite`。
+1. 继续扩展 AHB-Lite bus path 的更多外设集成测试，或按需做真正的多 master AHB matrix。
 2. 再考虑 `simple_bus_to_axi_lite`。
 3. 继续扩展 MMIO 外设或接入更完整的 SoC interconnect。

@@ -229,6 +229,52 @@ i_error or d_error = 1
 dbg_decode_error = 1
 ```
 
+### `rv32i_mem_bus_ahb`
+
+File: `rtl/bus/rv32i_mem_bus_ahb.v`
+
+Role: AHB-Lite version of the internal memory bus.
+
+The external simple interfaces match `rv32i_mem_bus`:
+
+- I master
+- D master
+- ROM
+- SRAM
+- MMIO
+
+Internal AHB-Lite path:
+
+```text
+simple I/D request arbiter
+  -> rv32i_simple_to_ahb
+  -> rv32i_ahb_lite_decoder
+  -> rv32i_ahb_to_simple for ROM/SRAM/MMIO
+```
+
+Implemented AHB-Lite signals:
+
+- `HADDR`
+- `HBURST`
+- `HPROT`
+- `HSIZE`
+- `HTRANS`
+- `HWRITE`
+- `HWDATA`
+- `HRDATA`
+- `HREADY`
+- `HRESP`
+
+The current path generates single-beat AHB-Lite transfers. Partial simple-bus writes are split into byte transfers.
+
+### `rv32i_cached_system_ahb_top`
+
+File: `rtl/top/rv32i_cached_system_ahb_top.v`
+
+Role: cached system wrapper using `rv32i_mem_bus_ahb`.
+
+The external port list intentionally matches `rv32i_cached_system_top`, so testbenches can switch between the simple-bus and AHB-Lite bus path without changing memory/peripheral models.
+
 ## Timer
 
 ### `rv32i_timer`

@@ -244,6 +244,34 @@ make sim TB_FILE=./testcases/rv32i_cached_uart_tb.sv TOP_NAME=rv32i_cached_uart_
 
 这个 testbench 在 `rv32i_cached_system_top` 外接 `rv32i_mmio_periph_mux`、`rv32i_timer` 和 `rv32i_uart`。ROM 程序通过 `0x4000_1000` 写出 `UART\n`，并检查 UART MMIO 访问仍然绕过 D-cache。
 
+## AHB-Lite Bus Testbench
+
+独立 AHB-Lite memory bus：
+
+```text
+sim/testcases/rv32i_mem_bus_ahb_tb.sv
+```
+
+运行方式：
+
+```bash
+make sim TB_FILE=./testcases/rv32i_mem_bus_ahb_tb.sv TOP_NAME=rv32i_mem_bus_ahb_tb
+```
+
+Cached system + AHB-Lite bus path：
+
+```text
+sim/testcases/rv32i_cached_system_ahb_top_tb.sv
+```
+
+运行方式：
+
+```bash
+make sim TB_FILE=./testcases/rv32i_cached_system_ahb_top_tb.sv TOP_NAME=rv32i_cached_system_ahb_top_tb
+```
+
+这两个 testbench 验证 simple I/D request 能通过 `rv32i_mem_bus_ahb` 转成 AHB-Lite address/data phase，再访问 ROM/SRAM/MMIO。当前 AHB 路径是 single-beat、single-outstanding，partial write 会拆成多个 AHB byte transfer。
+
 ## Access Fault Testbench
 
 ```text
@@ -272,4 +300,4 @@ make sim TB_FILE=./testcases/rv32i_cached_instr_access_fault_tb.sv TOP_NAME=rv32
 
 ## 注意事项
 
-当前 core 和 cache 仍是教学/学习版本。cache 和 bus 都是 blocking 风格，没有 outstanding 或 burst。I/D 侧 decode error 已经可以返回 core 并形成 instruction/load/store access fault；UART MMIO 已有最小 TX-only 版本，后续还可继续补 RX/FIFO/interrupt 或 AHB-lite/AXI-lite adapter。
+当前 core 和 cache 仍是教学/学习版本。cache 和 bus 都是 blocking 风格，没有 outstanding 或 burst。I/D 侧 decode error 已经可以返回 core 并形成 instruction/load/store access fault；UART MMIO 已有最小 TX-only 版本，AHB-Lite 总线路径已有第一版，后续还可继续补 AXI-lite adapter 或 UART RX/FIFO/interrupt。
