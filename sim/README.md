@@ -216,6 +216,34 @@ make sim TB_FILE=./testcases/rv32i_cached_timer_irq_tb.sv TOP_NAME=rv32i_cached_
 
 这个 testbench 验证 `timer_irq` 通过 `mstatus.MIE && mie.MTIE && mip.MTIP` 进入 machine timer interrupt，handler 读取 `mcause/mepc/mstatus/mie/mip`，关闭 `mie.MTIE` 后通过 `mret` 返回主程序。
 
+## MMIO UART Testbench
+
+独立 UART：
+
+```text
+sim/testcases/rv32i_uart_tb.sv
+```
+
+运行方式：
+
+```bash
+make sim TB_FILE=./testcases/rv32i_uart_tb.sv TOP_NAME=rv32i_uart_tb
+```
+
+Cached system + UART：
+
+```text
+sim/testcases/rv32i_cached_uart_tb.sv
+```
+
+运行方式：
+
+```bash
+make sim TB_FILE=./testcases/rv32i_cached_uart_tb.sv TOP_NAME=rv32i_cached_uart_tb
+```
+
+这个 testbench 在 `rv32i_cached_system_top` 外接 `rv32i_mmio_periph_mux`、`rv32i_timer` 和 `rv32i_uart`。ROM 程序通过 `0x4000_1000` 写出 `UART\n`，并检查 UART MMIO 访问仍然绕过 D-cache。
+
 ## Access Fault Testbench
 
 ```text
@@ -244,4 +272,4 @@ make sim TB_FILE=./testcases/rv32i_cached_instr_access_fault_tb.sv TOP_NAME=rv32
 
 ## 注意事项
 
-当前 core 和 cache 仍是教学/学习版本。cache 和 bus 都是 blocking 风格，没有 outstanding 或 burst。I/D 侧 decode error 已经可以返回 core 并形成 instruction/load/store access fault；UART MMIO、AHB-lite/AXI-lite adapter 仍可继续补。
+当前 core 和 cache 仍是教学/学习版本。cache 和 bus 都是 blocking 风格，没有 outstanding 或 burst。I/D 侧 decode error 已经可以返回 core 并形成 instruction/load/store access fault；UART MMIO 已有最小 TX-only 版本，后续还可继续补 RX/FIFO/interrupt 或 AHB-lite/AXI-lite adapter。

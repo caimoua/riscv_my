@@ -246,5 +246,5 @@ x21     = 0x55         // mret 后回到主程序
 后续可以继续增强：
 
 1. handler 里更新 `mtimecmp`，形成周期性 tick。
-2. 增加 UART MMIO。
+2. 和 UART 一起通过 MMIO 子外设 mux 做更多集成测试。
 3. 再做 `simple_bus_to_ahb_lite` 或 `simple_bus_to_axi_lite`。

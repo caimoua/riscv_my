@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1050" viewBox="0 0 1600 1050" role="img" aria-labelledby="title desc">
   <title id="title">RV32I Cached System Architecture</title>
-  <desc id="desc">Vector architecture diagram of the current RV32I cached system, pipeline core, caches, memory bus, timer interrupt, and I/D-side access fault paths.</desc>
+  <desc id="desc">Vector architecture diagram of the current RV32I cached system, pipeline core, caches, memory bus, MMIO timer/UART peripherals, timer interrupt, and I/D-side access fault paths.</desc>
 
   <defs>
     <style>
@@ -57,7 +57,7 @@
   <rect class="bg" x="0" y="0" width="1600" height="1050"/>
 
   <text class="title" x="80" y="70">RV32I Cached System Architecture</text>
-  <text class="subtitle" x="82" y="100">Current implementation: five-stage pipeline, blocking I/D caches, simple memory bus, timer interrupt, and I/D-side access faults</text>
+  <text class="subtitle" x="82" y="100">Current implementation: five-stage pipeline, blocking I/D caches, simple memory bus, MMIO timer/UART, and access faults</text>
 
   <rect class="boundary" x="55" y="130" width="1150" height="795" rx="16"/>
   <text class="label" x="82" y="164">rv32i_cached_system_top</text>
@@ -168,11 +168,17 @@
   <rect class="mem" x="1295" y="455" width="210" height="95" rx="10"/>
   <text class="box-title" x="1364" y="490">MMIO</text>
   <text class="box-text" x="1342" y="516">0x4000_0000</text>
+  <text class="box-text" x="1342" y="536">peripheral mux</text>
 
-  <rect class="timer" x="1295" y="625" width="210" height="115" rx="10"/>
+  <rect class="timer" x="1295" y="625" width="210" height="105" rx="10"/>
   <text class="box-title" x="1356" y="660">rv32i_timer</text>
   <text class="box-text" x="1344" y="687">mtime / mtimecmp</text>
   <text class="box-text" x="1344" y="707">ctrl, timer_irq</text>
+
+  <rect class="timer" x="1295" y="765" width="210" height="95" rx="10"/>
+  <text class="box-title" x="1362" y="800">rv32i_uart</text>
+  <text class="box-text" x="1344" y="827">TXDATA / STATUS</text>
+  <text class="box-text" x="1344" y="847">tx_valid, tx_data</text>
 
   <path class="arrow-green" d="M 1165 350 C 1218 315, 1235 232, 1293 222"/>
   <text class="tiny" x="1195" y="278">ROM slave</text>
@@ -180,8 +186,12 @@
   <text class="tiny" x="1194" y="375">SRAM slave</text>
   <path class="arrow-green" d="M 1165 435 C 1210 460, 1240 497, 1293 502"/>
   <text class="tiny" x="1194" y="476">MMIO slave</text>
-  <path class="arrow-green" d="M 1400 550 L 1400 623"/>
-  <text class="tiny" x="1412" y="590">external timer</text>
+  <path class="arrow-green" d="M 1385 550 C 1358 585, 1358 610, 1385 623"/>
+  <text class="tiny" x="1412" y="590">timer @ 0x4000_0000</text>
+  <path class="arrow-green" d="M 1450 550 C 1530 620, 1530 735, 1450 763"/>
+  <text class="tiny" x="1420" y="748">UART @ 0x4000_1000</text>
+  <path class="arrow-green" d="M 1505 812 L 1545 812"/>
+  <text class="tiny" x="1512" y="800">TX</text>
 
   <path class="dash-teal" d="M 1295 682 C 1130 720, 860 770, 532 675"/>
   <text class="tiny" x="927" y="744">timer_irq</text>
@@ -195,12 +205,12 @@
   <text class="tiny" x="925" y="884">D store fault -> mcause 7</text>
 
   <!-- Legend -->
-  <rect class="legend" x="1260" y="805" width="270" height="120" rx="10"/>
-  <text class="box-title" x="1284" y="835">Legend</text>
-  <line x1="1285" y1="862" x2="1335" y2="862" class="arrow"/>
-  <text class="tiny" x="1350" y="866">request / response</text>
-  <line x1="1285" y1="890" x2="1335" y2="890" class="dash-purple"/>
-  <text class="tiny" x="1350" y="894">redirect / control</text>
-  <line x1="1285" y1="918" x2="1335" y2="918" class="dash-red"/>
-  <text class="tiny" x="1350" y="922">fault path</text>
+  <rect class="legend" x="1260" y="900" width="270" height="120" rx="10"/>
+  <text class="box-title" x="1284" y="930">Legend</text>
+  <line x1="1285" y1="957" x2="1335" y2="957" class="arrow"/>
+  <text class="tiny" x="1350" y="961">request / response</text>
+  <line x1="1285" y1="985" x2="1335" y2="985" class="dash-purple"/>
+  <text class="tiny" x="1350" y="989">redirect / control</text>
+  <line x1="1285" y1="1013" x2="1335" y2="1013" class="dash-red"/>
+  <text class="tiny" x="1350" y="1017">fault path</text>
 </svg>

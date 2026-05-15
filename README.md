@@ -23,6 +23,7 @@
 - 已新增最小 MMIO timer 外设，并给 D-cache 增加默认 MMIO uncached bypass。说明见 `docs/RV32I_TIMER.md`。
 - 已把 `timer_irq` 接入 pipeline trap/CSR 框架，新增最小 `mstatus/mie/mip`，支持 machine timer interrupt 和 `mret` 返回。
 - 已把 I/D 侧 bus decode error 接入 pipeline trap/CSR，支持 instruction/load/store access fault，并新增 `rv32i_cached_access_fault_tb` 和 `rv32i_cached_instr_access_fault_tb`。
+- 已新增最小 TX-only UART MMIO 外设和 timer/UART MMIO 子外设 mux，UART directed tests 已通过。说明见 `docs/RV32I_UART.md`。
 
 ## 主要目录
 
@@ -87,6 +88,13 @@ make sim TB_FILE=./testcases/rv32i_cached_timer_irq_tb.sv TOP_NAME=rv32i_cached_
 make sim TB_FILE=./testcases/rv32i_cached_access_fault_tb.sv TOP_NAME=rv32i_cached_access_fault_tb
 ```
 
+MMIO UART：
+
+```bash
+make sim TB_FILE=./testcases/rv32i_uart_tb.sv TOP_NAME=rv32i_uart_tb
+make sim TB_FILE=./testcases/rv32i_cached_uart_tb.sv TOP_NAME=rv32i_cached_uart_tb
+```
+
 ## 后续方向
 
-后续适合继续补 UART MMIO，或者做 AHB-lite/AXI-lite adapter。
+后续适合继续做 AHB-lite/AXI-lite adapter，或者补 UART RX/FIFO/interrupt。

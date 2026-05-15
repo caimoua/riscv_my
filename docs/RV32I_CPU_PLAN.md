@@ -205,6 +205,8 @@ D 侧 bus decode error 已接入 pipeline trap/CSR：unmapped load/store 会形�
 
 I 侧 bus decode error 也已接入 pipeline trap/CSR：unmapped instruction fetch 会形成 precise instruction access fault，`mcause=1`，handler 可修改 `mepc` 后 `mret` 返回。验证入口为 `sim/testcases/rv32i_cached_instr_access_fault_tb.sv`。
 
+当前已经新增最小 TX-only UART MMIO：`rtl/periph/rv32i_uart.v`，并新增 `rtl/periph/rv32i_mmio_periph_mux.v`，把 `0x4000_0000` 分给 timer、`0x4000_1000` 分给 UART。说明文档见 `docs/RV32I_UART.md`，独立 testbench 为 `sim/testcases/rv32i_uart_tb.sv`，cached system 集成 testbench 为 `sim/testcases/rv32i_cached_uart_tb.sv`。这两个 UART testbench 已经通过 VCS。
+
 ## 阶段 5：面试材料整理
 
 输出材料：

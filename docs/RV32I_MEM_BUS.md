@@ -319,6 +319,6 @@ make sim TB_FILE=./testcases/rv32i_cached_system_top_tb.sv TOP_NAME=rv32i_cached
 
 后续自然演进方向：
 
-1. 加 UART MMIO。
-2. 做 `simple_bus_to_ahb_lite`。
-3. 再考虑 `simple_bus_to_axi_lite`。
+1. 做 `simple_bus_to_ahb_lite`。
+2. 再考虑 `simple_bus_to_axi_lite`。
+3. 继续扩展 MMIO 外设或接入更完整的 SoC interconnect。

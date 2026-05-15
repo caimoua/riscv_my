@@ -25,6 +25,8 @@ Status meanings:
 | Timer peripheral | `testcases/rv32i_timer_tb.sv` | `make sim TB_FILE=./testcases/rv32i_timer_tb.sv TOP_NAME=rv32i_timer_tb` | PASS |
 | Cached timer MMIO | `testcases/rv32i_cached_timer_tb.sv` | `make sim TB_FILE=./testcases/rv32i_cached_timer_tb.sv TOP_NAME=rv32i_cached_timer_tb` | PASS |
 | Cached timer interrupt | `testcases/rv32i_cached_timer_irq_tb.sv` | `make sim TB_FILE=./testcases/rv32i_cached_timer_irq_tb.sv TOP_NAME=rv32i_cached_timer_irq_tb` | PASS |
+| UART peripheral | `testcases/rv32i_uart_tb.sv` | `make sim TB_FILE=./testcases/rv32i_uart_tb.sv TOP_NAME=rv32i_uart_tb` | PASS |
+| Cached UART MMIO | `testcases/rv32i_cached_uart_tb.sv` | `make sim TB_FILE=./testcases/rv32i_cached_uart_tb.sv TOP_NAME=rv32i_cached_uart_tb` | PASS |
 | D-side load/store access fault | `testcases/rv32i_cached_access_fault_tb.sv` | `make sim TB_FILE=./testcases/rv32i_cached_access_fault_tb.sv TOP_NAME=rv32i_cached_access_fault_tb` | PASS |
 | I-side instruction access fault | `testcases/rv32i_cached_instr_access_fault_tb.sv` | `make sim TB_FILE=./testcases/rv32i_cached_instr_access_fault_tb.sv TOP_NAME=rv32i_cached_instr_access_fault_tb` | PASS |
 
@@ -44,8 +46,10 @@ Status meanings:
 - After any MMIO change, run:
   - timer tests
   - cached system top test
-  - future UART tests.
+  - `rv32i_uart_tb`
+  - `rv32i_cached_uart_tb`.
 
 ## Latest Manual Update
 
+- 2026-05-15: User confirmed PASS for `rv32i_uart_tb` and `rv32i_cached_uart_tb`.
 - 2026-05-15: User confirmed PASS for `rv32i_mem_bus_tb` and `rv32i_cached_instr_access_fault_tb`.

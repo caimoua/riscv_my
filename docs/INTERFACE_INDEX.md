@@ -36,6 +36,7 @@ bus ROM/SRAM/MMIO -> external ports
 bus i_error -> I-cache mem_error -> core imem_error
 bus d_error -> D-cache mem_error -> core dmem_error
 timer_irq -> core CSR/trap
+MMIO external port -> optional timer/UART peripheral mux
 ```
 
 ## Core
@@ -251,6 +252,55 @@ Output:
 Typical integration:
 
 ```text
-rv32i_timer MMIO port <-> rv32i_cached_system_top MMIO port
+rv32i_cached_system_top MMIO port -> rv32i_mmio_periph_mux -> rv32i_timer
 timer_irq -> rv32i_cached_system_top.timer_irq
 ```
+
+## UART
+
+### `rv32i_uart`
+
+File: `rtl/periph/rv32i_uart.v`
+
+Role: minimal TX-only MMIO UART model.
+
+Registers, relative to UART base:
+
+```text
+0x00 TXDATA  write byte0 emits one tx_valid pulse; read returns last TX byte
+0x04 STATUS  bit0 tx_ready, currently constant 1
+```
+
+Bus interface:
+
+- `valid`, `write`, `addr`, `wdata`, `wstrb`
+- `ready`, `rdata`
+
+TX/debug outputs:
+
+- `tx_valid`
+- `tx_data`
+- `dbg_tx_count`
+- `dbg_last_tx`
+
+Typical integration:
+
+```text
+rv32i_cached_system_top MMIO port -> rv32i_mmio_periph_mux -> rv32i_uart
+UART base address: 0x4000_1000
+```
+
+### `rv32i_mmio_periph_mux`
+
+File: `rtl/periph/rv32i_mmio_periph_mux.v`
+
+Role: simple external MMIO peripheral decoder for timer and UART.
+
+Default map:
+
+```text
+0x4000_0000 - 0x4000_0FFF  timer
+0x4000_1000 - 0x4000_1FFF  UART
+```
+
+Unmatched sub-MMIO accesses return `ready=valid`, `rdata=0`, and assert `dbg_decode_error`.

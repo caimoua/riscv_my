@@ -241,4 +241,24 @@ I 侧 bus decode error 也已经接入 pipeline trap/CSR，可形成 instruction
 sim/testcases/rv32i_cached_instr_access_fault_tb.sv
 ```
 
-后续更自然的方向是继续补 UART MMIO 和 AHB-lite/AXI-lite adapter。
+当前也已经新增最小 TX-only UART MMIO 外设。`rv32i_cached_system_top` 的外部 MMIO 端口可以先接 `rv32i_mmio_periph_mux`，再分发到 timer 和 UART：
+
+```text
+0x4000_0000 -> rv32i_timer
+0x4000_1000 -> rv32i_uart
+```
+
+说明见：
+
+```text
+docs/RV32I_UART.md
+```
+
+对应验证入口是：
+
+```text
+sim/testcases/rv32i_uart_tb.sv
+sim/testcases/rv32i_cached_uart_tb.sv
+```
+
+后续更自然的方向是继续补 AHB-lite/AXI-lite adapter，或者扩展 UART RX/FIFO/interrupt。

@@ -15,3 +15,5 @@
 当前更完整的系统连接放在 `top/rv32i_cached_system_top.v`：它把 pipeline core、I-cache、D-cache 和 memory bus 连接起来，对外暴露 ROM/SRAM/MMIO 接口，并接收外部 `timer_irq` 输入。
 
 第一版 MMIO 外设是 `periph/rv32i_timer.v`。D-cache 默认把 `0x4000_0000` MMIO 区间作为 uncached bypass，避免外设寄存器被缓存。`timer_irq` 已经接入 pipeline CSR/trap 逻辑，可以通过 `mstatus.MIE`、`mie.MTIE` 和 `mip.MTIP` 形成 machine timer interrupt。
+
+当前也新增了最小 TX-only UART：`periph/rv32i_uart.v`。外部 MMIO 端口可通过 `periph/rv32i_mmio_periph_mux.v` 分发到 timer 和 UART，其中 timer 默认在 `0x4000_0000`，UART 默认在 `0x4000_1000`。

@@ -14,7 +14,7 @@ rv32i_cached_system_top
   rv32i_icache
   rv32i_dcache
   rv32i_mem_bus
-  external ROM / SRAM / MMIO models
+  external ROM / SRAM / MMIO peripherals
 ```
 
 ## Completed
@@ -37,6 +37,8 @@ rv32i_cached_system_top
 - Cached system top wrapper.
 - MMIO timer peripheral with `mtime`, `mtimecmp`, `ctrl`, and `timer_irq`.
 - Machine timer interrupt flow through CSR/trap and `mret`.
+- Minimal TX-only UART MMIO peripheral.
+- External MMIO peripheral mux for timer at `0x4000_0000` and UART at `0x4000_1000`.
 - D-side load/store access fault through `d_error`.
 - I-side instruction access fault through `i_error`.
 - Presentation-quality architecture SVG: `docs/figures/rv32i_cached_system_architecture.svg`.
@@ -45,7 +47,7 @@ rv32i_cached_system_top
 
 Detailed status is tracked in `docs/VERIFICATION_MATRIX.md`.
 
-User-confirmed VCS PASS has been reported for all directed tests currently listed in `docs/VERIFICATION_MATRIX.md`, including memory bus and I-side instruction access fault.
+User-confirmed VCS PASS has been reported for all directed tests currently listed in `docs/VERIFICATION_MATRIX.md`, including UART MMIO.
 
 ## Active Design Assumptions
 
@@ -60,10 +62,10 @@ User-confirmed VCS PASS has been reported for all directed tests currently liste
 
 ## Next Candidate Work
 
-1. Add UART MMIO.
-2. Add simple-bus-to-AHB-lite adapter.
-3. Add simple-bus-to-AXI-lite adapter.
-4. Add optional misaligned load/store traps.
+1. Add simple-bus-to-AHB-lite adapter.
+2. Add simple-bus-to-AXI-lite adapter.
+3. Add optional misaligned load/store traps.
+4. Add UART RX/FIFO/interrupt if needed.
 5. Expand CSR instruction coverage if needed.
 
 ## Context Rules
