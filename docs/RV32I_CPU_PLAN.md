@@ -209,6 +209,8 @@ I 侧 bus decode error 也已接入 pipeline trap/CSR：unmapped instruction fet
 
 当前已经新增第一版 AHB-Lite 总线路径：`rtl/bus/rv32i_simple_to_ahb.v`、`rtl/bus/rv32i_ahb_to_simple.v`、`rtl/bus/rv32i_ahb_lite_decoder.v`、`rtl/bus/rv32i_mem_bus_ahb.v`，并新增 `rtl/top/rv32i_cached_system_ahb_top.v`。说明文档见 `docs/RV32I_AHB.md`，独立 testbench 为 `sim/testcases/rv32i_mem_bus_ahb_tb.sv`，cached system 集成 testbench 为 `sim/testcases/rv32i_cached_system_ahb_top_tb.sv`。这两个 AHB testbench 已由用户在 VCS 上确认 PASS。
 
+进一步新增 `rtl/bus/rv32i_ahb_master_bus.v` 和 `rtl/top/rv32i_cached_ahb_master_top.v`，把 CPU subsystem 边界调整为对外暴露单个 AHB-Lite master 接口。`sim/testcases/rv32i_cached_ahb_master_top_tb.sv` 把 AHB decoder 和 ROM/SRAM/MMIO slave 放在 DUT 外部，用来验证更标准的 SoC 集成方式。该 testbench 已由用户在 VCS 上确认 PASS。
+
 ## 阶段 5：面试材料整理
 
 输出材料：

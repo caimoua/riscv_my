@@ -275,6 +275,33 @@ Role: cached system wrapper using `rv32i_mem_bus_ahb`.
 
 The external port list intentionally matches `rv32i_cached_system_top`, so testbenches can switch between the simple-bus and AHB-Lite bus path without changing memory/peripheral models.
 
+### `rv32i_cached_ahb_master_top`
+
+File: `rtl/top/rv32i_cached_ahb_master_top.v`
+
+Role: integration-style cached CPU subsystem with an external AHB-Lite master interface.
+
+External AHB-Lite master port:
+
+- Outputs: `ahb_haddr`, `ahb_hburst`, `ahb_hprot`, `ahb_hsize`, `ahb_htrans`, `ahb_hwdata`, `ahb_hwrite`
+- Inputs: `ahb_hrdata`, `ahb_hready`, `ahb_hresp`
+
+External non-bus ports:
+
+- Inputs: `clk`, `rst_n`, `timer_irq`, `dbg_reg_addr`
+- Outputs: core performance/debug counters, cache hit/miss counters, bus grant counters, `dbg_bus_error`
+
+Internal connections:
+
+```text
+core imem -> I-cache -> rv32i_ahb_master_bus
+core dmem -> D-cache -> rv32i_ahb_master_bus
+rv32i_ahb_master_bus -> external AHB-Lite master port
+external AHB fabric -> ROM/SRAM/MMIO/peripherals
+```
+
+This top is the cleaner CPU-IP boundary. It does not expose ROM/SRAM/MMIO simple ports; memory and peripheral decode is owned by the external SoC fabric.
+
 ## Timer
 
 ### `rv32i_timer`

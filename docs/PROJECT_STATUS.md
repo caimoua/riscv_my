@@ -17,6 +17,17 @@ rv32i_cached_system_top
   external ROM / SRAM / MMIO peripherals
 ```
 
+The preferred integration-style CPU subsystem boundary is now:
+
+```text
+rv32i_cached_ahb_master_top
+  rv32i_pipe_core
+  rv32i_icache
+  rv32i_dcache
+  rv32i_ahb_master_bus
+  external AHB-Lite master interface
+```
+
 ## Completed
 
 - RV32I single-cycle baseline core.
@@ -39,6 +50,10 @@ rv32i_cached_system_top
   - AHB-Lite decoder
   - AHB-to-simple slave bridge
   - opt-in cached system AHB top wrapper.
+- AHB-Lite CPU subsystem interface:
+  - opt-in `rv32i_cached_ahb_master_top`
+  - one external AHB-Lite master port
+  - external SoC/bus fabric owns ROM/SRAM/MMIO decode.
 - Cached system top wrapper.
 - MMIO timer peripheral with `mtime`, `mtimecmp`, `ctrl`, and `timer_irq`.
 - Machine timer interrupt flow through CSR/trap and `mret`.
@@ -52,7 +67,7 @@ rv32i_cached_system_top
 
 Detailed status is tracked in `docs/VERIFICATION_MATRIX.md`.
 
-User-confirmed VCS PASS has been reported for all directed tests currently listed in `docs/VERIFICATION_MATRIX.md`, including UART MMIO and the AHB-Lite path.
+User-confirmed VCS PASS has been reported for all directed tests currently listed in `docs/VERIFICATION_MATRIX.md`, including UART MMIO, the AHB-Lite path, and the external AHB-Lite master CPU top.
 
 ## Active Design Assumptions
 

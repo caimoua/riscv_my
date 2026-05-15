@@ -4,4 +4,5 @@
 ../rtl/bus/rv32i_simple_to_ahb.v
 ../rtl/bus/rv32i_ahb_to_simple.v
 ../rtl/bus/rv32i_ahb_lite_decoder.v
+../rtl/bus/rv32i_ahb_master_bus.v
 ../rtl/bus/rv32i_mem_bus_ahb.v

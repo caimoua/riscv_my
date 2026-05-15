@@ -24,6 +24,7 @@ Status meanings:
 | Pipeline + cache + bus | `testcases/rv32i_pipe_cached_bus_tb.sv` | `make sim TB_FILE=./testcases/rv32i_pipe_cached_bus_tb.sv TOP_NAME=rv32i_pipe_cached_bus_tb` | PASS |
 | Cached system top | `testcases/rv32i_cached_system_top_tb.sv` | `make sim TB_FILE=./testcases/rv32i_cached_system_top_tb.sv TOP_NAME=rv32i_cached_system_top_tb` | PASS |
 | Cached system AHB top | `testcases/rv32i_cached_system_ahb_top_tb.sv` | `make sim TB_FILE=./testcases/rv32i_cached_system_ahb_top_tb.sv TOP_NAME=rv32i_cached_system_ahb_top_tb` | PASS |
+| Cached AHB master CPU top | `testcases/rv32i_cached_ahb_master_top_tb.sv` | `make sim TB_FILE=./testcases/rv32i_cached_ahb_master_top_tb.sv TOP_NAME=rv32i_cached_ahb_master_top_tb` | PASS |
 | Timer peripheral | `testcases/rv32i_timer_tb.sv` | `make sim TB_FILE=./testcases/rv32i_timer_tb.sv TOP_NAME=rv32i_timer_tb` | PASS |
 | Cached timer MMIO | `testcases/rv32i_cached_timer_tb.sv` | `make sim TB_FILE=./testcases/rv32i_cached_timer_tb.sv TOP_NAME=rv32i_cached_timer_tb` | PASS |
 | Cached timer interrupt | `testcases/rv32i_cached_timer_irq_tb.sv` | `make sim TB_FILE=./testcases/rv32i_cached_timer_irq_tb.sv TOP_NAME=rv32i_cached_timer_irq_tb` | PASS |
@@ -41,6 +42,7 @@ Status meanings:
   - `rv32i_dcache_tb`
   - `rv32i_cached_system_top_tb`
   - `rv32i_cached_system_ahb_top_tb`
+  - `rv32i_cached_ahb_master_top_tb`
   - access fault tests.
 - After any CSR/trap change, run:
   - `rv32i_trap_csr_tb`
@@ -55,6 +57,7 @@ Status meanings:
 
 ## Latest Manual Update
 
+- 2026-05-15: User confirmed PASS for `rv32i_cached_ahb_master_top_tb`.
 - 2026-05-15: User confirmed PASS for `rv32i_mem_bus_ahb_tb` and `rv32i_cached_system_ahb_top_tb`.
 - 2026-05-15: User confirmed PASS for `rv32i_uart_tb` and `rv32i_cached_uart_tb`.
 - 2026-05-15: User confirmed PASS for `rv32i_mem_bus_tb` and `rv32i_cached_instr_access_fault_tb`.

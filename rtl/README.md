@@ -19,3 +19,5 @@
 当前也新增了最小 TX-only UART：`periph/rv32i_uart.v`。外部 MMIO 端口可通过 `periph/rv32i_mmio_periph_mux.v` 分发到 timer 和 UART，其中 timer 默认在 `0x4000_0000`，UART 默认在 `0x4000_1000`。
 
 AHB-Lite 总线路径放在 `bus/rv32i_mem_bus_ahb.v`，它复用 simple I/D request 边界，在内部通过 `rv32i_simple_to_ahb`、`rv32i_ahb_lite_decoder` 和 `rv32i_ahb_to_simple` 访问 ROM/SRAM/MMIO。对应顶层 wrapper 是 `top/rv32i_cached_system_ahb_top.v`。
+
+更标准的 CPU subsystem 边界是 `top/rv32i_cached_ahb_master_top.v`。它内部保留 core/cache 和 D-priority arbiter，但对外只暴露一个 AHB-Lite master interface，外部 SoC fabric 决定 ROM/SRAM/MMIO/外设地址 decode。

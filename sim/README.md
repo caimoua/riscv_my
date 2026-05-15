@@ -272,6 +272,14 @@ make sim TB_FILE=./testcases/rv32i_cached_system_ahb_top_tb.sv TOP_NAME=rv32i_ca
 
 这两个 testbench 验证 simple I/D request 能通过 `rv32i_mem_bus_ahb` 转成 AHB-Lite address/data phase，再访问 ROM/SRAM/MMIO。当前 AHB 路径是 single-beat、single-outstanding，partial write 会拆成多个 AHB byte transfer。
 
+CPU subsystem AHB master interface：
+
+```bash
+make sim TB_FILE=./testcases/rv32i_cached_ahb_master_top_tb.sv TOP_NAME=rv32i_cached_ahb_master_top_tb
+```
+
+这个 testbench 使用 `rv32i_cached_ahb_master_top` 作为 DUT。ROM/SRAM/MMIO decoder 和 slave bridge 都放在 DUT 外面，用来验证 CPU subsystem 只通过外部 AHB-Lite master 接口访问系统外设。
+
 ## Access Fault Testbench
 
 ```text

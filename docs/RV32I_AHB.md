@@ -94,3 +94,41 @@ make sim TB_FILE=./testcases/rv32i_cached_system_ahb_top_tb.sv TOP_NAME=rv32i_ca
 - decoder 记录 data phase 的 slave 选择，再 mux 回 `HRDATA/HREADY/HRESP`。
 
 后续如果要做真正多 master AHB matrix，可以在当前 `rv32i_simple_to_ahb` 后面继续扩展。
+
+## 6. CPU subsystem AHB master top
+
+`rv32i_cached_ahb_master_top` is the cleaner CPU-IP style boundary added after the first internal AHB-Lite path.
+
+It keeps the CPU-side structure:
+
+```text
+rv32i_pipe_core
+  -> rv32i_icache / rv32i_dcache
+  -> rv32i_ahb_master_bus
+```
+
+But its external memory interface is only one AHB-Lite master port:
+
+```text
+ahb_haddr
+ahb_hburst
+ahb_hprot
+ahb_hsize
+ahb_htrans
+ahb_hwdata
+ahb_hwrite
+ahb_hrdata
+ahb_hready
+ahb_hresp
+```
+
+ROM, SRAM, timer, UART, GPIO, and other peripherals should be connected outside this top through an external AHB decoder or bus matrix.
+
+Verification entry:
+
+```bash
+cd sim
+make sim TB_FILE=./testcases/rv32i_cached_ahb_master_top_tb.sv TOP_NAME=rv32i_cached_ahb_master_top_tb
+```
+
+This testbench places the AHB decoder and ROM/SRAM/MMIO slave bridges outside the CPU subsystem, proving that the CPU can be integrated as an AHB-Lite master IP.
