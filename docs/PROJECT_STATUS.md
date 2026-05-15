@@ -45,7 +45,7 @@ rv32i_cached_system_top
 
 Detailed status is tracked in `docs/VERIFICATION_MATRIX.md`.
 
-User-confirmed VCS PASS has been reported for the existing regression set through timer interrupt and D-side access fault. The newest instruction access fault testbench has been added but still needs a user-side VCS run.
+User-confirmed VCS PASS has been reported for all directed tests currently listed in `docs/VERIFICATION_MATRIX.md`, including memory bus and I-side instruction access fault.
 
 ## Active Design Assumptions
 
