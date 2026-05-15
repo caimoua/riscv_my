@@ -1,0 +1,256 @@
+# Interface Index
+
+Last updated: 2026-05-15
+
+This file records stable module boundaries so future work does not need to rediscover common ports by scanning many RTL files.
+
+## Top-Level System
+
+### `rv32i_cached_system_top`
+
+File: `rtl/top/rv32i_cached_system_top.v`
+
+Role: reusable cached system wrapper.
+
+External interfaces:
+
+- `timer_irq`: external timer interrupt input to pipeline CSR/trap.
+- ROM slave-side passthrough:
+  - `rom_valid`, `rom_write`, `rom_addr`, `rom_wdata`, `rom_wstrb`, `rom_ready`, `rom_rdata`
+- SRAM slave-side passthrough:
+  - `sram_valid`, `sram_write`, `sram_addr`, `sram_wdata`, `sram_wstrb`, `sram_ready`, `sram_rdata`
+- MMIO slave-side passthrough:
+  - `mmio_valid`, `mmio_write`, `mmio_addr`, `mmio_wdata`, `mmio_wstrb`, `mmio_ready`, `mmio_rdata`
+- Debug outputs:
+  - core performance counters
+  - cache hit/miss counters
+  - bus grant counters
+  - bus decode error.
+
+Internal connections:
+
+```text
+core imem -> I-cache -> bus I master
+core dmem -> D-cache -> bus D master
+bus ROM/SRAM/MMIO -> external ports
+bus i_error -> I-cache mem_error -> core imem_error
+bus d_error -> D-cache mem_error -> core dmem_error
+timer_irq -> core CSR/trap
+```
+
+## Core
+
+### `rv32i_pipe_core`
+
+File: `rtl/core/rv32i_pipe_core.v`
+
+Role: five-stage RV32I pipeline.
+
+Instruction-side interface:
+
+- Outputs: `imem_valid`, `imem_addr`
+- Inputs: `imem_ready`, `imem_rdata`, `imem_error`
+- `imem_error` is captured as an instruction fault token and committed precisely.
+
+Data-side interface:
+
+- Outputs: `dmem_valid`, `dmem_write`, `dmem_addr`, `dmem_wdata`, `dmem_wstrb`
+- Inputs: `dmem_ready`, `dmem_rdata`, `dmem_error`
+- `dmem_error` is converted by LSU into load/store fault flags.
+
+Interrupt input:
+
+- `timer_irq`
+
+Debug:
+
+- `dbg_pc`
+- `dbg_cycle`
+- `dbg_instret`
+- `dbg_stall_cycle`
+- `dbg_flush_cycle`
+- `dbg_reg_addr`, `dbg_reg_rdata`
+- `dbg_illegal_instr`, `dbg_ecall`, `dbg_ebreak`
+
+Key internal modules:
+
+- `rv32i_pipe_hazard`
+- `rv32i_pipe_lsu`
+- `rv32i_pipe_csr`
+- `rv32i_regfile`
+- `rv32i_decoder`
+- `rv32i_imm_gen`
+- `rv32i_alu`
+
+## CSR / Trap
+
+### `rv32i_pipe_csr`
+
+File: `rtl/core/rv32i_pipe_csr.v`
+
+Role: architectural CSR state and commit-time trap/interrupt redirect.
+
+Implemented CSRs:
+
+- `mstatus`: only MIE/MPIE
+- `mie`: only MTIE
+- `mtvec`
+- `mepc`
+- `mcause`
+- `mip`: MTIP is derived from `timer_irq`
+- `cycle`
+
+Commit exception inputs:
+
+- `commit_illegal`
+- `commit_ecall`
+- `commit_ebreak`
+- `commit_instr_fault`
+- `commit_load_fault`
+- `commit_store_fault`
+
+Supported causes:
+
+```text
+1             instruction access fault
+2             illegal instruction
+3             breakpoint
+5             load access fault
+7             store/AMO access fault
+11            environment call from machine mode
+0x80000007    machine timer interrupt
+```
+
+## Caches
+
+### `rv32i_icache`
+
+File: `rtl/mem/rv32i_icache.v`
+
+Role: blocking instruction cache.
+
+CPU side:
+
+- `cpu_valid`
+- `cpu_addr`
+- `cpu_ready`
+- `cpu_rdata`
+- `cpu_error`
+
+Memory side:
+
+- `mem_valid`
+- `mem_addr`
+- `mem_ready`
+- `mem_rdata`
+- `mem_error`
+
+On `mem_error`, refill is aborted and `cpu_error` is returned to core.
+
+### `rv32i_dcache`
+
+File: `rtl/mem/rv32i_dcache.v`
+
+Role: blocking data cache.
+
+CPU side:
+
+- `cpu_valid`
+- `cpu_write`
+- `cpu_addr`
+- `cpu_wdata`
+- `cpu_wstrb`
+- `cpu_ready`
+- `cpu_rdata`
+- `cpu_error`
+
+Memory side:
+
+- `mem_valid`
+- `mem_write`
+- `mem_addr`
+- `mem_wdata`
+- `mem_wstrb`
+- `mem_ready`
+- `mem_rdata`
+- `mem_error`
+
+Default MMIO bypass sends accesses in the MMIO region directly to the bus without caching.
+
+## Bus
+
+### `rv32i_mem_bus`
+
+File: `rtl/bus/rv32i_mem_bus.v`
+
+Role: simple internal blocking memory bus.
+
+I master:
+
+- `i_valid`
+- `i_addr`
+- `i_ready`
+- `i_rdata`
+- `i_error`
+
+D master:
+
+- `d_valid`
+- `d_write`
+- `d_addr`
+- `d_wdata`
+- `d_wstrb`
+- `d_ready`
+- `d_rdata`
+- `d_error`
+
+Slaves:
+
+- ROM
+- SRAM
+- MMIO
+
+Default memory map:
+
+```text
+0x0000_0000 - 0x0FFF_FFFF  ROM
+0x2000_0000 - 0x2FFF_FFFF  SRAM
+0x4000_0000 - 0x4FFF_FFFF  MMIO
+other addresses             decode error
+```
+
+Decode error behavior:
+
+```text
+ready = 1
+rdata = 0
+i_error or d_error = 1
+dbg_decode_error = 1
+```
+
+## Timer
+
+### `rv32i_timer`
+
+File: `rtl/periph/rv32i_timer.v`
+
+Role: minimal MMIO timer.
+
+Registers:
+
+- `mtime_lo`
+- `mtime_hi`
+- `mtimecmp_lo`
+- `mtimecmp_hi`
+- `ctrl`
+
+Output:
+
+- `timer_irq`
+
+Typical integration:
+
+```text
+rv32i_timer MMIO port <-> rv32i_cached_system_top MMIO port
+timer_irq -> rv32i_cached_system_top.timer_irq
+```

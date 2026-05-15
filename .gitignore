@@ -1,0 +1,47 @@
+# Simulation output
+sim/csrc/
+sim/simv
+sim/simv.daidir/
+sim/ucli.key
+sim/*.log
+sim/*.vpd
+sim/*.vcd
+sim/*.fsdb
+sim/*.key
+sim/novas.*
+sim/verdiLog/
+sim/DVEfiles/
+
+# Common generated waveform/database files
+*.fsdb
+*.vcd
+*.vpd
+*.wlf
+*.trn
+*.dsn
+
+# EDA generated files
+*.jou
+*.pb
+*.rpt
+*.rptx
+*.str
+*.xpr
+*.runs/
+*.cache/
+*.hw/
+*.ip_user_files/
+
+# Build/cache
+build/
+out/
+dist/
+.cache/
+__pycache__/
+*.pyc
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

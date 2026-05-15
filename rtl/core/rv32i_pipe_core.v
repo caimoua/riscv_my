@@ -1,0 +1,691 @@
+`include "rv32i_defs.vh"
+
+module rv32i_pipe_core (
+  input  wire        clk,
+  input  wire        rst_n,
+  input  wire        timer_irq,
+
+  output wire        imem_valid,
+  output wire [31:0] imem_addr,
+  input  wire        imem_ready,
+  input  wire [31:0] imem_rdata,
+  input  wire        imem_error,
+
+  output wire        dmem_valid,
+  output wire        dmem_write,
+  output wire [31:0] dmem_addr,
+  output wire [31:0] dmem_wdata,
+  output wire [3:0]  dmem_wstrb,
+  input  wire        dmem_ready,
+  input  wire [31:0] dmem_rdata,
+  input  wire        dmem_error,
+
+  output wire [31:0] dbg_pc,
+  output wire [31:0] dbg_cycle,
+  output wire [31:0] dbg_instret,
+  output wire [31:0] dbg_stall_cycle,
+  output wire [31:0] dbg_flush_cycle,
+  input  wire [4:0]  dbg_reg_addr,
+  output wire [31:0] dbg_reg_rdata,
+  output wire        dbg_illegal_instr,
+  output wire        dbg_ecall,
+  output wire        dbg_ebreak
+);
+
+  reg [31:0] pc_q;
+  reg [31:0] cycle_q;
+  reg [31:0] instret_q;
+  reg [31:0] stall_cycle_q;
+  reg [31:0] flush_cycle_q;
+  reg        if_discard_q;
+
+  reg        if_id_valid_q;
+  reg [31:0] if_id_pc_q;
+  reg [31:0] if_id_pc4_q;
+  reg [31:0] if_id_instr_q;
+  reg        if_id_instr_fault_q;
+
+  reg        id_ex_valid_q;
+  reg [31:0] id_ex_pc_q;
+  reg [31:0] id_ex_pc4_q;
+  reg [4:0]  id_ex_rs1_addr_q;
+  reg [4:0]  id_ex_rs2_addr_q;
+  reg [4:0]  id_ex_rd_addr_q;
+  reg [31:0] id_ex_rs1_data_q;
+  reg [31:0] id_ex_rs2_data_q;
+  reg [31:0] id_ex_imm_i_q;
+  reg [31:0] id_ex_imm_s_q;
+  reg [31:0] id_ex_imm_b_q;
+  reg [31:0] id_ex_imm_u_q;
+  reg [31:0] id_ex_imm_j_q;
+  reg        id_ex_reg_we_q;
+  reg        id_ex_alu_src_imm_q;
+  reg [3:0]  id_ex_alu_op_q;
+  reg [2:0]  id_ex_wb_sel_q;
+  reg [1:0]  id_ex_pc_sel_q;
+  reg [2:0]  id_ex_branch_op_q;
+  reg        id_ex_mem_valid_q;
+  reg        id_ex_mem_write_q;
+  reg [1:0]  id_ex_mem_size_q;
+  reg        id_ex_mem_unsigned_q;
+  reg [11:0] id_ex_csr_addr_q;
+  reg [1:0]  id_ex_csr_op_q;
+  reg        id_ex_system_ecall_q;
+  reg        id_ex_system_ebreak_q;
+  reg        id_ex_system_mret_q;
+  reg        id_ex_illegal_q;
+  reg        id_ex_instr_fault_q;
+
+  reg        ex_mem_valid_q;
+  reg [31:0] ex_mem_pc4_q;
+  reg [4:0]  ex_mem_rd_addr_q;
+  reg [31:0] ex_mem_alu_result_q;
+  reg [31:0] ex_mem_store_data_q;
+  reg [31:0] ex_mem_mem_addr_q;
+  reg [31:0] ex_mem_imm_u_q;
+  reg [31:0] ex_mem_csr_rdata_q;
+  reg [31:0] ex_mem_csr_wdata_q;
+  reg [11:0] ex_mem_csr_addr_q;
+  reg [1:0]  ex_mem_csr_op_q;
+  reg        ex_mem_csr_write_q;
+  reg        ex_mem_reg_we_q;
+  reg [2:0]  ex_mem_wb_sel_q;
+  reg        ex_mem_mem_valid_q;
+  reg        ex_mem_mem_write_q;
+  reg [1:0]  ex_mem_mem_size_q;
+  reg        ex_mem_mem_unsigned_q;
+  reg        ex_mem_system_ecall_q;
+  reg        ex_mem_system_ebreak_q;
+  reg        ex_mem_system_mret_q;
+  reg        ex_mem_illegal_q;
+  reg        ex_mem_instr_fault_q;
+
+  reg        mem_wb_valid_q;
+  reg [31:0] mem_wb_pc4_q;
+  reg [4:0]  mem_wb_rd_addr_q;
+  reg [31:0] mem_wb_alu_result_q;
+  reg [31:0] mem_wb_load_data_q;
+  reg [31:0] mem_wb_imm_u_q;
+  reg [31:0] mem_wb_csr_rdata_q;
+  reg [31:0] mem_wb_csr_wdata_q;
+  reg [11:0] mem_wb_csr_addr_q;
+  reg [1:0]  mem_wb_csr_op_q;
+  reg        mem_wb_csr_write_q;
+  reg        mem_wb_reg_we_q;
+  reg [2:0]  mem_wb_wb_sel_q;
+  reg        mem_wb_system_ecall_q;
+  reg        mem_wb_system_ebreak_q;
+  reg        mem_wb_system_mret_q;
+  reg        mem_wb_illegal_q;
+  reg        mem_wb_instr_fault_q;
+  reg        mem_wb_load_fault_q;
+  reg        mem_wb_store_fault_q;
+
+  wire [4:0]  id_rs1_addr;
+  wire [4:0]  id_rs2_addr;
+  wire [4:0]  id_rd_addr;
+  wire        id_reg_we;
+  wire        id_alu_src_imm;
+  wire [3:0]  id_alu_op;
+  wire [2:0]  id_wb_sel;
+  wire [1:0]  id_pc_sel;
+  wire [2:0]  id_branch_op;
+  wire        id_mem_valid;
+  wire        id_mem_write;
+  wire [1:0]  id_mem_size;
+  wire        id_mem_unsigned;
+  wire [11:0] id_csr_addr;
+  wire [1:0]  id_csr_op;
+  wire [1:0]  id_system_op;
+  wire [1:0]  unused_id_system_op = id_system_op;
+  wire        id_system_ecall;
+  wire        id_system_ebreak;
+  wire        id_system_mret;
+  wire        id_illegal;
+  wire [31:0] id_imm_i;
+  wire [31:0] id_imm_s;
+  wire [31:0] id_imm_b;
+  wire [31:0] id_imm_u;
+  wire [31:0] id_imm_j;
+  wire [31:0] id_rs1_data;
+  wire [31:0] id_rs2_data;
+  wire [31:0] id_rs1_data_bypass;
+  wire [31:0] id_rs2_data_bypass;
+  wire        load_use_stall;
+  wire        if_stall;
+
+  wire [31:0] ex_alu_src_b;
+  wire [31:0] ex_alu_result;
+  wire [31:0] ex_mem_addr;
+  wire [31:0] ex_csr_rdata;
+  wire        ex_csr_write;
+  wire        ex_branch_taken;
+  wire        ex_redirect;
+  wire [31:0] ex_redirect_pc;
+
+  wire        mem_stall;
+  wire [31:0] mem_load_data;
+  wire        mem_load_fault;
+  wire        mem_store_fault;
+
+  wire [31:0] wb_wdata;
+  wire        wb_reg_we;
+  wire        commit_redirect;
+  wire [31:0] commit_redirect_pc;
+
+  wire [31:0] forward_rs1_data;
+  wire [31:0] forward_rs2_data;
+
+  assign imem_valid = 1'b1;
+  assign imem_addr  = pc_q;
+  assign if_stall   = imem_valid && !imem_ready;
+
+  assign dbg_pc            = pc_q;
+  assign dbg_cycle         = cycle_q;
+  assign dbg_instret       = instret_q;
+  assign dbg_stall_cycle   = stall_cycle_q;
+  assign dbg_flush_cycle   = flush_cycle_q;
+
+  rv32i_decoder u_decoder (
+    .instr         (if_id_instr_q),
+    .rs1_addr     (id_rs1_addr),
+    .rs2_addr     (id_rs2_addr),
+    .rd_addr      (id_rd_addr),
+    .reg_we       (id_reg_we),
+    .alu_src_imm  (id_alu_src_imm),
+    .alu_op       (id_alu_op),
+    .wb_sel       (id_wb_sel),
+    .pc_sel       (id_pc_sel),
+    .branch_op    (id_branch_op),
+    .mem_valid    (id_mem_valid),
+    .mem_write    (id_mem_write),
+    .mem_size     (id_mem_size),
+    .mem_unsigned (id_mem_unsigned),
+    .csr_addr     (id_csr_addr),
+    .csr_op       (id_csr_op),
+    .system_op    (id_system_op),
+    .system_ecall (id_system_ecall),
+    .system_ebreak(id_system_ebreak),
+    .system_mret  (id_system_mret),
+    .illegal_instr(id_illegal)
+  );
+
+  rv32i_imm_gen u_imm_gen (
+    .instr (if_id_instr_q),
+    .imm_i (id_imm_i),
+    .imm_s (id_imm_s),
+    .imm_b (id_imm_b),
+    .imm_u (id_imm_u),
+    .imm_j (id_imm_j)
+  );
+
+  rv32i_regfile u_regfile (
+    .clk       (clk),
+    .rst_n     (rst_n),
+    .we        (wb_reg_we),
+    .waddr     (mem_wb_rd_addr_q),
+    .wdata     (wb_wdata),
+    .raddr0    (id_rs1_addr),
+    .raddr1    (id_rs2_addr),
+    .rdata0    (id_rs1_data),
+    .rdata1    (id_rs2_data),
+    .dbg_raddr (dbg_reg_addr),
+    .dbg_rdata (dbg_reg_rdata)
+  );
+
+  rv32i_pipe_hazard u_pipe_hazard (
+    .if_id_valid        (if_id_valid_q),
+    .id_opcode          (if_id_instr_q[6:0]),
+    .id_rs1_addr        (id_rs1_addr),
+    .id_rs2_addr        (id_rs2_addr),
+    .id_rs1_data        (id_rs1_data),
+    .id_rs2_data        (id_rs2_data),
+    .id_ex_valid        (id_ex_valid_q),
+    .id_ex_mem_valid    (id_ex_mem_valid_q),
+    .id_ex_mem_write    (id_ex_mem_write_q),
+    .id_ex_reg_we       (id_ex_reg_we_q),
+    .id_ex_illegal      (id_ex_illegal_q),
+    .id_ex_rd_addr      (id_ex_rd_addr_q),
+    .id_ex_rs1_addr     (id_ex_rs1_addr_q),
+    .id_ex_rs2_addr     (id_ex_rs2_addr_q),
+    .id_ex_rs1_data     (id_ex_rs1_data_q),
+    .id_ex_rs2_data     (id_ex_rs2_data_q),
+    .ex_mem_valid       (ex_mem_valid_q),
+    .ex_mem_reg_we      (ex_mem_reg_we_q),
+    .ex_mem_illegal     (ex_mem_illegal_q),
+    .ex_mem_rd_addr     (ex_mem_rd_addr_q),
+    .ex_mem_wb_sel      (ex_mem_wb_sel_q),
+    .ex_mem_pc4         (ex_mem_pc4_q),
+    .ex_mem_alu_result  (ex_mem_alu_result_q),
+    .ex_mem_imm_u       (ex_mem_imm_u_q),
+    .ex_mem_csr_rdata   (ex_mem_csr_rdata_q),
+    .wb_reg_we          (wb_reg_we),
+    .wb_rd_addr         (mem_wb_rd_addr_q),
+    .wb_wdata           (wb_wdata),
+    .load_use_stall     (load_use_stall),
+    .id_rs1_data_bypass (id_rs1_data_bypass),
+    .id_rs2_data_bypass (id_rs2_data_bypass),
+    .forward_rs1_data   (forward_rs1_data),
+    .forward_rs2_data   (forward_rs2_data)
+  );
+
+  assign ex_alu_src_b = id_ex_alu_src_imm_q ? id_ex_imm_i_q : forward_rs2_data;
+  assign ex_mem_addr  = id_ex_mem_write_q ? (forward_rs1_data + id_ex_imm_s_q) :
+                                             ex_alu_result;
+  assign ex_csr_write = (id_ex_csr_op_q == `RV32I_CSR_OP_RW) ||
+                        ((id_ex_csr_op_q == `RV32I_CSR_OP_RS) &&
+                         (id_ex_rs1_addr_q != 5'd0));
+  assign ex_branch_taken = (id_ex_branch_op_q == `RV32I_BR_BEQ)  ? (forward_rs1_data == forward_rs2_data) :
+                           (id_ex_branch_op_q == `RV32I_BR_BNE)  ? (forward_rs1_data != forward_rs2_data) :
+                           (id_ex_branch_op_q == `RV32I_BR_BLT)  ? ($signed(forward_rs1_data) < $signed(forward_rs2_data)) :
+                           (id_ex_branch_op_q == `RV32I_BR_BGE)  ? ($signed(forward_rs1_data) >= $signed(forward_rs2_data)) :
+                           (id_ex_branch_op_q == `RV32I_BR_BLTU) ? (forward_rs1_data < forward_rs2_data) :
+                           (id_ex_branch_op_q == `RV32I_BR_BGEU) ? (forward_rs1_data >= forward_rs2_data) :
+                                                                   1'b0;
+  assign ex_redirect = id_ex_valid_q &&
+                       !id_ex_illegal_q &&
+                       !id_ex_instr_fault_q &&
+                       ((id_ex_pc_sel_q == `RV32I_PC_JAL) ||
+                        (id_ex_pc_sel_q == `RV32I_PC_JALR) ||
+                        ((id_ex_pc_sel_q == `RV32I_PC_BRANCH) && ex_branch_taken));
+  assign ex_redirect_pc = (id_ex_pc_sel_q == `RV32I_PC_JAL)  ? (id_ex_pc_q + id_ex_imm_j_q) :
+                          (id_ex_pc_sel_q == `RV32I_PC_JALR) ? ((forward_rs1_data + id_ex_imm_i_q) & ~32'd1) :
+                                                               (id_ex_pc_q + id_ex_imm_b_q);
+
+  rv32i_alu u_alu (
+    .alu_op (id_ex_alu_op_q),
+    .src_a  (forward_rs1_data),
+    .src_b  (ex_alu_src_b),
+    .result (ex_alu_result)
+  );
+
+  rv32i_pipe_csr u_pipe_csr (
+    .clk                  (clk),
+    .rst_n                (rst_n),
+    .cycle_value          (cycle_q),
+    .timer_irq            (timer_irq),
+    .ex_csr_addr          (id_ex_csr_addr_q),
+    .ex_csr_rdata         (ex_csr_rdata),
+    .commit_valid         (mem_wb_valid_q),
+    .commit_pc4           (mem_wb_pc4_q),
+    .commit_illegal       (mem_wb_illegal_q),
+    .commit_ecall         (mem_wb_system_ecall_q),
+    .commit_ebreak        (mem_wb_system_ebreak_q),
+    .commit_mret          (mem_wb_system_mret_q),
+    .commit_instr_fault   (mem_wb_instr_fault_q),
+    .commit_load_fault    (mem_wb_load_fault_q),
+    .commit_store_fault   (mem_wb_store_fault_q),
+    .commit_csr_write_req (mem_wb_csr_write_q),
+    .commit_csr_addr      (mem_wb_csr_addr_q),
+    .commit_csr_op        (mem_wb_csr_op_q),
+    .commit_csr_rdata     (mem_wb_csr_rdata_q),
+    .commit_csr_wdata     (mem_wb_csr_wdata_q),
+    .commit_redirect      (commit_redirect),
+    .commit_redirect_pc   (commit_redirect_pc),
+    .dbg_illegal_instr    (dbg_illegal_instr),
+    .dbg_ecall            (dbg_ecall),
+    .dbg_ebreak           (dbg_ebreak)
+  );
+
+  rv32i_pipe_lsu u_pipe_lsu (
+    .ex_mem_valid        (ex_mem_valid_q),
+    .ex_mem_illegal      (ex_mem_illegal_q),
+    .ex_mem_mem_valid    (ex_mem_mem_valid_q),
+    .ex_mem_mem_write    (ex_mem_mem_write_q),
+    .ex_mem_mem_size     (ex_mem_mem_size_q),
+    .ex_mem_mem_unsigned (ex_mem_mem_unsigned_q),
+    .ex_mem_mem_addr     (ex_mem_mem_addr_q),
+    .ex_mem_store_data   (ex_mem_store_data_q),
+    .commit_redirect     (commit_redirect),
+    .dmem_valid          (dmem_valid),
+    .dmem_write          (dmem_write),
+    .dmem_addr           (dmem_addr),
+    .dmem_wdata          (dmem_wdata),
+    .dmem_wstrb          (dmem_wstrb),
+    .dmem_ready          (dmem_ready),
+    .dmem_rdata          (dmem_rdata),
+    .dmem_error          (dmem_error),
+    .mem_stall           (mem_stall),
+    .mem_load_data       (mem_load_data),
+    .mem_load_fault      (mem_load_fault),
+    .mem_store_fault     (mem_store_fault)
+  );
+
+  assign wb_wdata = (mem_wb_wb_sel_q == `RV32I_WB_LUI)   ? mem_wb_imm_u_q :
+                    (mem_wb_wb_sel_q == `RV32I_WB_AUIPC) ? ((mem_wb_pc4_q - 32'd4) + mem_wb_imm_u_q) :
+                    (mem_wb_wb_sel_q == `RV32I_WB_PC4)   ? mem_wb_pc4_q :
+                    (mem_wb_wb_sel_q == `RV32I_WB_MEM)   ? mem_wb_load_data_q :
+                    (mem_wb_wb_sel_q == `RV32I_WB_CSR)   ? mem_wb_csr_rdata_q :
+                                                            mem_wb_alu_result_q;
+  assign wb_reg_we = mem_wb_valid_q && mem_wb_reg_we_q &&
+                     !mem_wb_illegal_q && !mem_wb_instr_fault_q &&
+                     !mem_wb_load_fault_q && !mem_wb_store_fault_q;
+
+  always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      pc_q                   <= 32'd0;
+      cycle_q                <= 32'd0;
+      instret_q              <= 32'd0;
+      stall_cycle_q          <= 32'd0;
+      flush_cycle_q          <= 32'd0;
+      if_discard_q           <= 1'b0;
+      if_id_valid_q          <= 1'b0;
+      if_id_pc_q             <= 32'd0;
+      if_id_pc4_q            <= 32'd0;
+      if_id_instr_q          <= 32'h0000_0013;
+      if_id_instr_fault_q    <= 1'b0;
+      id_ex_valid_q          <= 1'b0;
+      id_ex_pc_q             <= 32'd0;
+      id_ex_pc4_q            <= 32'd0;
+      id_ex_rs1_addr_q       <= 5'd0;
+      id_ex_rs2_addr_q       <= 5'd0;
+      id_ex_rd_addr_q        <= 5'd0;
+      id_ex_rs1_data_q       <= 32'd0;
+      id_ex_rs2_data_q       <= 32'd0;
+      id_ex_imm_i_q          <= 32'd0;
+      id_ex_imm_s_q          <= 32'd0;
+      id_ex_imm_b_q          <= 32'd0;
+      id_ex_imm_u_q          <= 32'd0;
+      id_ex_imm_j_q          <= 32'd0;
+      id_ex_reg_we_q         <= 1'b0;
+      id_ex_alu_src_imm_q    <= 1'b0;
+      id_ex_alu_op_q         <= `RV32I_ALU_ADD;
+      id_ex_wb_sel_q         <= `RV32I_WB_ALU;
+      id_ex_pc_sel_q         <= `RV32I_PC_NEXT;
+      id_ex_branch_op_q      <= `RV32I_BR_BEQ;
+      id_ex_mem_valid_q      <= 1'b0;
+      id_ex_mem_write_q      <= 1'b0;
+      id_ex_mem_size_q       <= `RV32I_MEM_WORD;
+      id_ex_mem_unsigned_q   <= 1'b0;
+      id_ex_csr_addr_q       <= 12'd0;
+      id_ex_csr_op_q         <= `RV32I_CSR_OP_NONE;
+      id_ex_system_ecall_q   <= 1'b0;
+      id_ex_system_ebreak_q  <= 1'b0;
+      id_ex_system_mret_q    <= 1'b0;
+      id_ex_illegal_q        <= 1'b0;
+      id_ex_instr_fault_q    <= 1'b0;
+      ex_mem_valid_q         <= 1'b0;
+      ex_mem_pc4_q           <= 32'd0;
+      ex_mem_rd_addr_q       <= 5'd0;
+      ex_mem_alu_result_q    <= 32'd0;
+      ex_mem_store_data_q    <= 32'd0;
+      ex_mem_mem_addr_q      <= 32'd0;
+      ex_mem_imm_u_q         <= 32'd0;
+      ex_mem_csr_rdata_q     <= 32'd0;
+      ex_mem_csr_wdata_q     <= 32'd0;
+      ex_mem_csr_addr_q      <= 12'd0;
+      ex_mem_csr_op_q        <= `RV32I_CSR_OP_NONE;
+      ex_mem_csr_write_q     <= 1'b0;
+      ex_mem_reg_we_q        <= 1'b0;
+      ex_mem_wb_sel_q        <= `RV32I_WB_ALU;
+      ex_mem_mem_valid_q     <= 1'b0;
+      ex_mem_mem_write_q     <= 1'b0;
+      ex_mem_mem_size_q      <= `RV32I_MEM_WORD;
+      ex_mem_mem_unsigned_q  <= 1'b0;
+      ex_mem_system_ecall_q  <= 1'b0;
+      ex_mem_system_ebreak_q <= 1'b0;
+      ex_mem_system_mret_q   <= 1'b0;
+      ex_mem_illegal_q       <= 1'b0;
+      ex_mem_instr_fault_q   <= 1'b0;
+      mem_wb_valid_q         <= 1'b0;
+      mem_wb_pc4_q           <= 32'd0;
+      mem_wb_rd_addr_q       <= 5'd0;
+      mem_wb_alu_result_q    <= 32'd0;
+      mem_wb_load_data_q     <= 32'd0;
+      mem_wb_imm_u_q         <= 32'd0;
+      mem_wb_csr_rdata_q     <= 32'd0;
+      mem_wb_csr_wdata_q     <= 32'd0;
+      mem_wb_csr_addr_q      <= 12'd0;
+      mem_wb_csr_op_q        <= `RV32I_CSR_OP_NONE;
+      mem_wb_csr_write_q     <= 1'b0;
+      mem_wb_reg_we_q        <= 1'b0;
+      mem_wb_wb_sel_q        <= `RV32I_WB_ALU;
+      mem_wb_system_ecall_q  <= 1'b0;
+      mem_wb_system_ebreak_q <= 1'b0;
+      mem_wb_system_mret_q   <= 1'b0;
+      mem_wb_illegal_q       <= 1'b0;
+      mem_wb_instr_fault_q   <= 1'b0;
+      mem_wb_load_fault_q    <= 1'b0;
+      mem_wb_store_fault_q   <= 1'b0;
+    end else begin
+      cycle_q <= cycle_q + 32'd1;
+
+      if (ex_mem_valid_q && !ex_mem_illegal_q && !ex_mem_instr_fault_q && !mem_stall &&
+          !mem_load_fault && !mem_store_fault && !commit_redirect) begin
+        instret_q <= instret_q + 32'd1;
+      end
+      if (load_use_stall || mem_stall || if_stall || if_discard_q) begin
+        stall_cycle_q <= stall_cycle_q + 32'd1;
+      end
+      if (ex_redirect && !mem_stall && !commit_redirect) begin
+        flush_cycle_q <= flush_cycle_q + 32'd1;
+      end
+
+      if (commit_redirect) begin
+        pc_q          <= commit_redirect_pc;
+        if_discard_q  <= 1'b1;
+        if_id_valid_q <= 1'b0;
+        if_id_pc_q    <= 32'd0;
+        if_id_pc4_q   <= 32'd0;
+        if_id_instr_q <= 32'h0000_0013;
+        if_id_instr_fault_q <= 1'b0;
+      end else if (!mem_stall) begin
+        if (if_discard_q) begin
+          if (imem_ready) begin
+            if_discard_q <= 1'b0;
+          end
+          if_id_valid_q <= 1'b0;
+          if_id_pc_q    <= 32'd0;
+          if_id_pc4_q   <= 32'd0;
+          if_id_instr_q <= 32'h0000_0013;
+          if_id_instr_fault_q <= 1'b0;
+        end else if (ex_redirect) begin
+          pc_q          <= ex_redirect_pc;
+          if_discard_q  <= 1'b1;
+          if_id_valid_q <= 1'b0;
+          if_id_pc_q    <= 32'd0;
+          if_id_pc4_q   <= 32'd0;
+          if_id_instr_q <= 32'h0000_0013;
+          if_id_instr_fault_q <= 1'b0;
+        end else if (!load_use_stall && !if_stall) begin
+          pc_q          <= pc_q + 32'd4;
+          if_id_valid_q <= 1'b1;
+          if_id_pc_q    <= pc_q;
+          if_id_pc4_q   <= pc_q + 32'd4;
+          if_id_instr_q <= imem_error ? 32'h0000_0013 : imem_rdata;
+          if_id_instr_fault_q <= imem_error;
+        end
+      end
+
+      if (commit_redirect) begin
+        id_ex_valid_q         <= 1'b0;
+        id_ex_pc_q            <= 32'd0;
+        id_ex_pc4_q           <= 32'd0;
+        id_ex_rs1_addr_q      <= 5'd0;
+        id_ex_rs2_addr_q      <= 5'd0;
+        id_ex_rd_addr_q       <= 5'd0;
+        id_ex_rs1_data_q      <= 32'd0;
+        id_ex_rs2_data_q      <= 32'd0;
+        id_ex_imm_i_q         <= 32'd0;
+        id_ex_imm_s_q         <= 32'd0;
+        id_ex_imm_b_q         <= 32'd0;
+        id_ex_imm_u_q         <= 32'd0;
+        id_ex_imm_j_q         <= 32'd0;
+        id_ex_reg_we_q        <= 1'b0;
+        id_ex_alu_src_imm_q   <= 1'b0;
+        id_ex_alu_op_q        <= `RV32I_ALU_ADD;
+        id_ex_wb_sel_q        <= `RV32I_WB_ALU;
+        id_ex_pc_sel_q        <= `RV32I_PC_NEXT;
+        id_ex_branch_op_q     <= `RV32I_BR_BEQ;
+        id_ex_mem_valid_q     <= 1'b0;
+        id_ex_mem_write_q     <= 1'b0;
+        id_ex_mem_size_q      <= `RV32I_MEM_WORD;
+        id_ex_mem_unsigned_q  <= 1'b0;
+        id_ex_csr_addr_q      <= 12'd0;
+        id_ex_csr_op_q        <= `RV32I_CSR_OP_NONE;
+        id_ex_system_ecall_q  <= 1'b0;
+        id_ex_system_ebreak_q <= 1'b0;
+        id_ex_system_mret_q   <= 1'b0;
+        id_ex_illegal_q       <= 1'b0;
+        id_ex_instr_fault_q   <= 1'b0;
+      end else if (!mem_stall) begin
+        if (ex_redirect || load_use_stall || if_stall || if_discard_q) begin
+          id_ex_valid_q         <= 1'b0;
+          id_ex_pc_q            <= 32'd0;
+          id_ex_pc4_q           <= 32'd0;
+          id_ex_rs1_addr_q      <= 5'd0;
+          id_ex_rs2_addr_q      <= 5'd0;
+          id_ex_rd_addr_q       <= 5'd0;
+          id_ex_rs1_data_q      <= 32'd0;
+          id_ex_rs2_data_q      <= 32'd0;
+          id_ex_imm_i_q         <= 32'd0;
+          id_ex_imm_s_q         <= 32'd0;
+          id_ex_imm_b_q         <= 32'd0;
+          id_ex_imm_u_q         <= 32'd0;
+          id_ex_imm_j_q         <= 32'd0;
+          id_ex_reg_we_q        <= 1'b0;
+          id_ex_alu_src_imm_q   <= 1'b0;
+          id_ex_alu_op_q        <= `RV32I_ALU_ADD;
+          id_ex_wb_sel_q        <= `RV32I_WB_ALU;
+          id_ex_pc_sel_q        <= `RV32I_PC_NEXT;
+          id_ex_branch_op_q     <= `RV32I_BR_BEQ;
+          id_ex_mem_valid_q     <= 1'b0;
+          id_ex_mem_write_q     <= 1'b0;
+          id_ex_mem_size_q      <= `RV32I_MEM_WORD;
+          id_ex_mem_unsigned_q  <= 1'b0;
+          id_ex_csr_addr_q      <= 12'd0;
+          id_ex_csr_op_q        <= `RV32I_CSR_OP_NONE;
+          id_ex_system_ecall_q  <= 1'b0;
+          id_ex_system_ebreak_q <= 1'b0;
+          id_ex_system_mret_q   <= 1'b0;
+          id_ex_illegal_q       <= 1'b0;
+          id_ex_instr_fault_q   <= 1'b0;
+        end else begin
+          id_ex_valid_q         <= if_id_valid_q;
+          id_ex_pc_q            <= if_id_pc_q;
+          id_ex_pc4_q           <= if_id_pc4_q;
+          id_ex_rs1_addr_q      <= id_rs1_addr;
+          id_ex_rs2_addr_q      <= id_rs2_addr;
+          id_ex_rd_addr_q       <= id_rd_addr;
+          id_ex_rs1_data_q      <= id_rs1_data_bypass;
+          id_ex_rs2_data_q      <= id_rs2_data_bypass;
+          id_ex_imm_i_q         <= id_imm_i;
+          id_ex_imm_s_q         <= id_imm_s;
+          id_ex_imm_b_q         <= id_imm_b;
+          id_ex_imm_u_q         <= id_imm_u;
+          id_ex_imm_j_q         <= id_imm_j;
+          id_ex_reg_we_q        <= id_reg_we;
+          id_ex_alu_src_imm_q   <= id_alu_src_imm;
+          id_ex_alu_op_q        <= id_alu_op;
+          id_ex_wb_sel_q        <= id_wb_sel;
+          id_ex_pc_sel_q        <= id_pc_sel;
+          id_ex_branch_op_q     <= id_branch_op;
+          id_ex_mem_valid_q     <= id_mem_valid;
+          id_ex_mem_write_q     <= id_mem_write;
+          id_ex_mem_size_q      <= id_mem_size;
+          id_ex_mem_unsigned_q  <= id_mem_unsigned;
+          id_ex_csr_addr_q      <= id_csr_addr;
+          id_ex_csr_op_q        <= id_csr_op;
+          id_ex_system_ecall_q  <= id_system_ecall;
+          id_ex_system_ebreak_q <= id_system_ebreak;
+          id_ex_system_mret_q   <= id_system_mret;
+          id_ex_illegal_q       <= id_illegal;
+          id_ex_instr_fault_q   <= if_id_instr_fault_q;
+        end
+      end
+
+      if (commit_redirect) begin
+        ex_mem_valid_q         <= 1'b0;
+        ex_mem_pc4_q           <= 32'd0;
+        ex_mem_rd_addr_q       <= 5'd0;
+        ex_mem_alu_result_q    <= 32'd0;
+        ex_mem_store_data_q    <= 32'd0;
+        ex_mem_mem_addr_q      <= 32'd0;
+        ex_mem_imm_u_q         <= 32'd0;
+        ex_mem_csr_rdata_q     <= 32'd0;
+        ex_mem_csr_wdata_q     <= 32'd0;
+        ex_mem_csr_addr_q      <= 12'd0;
+        ex_mem_csr_op_q        <= `RV32I_CSR_OP_NONE;
+        ex_mem_csr_write_q     <= 1'b0;
+        ex_mem_reg_we_q        <= 1'b0;
+        ex_mem_wb_sel_q        <= `RV32I_WB_ALU;
+        ex_mem_mem_valid_q     <= 1'b0;
+        ex_mem_mem_write_q     <= 1'b0;
+        ex_mem_mem_size_q      <= `RV32I_MEM_WORD;
+        ex_mem_mem_unsigned_q  <= 1'b0;
+        ex_mem_system_ecall_q  <= 1'b0;
+        ex_mem_system_ebreak_q <= 1'b0;
+        ex_mem_system_mret_q   <= 1'b0;
+        ex_mem_illegal_q       <= 1'b0;
+        ex_mem_instr_fault_q   <= 1'b0;
+
+        mem_wb_valid_q         <= 1'b0;
+        mem_wb_pc4_q           <= 32'd0;
+        mem_wb_rd_addr_q       <= 5'd0;
+        mem_wb_alu_result_q    <= 32'd0;
+        mem_wb_load_data_q     <= 32'd0;
+        mem_wb_imm_u_q         <= 32'd0;
+        mem_wb_csr_rdata_q     <= 32'd0;
+        mem_wb_csr_wdata_q     <= 32'd0;
+        mem_wb_csr_addr_q      <= 12'd0;
+        mem_wb_csr_op_q        <= `RV32I_CSR_OP_NONE;
+        mem_wb_csr_write_q     <= 1'b0;
+        mem_wb_reg_we_q        <= 1'b0;
+        mem_wb_wb_sel_q        <= `RV32I_WB_ALU;
+        mem_wb_system_ecall_q  <= 1'b0;
+        mem_wb_system_ebreak_q <= 1'b0;
+        mem_wb_system_mret_q   <= 1'b0;
+        mem_wb_illegal_q       <= 1'b0;
+        mem_wb_instr_fault_q   <= 1'b0;
+        mem_wb_load_fault_q    <= 1'b0;
+        mem_wb_store_fault_q   <= 1'b0;
+      end else if (!mem_stall) begin
+        ex_mem_valid_q         <= id_ex_valid_q;
+        ex_mem_pc4_q           <= id_ex_pc4_q;
+        ex_mem_rd_addr_q       <= id_ex_rd_addr_q;
+        ex_mem_alu_result_q    <= ex_alu_result;
+        ex_mem_store_data_q    <= forward_rs2_data;
+        ex_mem_mem_addr_q      <= ex_mem_addr;
+        ex_mem_imm_u_q         <= id_ex_imm_u_q;
+        ex_mem_csr_rdata_q     <= ex_csr_rdata;
+        ex_mem_csr_wdata_q     <= forward_rs1_data;
+        ex_mem_csr_addr_q      <= id_ex_csr_addr_q;
+        ex_mem_csr_op_q        <= id_ex_csr_op_q;
+        ex_mem_csr_write_q     <= ex_csr_write;
+        ex_mem_reg_we_q        <= id_ex_reg_we_q;
+        ex_mem_wb_sel_q        <= id_ex_wb_sel_q;
+        ex_mem_mem_valid_q     <= id_ex_mem_valid_q;
+        ex_mem_mem_write_q     <= id_ex_mem_write_q;
+        ex_mem_mem_size_q      <= id_ex_mem_size_q;
+        ex_mem_mem_unsigned_q  <= id_ex_mem_unsigned_q;
+        ex_mem_system_ecall_q  <= id_ex_system_ecall_q;
+        ex_mem_system_ebreak_q <= id_ex_system_ebreak_q;
+        ex_mem_system_mret_q   <= id_ex_system_mret_q;
+        ex_mem_illegal_q       <= id_ex_illegal_q;
+        ex_mem_instr_fault_q   <= id_ex_instr_fault_q;
+
+        mem_wb_valid_q         <= ex_mem_valid_q;
+        mem_wb_pc4_q           <= ex_mem_pc4_q;
+        mem_wb_rd_addr_q       <= ex_mem_rd_addr_q;
+        mem_wb_alu_result_q    <= ex_mem_alu_result_q;
+        mem_wb_load_data_q     <= mem_load_data;
+        mem_wb_imm_u_q         <= ex_mem_imm_u_q;
+        mem_wb_csr_rdata_q     <= ex_mem_csr_rdata_q;
+        mem_wb_csr_wdata_q     <= ex_mem_csr_wdata_q;
+        mem_wb_csr_addr_q      <= ex_mem_csr_addr_q;
+        mem_wb_csr_op_q        <= ex_mem_csr_op_q;
+        mem_wb_csr_write_q     <= ex_mem_csr_write_q;
+        mem_wb_reg_we_q        <= ex_mem_reg_we_q;
+        mem_wb_wb_sel_q        <= ex_mem_wb_sel_q;
+        mem_wb_system_ecall_q  <= ex_mem_system_ecall_q;
+        mem_wb_system_ebreak_q <= ex_mem_system_ebreak_q;
+        mem_wb_system_mret_q   <= ex_mem_system_mret_q;
+        mem_wb_illegal_q       <= ex_mem_illegal_q;
+        mem_wb_instr_fault_q   <= ex_mem_instr_fault_q;
+        mem_wb_load_fault_q    <= mem_load_fault;
+        mem_wb_store_fault_q   <= mem_store_fault;
+      end
+    end
+  end
+
+endmodule
