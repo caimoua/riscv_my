@@ -40,6 +40,10 @@ dist/
 __pycache__/
 *.pyc
 
+# Local licensed third-party RTL/IP. Keep public commits clean.
+vendor_ip/*
+!vendor_ip/README.md
+
 # OS/editor
 .DS_Store
 Thumbs.db

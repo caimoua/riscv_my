@@ -54,6 +54,14 @@ rv32i_cached_ahb_master_top
   - opt-in `rv32i_cached_ahb_master_top`
   - one external AHB-Lite master port
   - external SoC/bus fabric owns ROM/SRAM/MMIO decode.
+- Clean-room AHB-Lite 1-master / 4-slave matrix SoC wrapper:
+  - `rv32i_ahb_lite_matrix_1m4s`
+  - `rv32i_ahb_matrix_soc_top`
+  - flash slot at `0x0800_0000`
+  - SRAM slot at `0x2000_0000`
+  - AHB peripheral slot at `0x4000_0000`
+  - APB peripheral slot at `0x4200_0000`
+- `rv32i_pipe_core` and cached wrappers have a `RESET_PC` parameter so an SoC wrapper can boot from flash.
 - Cached system top wrapper.
 - MMIO timer peripheral with `mtime`, `mtimecmp`, `ctrl`, and `timer_irq`.
 - Machine timer interrupt flow through CSR/trap and `mret`.
@@ -67,7 +75,7 @@ rv32i_cached_ahb_master_top
 
 Detailed status is tracked in `docs/VERIFICATION_MATRIX.md`.
 
-User-confirmed VCS PASS has been reported for all directed tests currently listed in `docs/VERIFICATION_MATRIX.md`, including UART MMIO, the AHB-Lite path, and the external AHB-Lite master CPU top.
+User-confirmed VCS PASS has been reported for all directed tests currently listed in `docs/VERIFICATION_MATRIX.md`, including UART MMIO, the AHB-Lite path, the external AHB-Lite master CPU top, and the clean-room AHB matrix SoC top.
 
 ## Active Design Assumptions
 
@@ -82,10 +90,10 @@ User-confirmed VCS PASS has been reported for all directed tests currently liste
 
 ## Next Candidate Work
 
-1. Add simple-bus-to-AXI-lite adapter.
-2. Add optional misaligned load/store traps.
-3. Add UART RX/FIFO/interrupt if needed.
-4. Expand CSR instruction coverage if needed.
+1. If licensed vendor IP is required, keep AE350/Andes/ARM files outside the public repo or add them through a private `vendor_ip` path and filelist.
+2. Add simple-bus-to-AXI-lite adapter.
+3. Add optional misaligned load/store traps.
+4. Add UART RX/FIFO/interrupt if needed.
 5. Consider a true multi-master AHB matrix if the project needs parallel slave access.
 
 ## Context Rules

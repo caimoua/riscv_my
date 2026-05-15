@@ -1,5 +1,7 @@
 # RTL 目录
 
+Current AHB matrix SoC wrapper: `top/rv32i_ahb_matrix_soc_top.v`. It keeps `rv32i_cached_ahb_master_top` as the CPU subsystem and connects it to `bus/rv32i_ahb_lite_matrix_1m4s.v`, exposing flash, SRAM, AHB peripheral, and APB peripheral AHB-Lite slave slots.
+
 建议的模块归属：
 
 | 路径 | 内容 |

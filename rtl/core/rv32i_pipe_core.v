@@ -1,6 +1,8 @@
 `include "rv32i_defs.vh"
 
-module rv32i_pipe_core (
+module rv32i_pipe_core #(
+  parameter [31:0] RESET_PC = 32'h0000_0000
+) (
   input  wire        clk,
   input  wire        rst_n,
   input  wire        timer_irq,
@@ -363,7 +365,7 @@ module rv32i_pipe_core (
 
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-      pc_q                   <= 32'd0;
+      pc_q                   <= RESET_PC;
       cycle_q                <= 32'd0;
       instret_q              <= 32'd0;
       stall_cycle_q          <= 32'd0;

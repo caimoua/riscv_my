@@ -302,6 +302,53 @@ external AHB fabric -> ROM/SRAM/MMIO/peripherals
 
 This top is the cleaner CPU-IP boundary. It does not expose ROM/SRAM/MMIO simple ports; memory and peripheral decode is owned by the external SoC fabric.
 
+### `rv32i_ahb_lite_matrix_1m4s`
+
+File: `rtl/bus/rv32i_ahb_lite_matrix_1m4s.v`
+
+Role: clean-room AHB-Lite single-master / four-slave decoder matrix for the current SoC integration step.
+
+Master side:
+
+- Inputs: `m_haddr`, `m_hburst`, `m_hprot`, `m_hsize`, `m_htrans`, `m_hwdata`, `m_hwrite`
+- Outputs: `m_hrdata`, `m_hready`, `m_hresp`
+
+Slave side:
+
+- `s0_*`: flash slot
+- `s1_*`: SRAM slot
+- `s2_*`: AHB peripheral slot
+- `s3_*`: APB peripheral slot, still exposed as an AHB-Lite slave-side port so an AHB-to-APB bridge can be attached later.
+
+Default map:
+
+```text
+0x0800_0000 - 0x0FFF_FFFF  flash
+0x2000_0000 - 0x2FFF_FFFF  SRAM
+0x4000_0000 - 0x41FF_FFFF  AHB peripherals
+0x4200_0000 - 0x43FF_FFFF  APB peripherals
+other addresses             AHB ERROR response
+```
+
+### `rv32i_ahb_matrix_soc_top`
+
+File: `rtl/top/rv32i_ahb_matrix_soc_top.v`
+
+Role: SoC-style wrapper around `rv32i_cached_ahb_master_top` plus the local AHB-Lite matrix.
+
+External ports:
+
+- Four AHB-Lite slave-side slots: `flash_*`, `sram_*`, `ahb_periph_*`, `apb_periph_*`
+- Core debug and cache/bus counters
+- `dbg_cpu_bus_error`
+- `dbg_matrix_decode_error`
+
+Default boot address:
+
+```text
+RESET_PC = 0x0800_0000
+```
+
 ## Timer
 
 ### `rv32i_timer`

@@ -132,3 +132,45 @@ make sim TB_FILE=./testcases/rv32i_cached_ahb_master_top_tb.sv TOP_NAME=rv32i_ca
 ```
 
 This testbench places the AHB decoder and ROM/SRAM/MMIO slave bridges outside the CPU subsystem, proving that the CPU can be integrated as an AHB-Lite master IP.
+
+## 7. Clean-room AHB-Lite Matrix SoC Top
+
+The next SoC integration step adds a local clean-room matrix instead of copying proprietary AE350/Andes/ARM source files into this repo.
+
+New RTL:
+
+```text
+rtl/bus/rv32i_ahb_lite_matrix_1m4s.v
+rtl/top/rv32i_ahb_matrix_soc_top.v
+```
+
+`rv32i_ahb_matrix_soc_top` instantiates:
+
+```text
+rv32i_cached_ahb_master_top
+  -> rv32i_ahb_lite_matrix_1m4s
+      -> flash slot
+      -> SRAM slot
+      -> AHB peripheral slot
+      -> APB peripheral slot
+```
+
+Default map:
+
+```text
+0x0800_0000 - 0x0FFF_FFFF  flash
+0x2000_0000 - 0x2FFF_FFFF  SRAM
+0x4000_0000 - 0x41FF_FFFF  AHB peripherals
+0x4200_0000 - 0x43FF_FFFF  APB peripherals
+```
+
+`RESET_PC` defaults to `0x0800_0000` in this SoC top, matching the flash slot. The lower CPU subsystem still defaults to `0x0000_0000`, so older tests keep their original behavior.
+
+Verification entry:
+
+```bash
+cd sim
+make sim TB_FILE=./testcases/rv32i_ahb_matrix_soc_top_tb.sv TOP_NAME=rv32i_ahb_matrix_soc_top_tb
+```
+
+User-confirmed VCS PASS was reported for this test on 2026-05-15.

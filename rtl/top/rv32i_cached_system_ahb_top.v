@@ -1,6 +1,7 @@
 module rv32i_cached_system_ahb_top #(
   parameter ICACHE_INDEX_BITS = 2,
-  parameter DCACHE_INDEX_BITS = 2
+  parameter DCACHE_INDEX_BITS = 2,
+  parameter [31:0] RESET_PC = 32'h0000_0000
 ) (
   input  wire        clk,
   input  wire        rst_n,
@@ -88,7 +89,9 @@ module rv32i_cached_system_ahb_top #(
   wire        unused_bus_dbg_grant_is_d;
   wire [1:0]  unused_bus_dbg_target;
 
-  rv32i_pipe_core u_core (
+  rv32i_pipe_core #(
+    .RESET_PC(RESET_PC)
+  ) u_core (
     .clk              (clk),
     .rst_n            (rst_n),
     .timer_irq        (timer_irq),

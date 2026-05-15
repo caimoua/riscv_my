@@ -1,5 +1,22 @@
 # CPU_PRJ
 
+## Current AHB Matrix SoC Work
+
+The current SoC-style integration step adds a clean-room local AHB-Lite matrix wrapper instead of copying third-party AE350/Andes/ARM IP into this repo:
+
+```text
+rv32i_ahb_matrix_soc_top
+  rv32i_cached_ahb_master_top
+  rv32i_ahb_lite_matrix_1m4s
+```
+
+VCS command:
+
+```bash
+cd sim
+make sim TB_FILE=./testcases/rv32i_ahb_matrix_soc_top_tb.sv TOP_NAME=rv32i_ahb_matrix_soc_top_tb
+```
+
 这是一个面向学习和面试准备的 RISC-V CPU 项目，目标是系统性练习 CPU 微架构、简单 SoC 集成和验证流程。
 
 ## 项目导航入口

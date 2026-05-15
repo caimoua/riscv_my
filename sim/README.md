@@ -1,5 +1,13 @@
 # 仿真说明
 
+## Current AHB Matrix SoC Test
+
+```bash
+make sim TB_FILE=./testcases/rv32i_ahb_matrix_soc_top_tb.sv TOP_NAME=rv32i_ahb_matrix_soc_top_tb
+```
+
+This test boots from the flash slot at `0x0800_0000` and routes accesses through the local AHB-Lite matrix to flash, SRAM, AHB peripheral, and APB peripheral slots.
+
 这个目录是 VCS/Verdi 仿真的统一入口。
 
 ## 常用命令
