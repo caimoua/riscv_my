@@ -70,12 +70,18 @@ rv32i_cached_ahb_master_top
 - D-side load/store access fault through `d_error`.
 - I-side instruction access fault through `i_error`.
 - Presentation-quality architecture SVG: `docs/figures/rv32i_cached_system_architecture.svg`.
+- Software-driven test image flow:
+  - `software/asm/ahb_matrix_soc.S`
+  - `software/linker/rv32i_flash.ld`
+  - `software/scripts/bin_to_memh.py`
+  - `software/bin/ahb_matrix_soc.memh`
+  - `rv32i_ahb_matrix_soc_top_tb` now loads flash contents through `$readmemh`.
 
 ## Verification Status Summary
 
 Detailed status is tracked in `docs/VERIFICATION_MATRIX.md`.
 
-User-confirmed VCS PASS has been reported for all directed tests currently listed in `docs/VERIFICATION_MATRIX.md`, including UART MMIO, the AHB-Lite path, the external AHB-Lite master CPU top, and the clean-room AHB matrix SoC top.
+User-confirmed VCS PASS has been reported for all directed tests currently listed in `docs/VERIFICATION_MATRIX.md`, including the MEMH-loader revision of `rv32i_ahb_matrix_soc_top_tb`.
 
 ## Active Design Assumptions
 
@@ -90,11 +96,12 @@ User-confirmed VCS PASS has been reported for all directed tests currently liste
 
 ## Next Candidate Work
 
-1. If licensed vendor IP is required, keep AE350/Andes/ARM files outside the public repo or add them through a private `vendor_ip` path and filelist.
-2. Add simple-bus-to-AXI-lite adapter.
-3. Add optional misaligned load/store traps.
-4. Add UART RX/FIFO/interrupt if needed.
-5. Consider a true multi-master AHB matrix if the project needs parallel slave access.
+1. Install local RISC-V GNU toolchain if we want this Windows machine to regenerate `software/bin/*.memh`.
+2. If licensed vendor IP is required, keep AE350/Andes/ARM files outside the public repo or add them through a private `vendor_ip` path and filelist.
+3. Add simple-bus-to-AXI-lite adapter.
+4. Add optional misaligned load/store traps.
+5. Add UART RX/FIFO/interrupt if needed.
+6. Consider a true multi-master AHB matrix if the project needs parallel slave access.
 
 ## Context Rules
 

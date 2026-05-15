@@ -40,6 +40,13 @@ dist/
 __pycache__/
 *.pyc
 
+# Software build products. Keep checked-in memory images explicit.
+software/bin/*.bin
+software/bin/*.elf
+software/bin/*.map
+software/bin/*.o
+!software/bin/*.memh
+
 # Local licensed third-party RTL/IP. Keep public commits clean.
 vendor_ip/*
 !vendor_ip/README.md

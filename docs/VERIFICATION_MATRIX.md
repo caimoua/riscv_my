@@ -59,6 +59,8 @@ Status meanings:
 
 ## Latest Manual Update
 
+- 2026-05-15: User confirmed PASS for the MEMH-loader revision of `rv32i_ahb_matrix_soc_top_tb`.
+- 2026-05-15: `rv32i_ahb_matrix_soc_top_tb` was migrated from hand-written SV machine code to `$readmemh` loading `software/bin/ahb_matrix_soc.memh`.
 - 2026-05-15: User confirmed PASS for `rv32i_ahb_matrix_soc_top_tb`.
 - 2026-05-15: User confirmed PASS for `rv32i_cached_ahb_master_top_tb`.
 - 2026-05-15: User confirmed PASS for `rv32i_mem_bus_ahb_tb` and `rv32i_cached_system_ahb_top_tb`.

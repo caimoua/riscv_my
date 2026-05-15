@@ -173,4 +173,4 @@ cd sim
 make sim TB_FILE=./testcases/rv32i_ahb_matrix_soc_top_tb.sv TOP_NAME=rv32i_ahb_matrix_soc_top_tb
 ```
 
-User-confirmed VCS PASS was reported for this test on 2026-05-15.
+The test now loads its flash program from `software/bin/ahb_matrix_soc.memh`, generated from `software/asm/ahb_matrix_soc.S`. User-confirmed VCS PASS for this MEMH-loader flow was reported on 2026-05-15.

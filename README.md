@@ -17,6 +17,15 @@ cd sim
 make sim TB_FILE=./testcases/rv32i_ahb_matrix_soc_top_tb.sv TOP_NAME=rv32i_ahb_matrix_soc_top_tb
 ```
 
+The flash program for this test now lives in `software/asm/ahb_matrix_soc.S` and is loaded through `software/bin/ahb_matrix_soc.memh`. Regenerate it with:
+
+```bash
+cd software
+make
+```
+
+RISC-V GNU toolchain setup notes are in `docs/RISCV_TOOLCHAIN.md`.
+
 这是一个面向学习和面试准备的 RISC-V CPU 项目，目标是系统性练习 CPU 微架构、简单 SoC 集成和验证流程。
 
 ## 项目导航入口

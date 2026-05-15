@@ -114,7 +114,9 @@ module rv32i_ahb_matrix_soc_top_tb;
   logic [31:0] sram [0:255];
   logic [31:0] ahb_periph_reg;
   logic [31:0] apb_periph_reg;
+  string flash_memh;
   integer i;
+  integer memh_fd;
   integer timeout;
 
   initial begin
@@ -147,23 +149,16 @@ module rv32i_ahb_matrix_soc_top_tb;
     ahb_periph_reg = 32'd0;
     apb_periph_reg = 32'd0;
 
-    // Boot from the flash slot at 0x0800_0000.
-    flash[0]  = 32'h2000_00b7; // lui  x1, 0x20000
-    flash[1]  = 32'h0040_a103; // lw   x2, 4(x1)
-    flash[2]  = 32'h0051_0193; // addi x3, x2, 5
-    flash[3]  = 32'h0030_a423; // sw   x3, 8(x1)
-    flash[4]  = 32'h0080_a203; // lw   x4, 8(x1)
-    flash[5]  = 32'h4000_0537; // lui  x10, 0x40000
-    flash[6]  = 32'h05a0_0593; // addi x11, x0, 0x5a
-    flash[7]  = 32'h00b5_2023; // sw   x11, 0(x10)
-    flash[8]  = 32'h0005_2603; // lw   x12, 0(x10)
-    flash[9]  = 32'h4200_0737; // lui  x14, 0x42000
-    flash[10] = 32'h0330_0793; // addi x15, x0, 0x33
-    flash[11] = 32'h00f7_2023; // sw   x15, 0(x14)
-    flash[12] = 32'h0007_2803; // lw   x16, 0(x14)
-    flash[13] = 32'h00c2_06b3; // add  x13, x4, x12
-    flash[14] = 32'h0106_88b3; // add  x17, x13, x16
-    flash[15] = 32'h0010_0073; // ebreak
+    if (!$value$plusargs("FLASH_MEMH=%s", flash_memh)) begin
+      flash_memh = "../software/bin/ahb_matrix_soc.memh";
+    end
+
+    memh_fd = $fopen(flash_memh, "r");
+    if (memh_fd == 0) begin
+      $fatal(1, "failed to open FLASH_MEMH='%s'", flash_memh);
+    end
+    $fclose(memh_fd);
+    $readmemh(flash_memh, flash);
   end
 
   assign flash_ready = flash_valid;

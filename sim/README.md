@@ -8,6 +8,12 @@ make sim TB_FILE=./testcases/rv32i_ahb_matrix_soc_top_tb.sv TOP_NAME=rv32i_ahb_m
 
 This test boots from the flash slot at `0x0800_0000` and routes accesses through the local AHB-Lite matrix to flash, SRAM, AHB peripheral, and APB peripheral slots.
 
+The default flash image is loaded from `../software/bin/ahb_matrix_soc.memh`. To override it:
+
+```bash
+make sim TB_FILE=./testcases/rv32i_ahb_matrix_soc_top_tb.sv TOP_NAME=rv32i_ahb_matrix_soc_top_tb SIM_PLUSARGS="+FLASH_MEMH=../software/bin/ahb_matrix_soc.memh"
+```
+
 这个目录是 VCS/Verdi 仿真的统一入口。
 
 ## 常用命令
