@@ -100,6 +100,7 @@ module rv32i_pipe_core #(
   reg        ex_mem_system_ebreak_q;
   reg        ex_mem_system_mret_q;
   reg        ex_mem_illegal_q;
+  reg        ex_mem_instr_addr_misaligned_q;
   reg        ex_mem_instr_fault_q;
 
   reg        mem_wb_valid_q;
@@ -119,8 +120,11 @@ module rv32i_pipe_core #(
   reg        mem_wb_system_ebreak_q;
   reg        mem_wb_system_mret_q;
   reg        mem_wb_illegal_q;
+  reg        mem_wb_instr_addr_misaligned_q;
   reg        mem_wb_instr_fault_q;
+  reg        mem_wb_load_addr_misaligned_q;
   reg        mem_wb_load_fault_q;
+  reg        mem_wb_store_addr_misaligned_q;
   reg        mem_wb_store_fault_q;
 
   wire [4:0]  id_rs1_addr;
@@ -162,11 +166,15 @@ module rv32i_pipe_core #(
   wire [31:0] ex_csr_rdata;
   wire        ex_csr_write;
   wire        ex_branch_taken;
+  wire        ex_control_taken;
   wire        ex_redirect;
+  wire        ex_instr_addr_misaligned;
   wire [31:0] ex_redirect_pc;
 
   wire        mem_stall;
   wire [31:0] mem_load_data;
+  wire        mem_load_addr_misaligned;
+  wire        mem_store_addr_misaligned;
   wire        mem_load_fault;
   wire        mem_store_fault;
 
@@ -284,15 +292,22 @@ module rv32i_pipe_core #(
                            (id_ex_branch_op_q == `RV32I_BR_BLTU) ? (forward_rs1_data < forward_rs2_data) :
                            (id_ex_branch_op_q == `RV32I_BR_BGEU) ? (forward_rs1_data >= forward_rs2_data) :
                                                                    1'b0;
-  assign ex_redirect = id_ex_valid_q &&
-                       !id_ex_illegal_q &&
-                       !id_ex_instr_fault_q &&
-                       ((id_ex_pc_sel_q == `RV32I_PC_JAL) ||
-                        (id_ex_pc_sel_q == `RV32I_PC_JALR) ||
-                        ((id_ex_pc_sel_q == `RV32I_PC_BRANCH) && ex_branch_taken));
   assign ex_redirect_pc = (id_ex_pc_sel_q == `RV32I_PC_JAL)  ? (id_ex_pc_q + id_ex_imm_j_q) :
                           (id_ex_pc_sel_q == `RV32I_PC_JALR) ? ((forward_rs1_data + id_ex_imm_i_q) & ~32'd1) :
                                                                (id_ex_pc_q + id_ex_imm_b_q);
+  assign ex_control_taken = (id_ex_pc_sel_q == `RV32I_PC_JAL) ||
+                            (id_ex_pc_sel_q == `RV32I_PC_JALR) ||
+                            ((id_ex_pc_sel_q == `RV32I_PC_BRANCH) && ex_branch_taken);
+  assign ex_instr_addr_misaligned = id_ex_valid_q &&
+                                    !id_ex_illegal_q &&
+                                    !id_ex_instr_fault_q &&
+                                    ex_control_taken &&
+                                    (ex_redirect_pc[1:0] != 2'b00);
+  assign ex_redirect = id_ex_valid_q &&
+                       !id_ex_illegal_q &&
+                       !id_ex_instr_fault_q &&
+                       ex_control_taken &&
+                       !ex_instr_addr_misaligned;
 
   rv32i_alu u_alu (
     .alu_op (id_ex_alu_op_q),
@@ -314,8 +329,11 @@ module rv32i_pipe_core #(
     .commit_ecall         (mem_wb_system_ecall_q),
     .commit_ebreak        (mem_wb_system_ebreak_q),
     .commit_mret          (mem_wb_system_mret_q),
+    .commit_instr_addr_misaligned (mem_wb_instr_addr_misaligned_q),
     .commit_instr_fault   (mem_wb_instr_fault_q),
+    .commit_load_addr_misaligned  (mem_wb_load_addr_misaligned_q),
     .commit_load_fault    (mem_wb_load_fault_q),
+    .commit_store_addr_misaligned (mem_wb_store_addr_misaligned_q),
     .commit_store_fault   (mem_wb_store_fault_q),
     .commit_csr_write_req (mem_wb_csr_write_q),
     .commit_csr_addr      (mem_wb_csr_addr_q),
@@ -349,6 +367,8 @@ module rv32i_pipe_core #(
     .dmem_error          (dmem_error),
     .mem_stall           (mem_stall),
     .mem_load_data       (mem_load_data),
+    .mem_load_addr_misaligned  (mem_load_addr_misaligned),
+    .mem_store_addr_misaligned (mem_store_addr_misaligned),
     .mem_load_fault      (mem_load_fault),
     .mem_store_fault     (mem_store_fault)
   );
@@ -360,8 +380,13 @@ module rv32i_pipe_core #(
                     (mem_wb_wb_sel_q == `RV32I_WB_CSR)   ? mem_wb_csr_rdata_q :
                                                             mem_wb_alu_result_q;
   assign wb_reg_we = mem_wb_valid_q && mem_wb_reg_we_q &&
-                     !mem_wb_illegal_q && !mem_wb_instr_fault_q &&
-                     !mem_wb_load_fault_q && !mem_wb_store_fault_q;
+                     !mem_wb_illegal_q &&
+                     !mem_wb_instr_addr_misaligned_q &&
+                     !mem_wb_instr_fault_q &&
+                     !mem_wb_load_addr_misaligned_q &&
+                     !mem_wb_load_fault_q &&
+                     !mem_wb_store_addr_misaligned_q &&
+                     !mem_wb_store_fault_q;
 
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
@@ -428,6 +453,7 @@ module rv32i_pipe_core #(
       ex_mem_system_ebreak_q <= 1'b0;
       ex_mem_system_mret_q   <= 1'b0;
       ex_mem_illegal_q       <= 1'b0;
+      ex_mem_instr_addr_misaligned_q <= 1'b0;
       ex_mem_instr_fault_q   <= 1'b0;
       mem_wb_valid_q         <= 1'b0;
       mem_wb_pc4_q           <= 32'd0;
@@ -446,14 +472,20 @@ module rv32i_pipe_core #(
       mem_wb_system_ebreak_q <= 1'b0;
       mem_wb_system_mret_q   <= 1'b0;
       mem_wb_illegal_q       <= 1'b0;
+      mem_wb_instr_addr_misaligned_q <= 1'b0;
       mem_wb_instr_fault_q   <= 1'b0;
+      mem_wb_load_addr_misaligned_q  <= 1'b0;
       mem_wb_load_fault_q    <= 1'b0;
+      mem_wb_store_addr_misaligned_q <= 1'b0;
       mem_wb_store_fault_q   <= 1'b0;
     end else begin
       cycle_q <= cycle_q + 32'd1;
 
-      if (ex_mem_valid_q && !ex_mem_illegal_q && !ex_mem_instr_fault_q && !mem_stall &&
-          !mem_load_fault && !mem_store_fault && !commit_redirect) begin
+      if (ex_mem_valid_q && !ex_mem_illegal_q &&
+          !ex_mem_instr_addr_misaligned_q && !ex_mem_instr_fault_q && !mem_stall &&
+          !mem_load_addr_misaligned && !mem_load_fault &&
+          !mem_store_addr_misaligned && !mem_store_fault &&
+          !commit_redirect) begin
         instret_q <= instret_q + 32'd1;
       end
       if (load_use_stall || mem_stall || if_stall || if_discard_q) begin
@@ -619,6 +651,7 @@ module rv32i_pipe_core #(
         ex_mem_system_ebreak_q <= 1'b0;
         ex_mem_system_mret_q   <= 1'b0;
         ex_mem_illegal_q       <= 1'b0;
+        ex_mem_instr_addr_misaligned_q <= 1'b0;
         ex_mem_instr_fault_q   <= 1'b0;
 
         mem_wb_valid_q         <= 1'b0;
@@ -638,8 +671,11 @@ module rv32i_pipe_core #(
         mem_wb_system_ebreak_q <= 1'b0;
         mem_wb_system_mret_q   <= 1'b0;
         mem_wb_illegal_q       <= 1'b0;
+        mem_wb_instr_addr_misaligned_q <= 1'b0;
         mem_wb_instr_fault_q   <= 1'b0;
+        mem_wb_load_addr_misaligned_q  <= 1'b0;
         mem_wb_load_fault_q    <= 1'b0;
+        mem_wb_store_addr_misaligned_q <= 1'b0;
         mem_wb_store_fault_q   <= 1'b0;
       end else if (!mem_stall) begin
         ex_mem_valid_q         <= id_ex_valid_q;
@@ -664,6 +700,7 @@ module rv32i_pipe_core #(
         ex_mem_system_ebreak_q <= id_ex_system_ebreak_q;
         ex_mem_system_mret_q   <= id_ex_system_mret_q;
         ex_mem_illegal_q       <= id_ex_illegal_q;
+        ex_mem_instr_addr_misaligned_q <= ex_instr_addr_misaligned;
         ex_mem_instr_fault_q   <= id_ex_instr_fault_q;
 
         mem_wb_valid_q         <= ex_mem_valid_q;
@@ -683,8 +720,11 @@ module rv32i_pipe_core #(
         mem_wb_system_ebreak_q <= ex_mem_system_ebreak_q;
         mem_wb_system_mret_q   <= ex_mem_system_mret_q;
         mem_wb_illegal_q       <= ex_mem_illegal_q;
+        mem_wb_instr_addr_misaligned_q <= ex_mem_instr_addr_misaligned_q;
         mem_wb_instr_fault_q   <= ex_mem_instr_fault_q;
+        mem_wb_load_addr_misaligned_q  <= mem_load_addr_misaligned;
         mem_wb_load_fault_q    <= mem_load_fault;
+        mem_wb_store_addr_misaligned_q <= mem_store_addr_misaligned;
         mem_wb_store_fault_q   <= mem_store_fault;
       end
     end

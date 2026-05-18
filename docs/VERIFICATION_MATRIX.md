@@ -1,6 +1,6 @@
 # Verification Matrix
 
-Last updated: 2026-05-15
+Last updated: 2026-05-18
 
 Status meanings:
 
@@ -33,6 +33,7 @@ Status meanings:
 | Cached UART MMIO | `testcases/rv32i_cached_uart_tb.sv` | `make sim TB_FILE=./testcases/rv32i_cached_uart_tb.sv TOP_NAME=rv32i_cached_uart_tb` | PASS |
 | D-side load/store access fault | `testcases/rv32i_cached_access_fault_tb.sv` | `make sim TB_FILE=./testcases/rv32i_cached_access_fault_tb.sv TOP_NAME=rv32i_cached_access_fault_tb` | PASS |
 | I-side instruction access fault | `testcases/rv32i_cached_instr_access_fault_tb.sv` | `make sim TB_FILE=./testcases/rv32i_cached_instr_access_fault_tb.sv TOP_NAME=rv32i_cached_instr_access_fault_tb` | PASS |
+| Misaligned address traps | `testcases/rv32i_cached_misaligned_trap_tb.sv` | `make sim TB_FILE=./testcases/rv32i_cached_misaligned_trap_tb.sv TOP_NAME=rv32i_cached_misaligned_trap_tb` | PASS |
 
 ## Regression Notes
 
@@ -50,7 +51,8 @@ Status meanings:
   - `rv32i_trap_csr_tb`
   - `rv32i_cached_timer_irq_tb`
   - `rv32i_cached_access_fault_tb`
-  - `rv32i_cached_instr_access_fault_tb`.
+  - `rv32i_cached_instr_access_fault_tb`
+  - `rv32i_cached_misaligned_trap_tb`.
 - After any MMIO change, run:
   - timer tests
   - cached system top test
@@ -59,6 +61,7 @@ Status meanings:
 
 ## Latest Manual Update
 
+- 2026-05-18: User confirmed PASS for `rv32i_cached_misaligned_trap_tb`.
 - 2026-05-15: User confirmed PASS for the MEMH-loader revision of `rv32i_ahb_matrix_soc_top_tb`.
 - 2026-05-15: `rv32i_ahb_matrix_soc_top_tb` was migrated from hand-written SV machine code to `$readmemh` loading `software/bin/ahb_matrix_soc.memh`.
 - 2026-05-15: User confirmed PASS for `rv32i_ahb_matrix_soc_top_tb`.

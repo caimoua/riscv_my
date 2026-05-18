@@ -1,6 +1,6 @@
 # Interface Index
 
-Last updated: 2026-05-15
+Last updated: 2026-05-18
 
 This file records stable module boundaries so future work does not need to rediscover common ports by scanning many RTL files.
 
@@ -58,6 +58,8 @@ Data-side interface:
 - Outputs: `dmem_valid`, `dmem_write`, `dmem_addr`, `dmem_wdata`, `dmem_wstrb`
 - Inputs: `dmem_ready`, `dmem_rdata`, `dmem_error`
 - `dmem_error` is converted by LSU into load/store fault flags.
+- Load/store address misalignment is caught in the LSU before issuing a D-bus request.
+- Taken branch/jump target misalignment is caught in EX and committed as a precise instruction-address-misaligned trap.
 
 Interrupt input:
 
@@ -106,17 +108,23 @@ Commit exception inputs:
 - `commit_illegal`
 - `commit_ecall`
 - `commit_ebreak`
+- `commit_instr_addr_misaligned`
 - `commit_instr_fault`
+- `commit_load_addr_misaligned`
 - `commit_load_fault`
+- `commit_store_addr_misaligned`
 - `commit_store_fault`
 
 Supported causes:
 
 ```text
+0             instruction address misaligned
 1             instruction access fault
 2             illegal instruction
 3             breakpoint
+4             load address misaligned
 5             load access fault
+6             store/AMO address misaligned
 7             store/AMO access fault
 11            environment call from machine mode
 0x80000007    machine timer interrupt

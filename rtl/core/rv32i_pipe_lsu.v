@@ -23,11 +23,14 @@ module rv32i_pipe_lsu (
 
   output wire        mem_stall,
   output wire [31:0] mem_load_data,
+  output wire        mem_load_addr_misaligned,
+  output wire        mem_store_addr_misaligned,
   output wire        mem_load_fault,
   output wire        mem_store_fault
 );
 
   wire        mem_access_valid;
+  wire        mem_addr_misaligned;
   wire        mem_access_done;
   wire [7:0]  mem_load_byte;
   wire [15:0] mem_load_half;
@@ -37,8 +40,11 @@ module rv32i_pipe_lsu (
   assign mem_access_valid = ex_mem_valid &&
                             ex_mem_mem_valid &&
                             !ex_mem_illegal;
+  assign mem_addr_misaligned =
+    ((ex_mem_mem_size == `RV32I_MEM_HALF) && ex_mem_mem_addr[0]) ||
+    ((ex_mem_mem_size == `RV32I_MEM_WORD) && (ex_mem_mem_addr[1:0] != 2'b00));
 
-  assign dmem_valid = mem_access_valid && !commit_redirect;
+  assign dmem_valid = mem_access_valid && !mem_addr_misaligned && !commit_redirect;
   assign dmem_write = dmem_valid && ex_mem_mem_write;
   assign dmem_addr  = ex_mem_mem_addr;
   assign dmem_wdata = mem_store_data;
@@ -46,6 +52,8 @@ module rv32i_pipe_lsu (
 
   assign mem_stall = dmem_valid && !dmem_ready;
   assign mem_access_done = dmem_valid && dmem_ready;
+  assign mem_load_addr_misaligned  = mem_access_valid && mem_addr_misaligned && !ex_mem_mem_write;
+  assign mem_store_addr_misaligned = mem_access_valid && mem_addr_misaligned &&  ex_mem_mem_write;
   assign mem_load_fault  = mem_access_done && dmem_error && !ex_mem_mem_write;
   assign mem_store_fault = mem_access_done && dmem_error &&  ex_mem_mem_write;
 

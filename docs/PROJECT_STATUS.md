@@ -69,6 +69,10 @@ rv32i_cached_ahb_master_top
 - External MMIO peripheral mux for timer at `0x4000_0000` and UART at `0x4000_1000`.
 - D-side load/store access fault through `d_error`.
 - I-side instruction access fault through `i_error`.
+- Misaligned address traps:
+  - instruction address misaligned: `mcause=0`
+  - load address misaligned: `mcause=4`
+  - store/AMO address misaligned: `mcause=6`
 - Presentation-quality architecture SVG: `docs/figures/rv32i_cached_system_architecture.svg`.
 - Software-driven test image flow:
   - `software/asm/ahb_matrix_soc.S`
@@ -103,9 +107,8 @@ User-confirmed VCS PASS has been reported for all directed tests currently liste
 
 1. If licensed vendor IP is required, keep AE350/Andes/ARM files outside the public repo or add them through a private `vendor_ip` path and filelist.
 2. Add simple-bus-to-AXI-lite adapter.
-3. Add optional misaligned load/store traps.
-4. Add UART RX/FIFO/interrupt if needed.
-5. Consider a true multi-master AHB matrix if the project needs parallel slave access.
+3. Add UART RX/FIFO/interrupt if needed.
+4. Consider a true multi-master AHB matrix if the project needs parallel slave access.
 
 ## Context Rules
 

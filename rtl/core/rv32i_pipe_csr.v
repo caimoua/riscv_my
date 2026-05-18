@@ -16,8 +16,11 @@ module rv32i_pipe_csr (
   input  wire        commit_ecall,
   input  wire        commit_ebreak,
   input  wire        commit_mret,
+  input  wire        commit_instr_addr_misaligned,
   input  wire        commit_instr_fault,
+  input  wire        commit_load_addr_misaligned,
   input  wire        commit_load_fault,
+  input  wire        commit_store_addr_misaligned,
   input  wire        commit_store_fault,
 
   input  wire        commit_csr_write_req,
@@ -108,34 +111,46 @@ module rv32i_pipe_csr (
                                  (commit_illegal ||
                                   commit_ecall ||
                                   commit_ebreak ||
+                                  commit_instr_addr_misaligned ||
                                   commit_instr_fault ||
+                                  commit_load_addr_misaligned ||
                                   commit_load_fault ||
+                                  commit_store_addr_misaligned ||
                                   commit_store_fault);
   assign commit_timer_interrupt = commit_valid &&
                                   timer_interrupt_enabled &&
                                   !commit_illegal &&
                                   !commit_ecall &&
                                   !commit_ebreak &&
+                                  !commit_instr_addr_misaligned &&
                                   !commit_instr_fault &&
+                                  !commit_load_addr_misaligned &&
                                   !commit_load_fault &&
+                                  !commit_store_addr_misaligned &&
                                   !commit_store_fault &&
                                   !commit_mret &&
                                   !commit_csr_write_req;
   assign commit_trap = commit_exception_trap || commit_timer_interrupt;
   assign commit_mret_taken = commit_valid &&
                              !commit_illegal &&
+                             !commit_instr_addr_misaligned &&
                              !commit_instr_fault &&
+                             !commit_load_addr_misaligned &&
                              !commit_load_fault &&
+                             !commit_store_addr_misaligned &&
                              !commit_store_fault &&
                              commit_mret;
   assign commit_redirect_int = commit_trap || commit_mret_taken;
   assign commit_redirect = commit_redirect_int;
 
-  assign commit_exception_cause = commit_instr_fault ? `RV32I_TRAP_CAUSE_INSTR_ACCESS_FAULT :
+  assign commit_exception_cause = commit_instr_addr_misaligned ? `RV32I_TRAP_CAUSE_INSTR_ADDR_MISALIGNED :
+                                  commit_instr_fault ? `RV32I_TRAP_CAUSE_INSTR_ACCESS_FAULT :
                                   commit_illegal ? `RV32I_TRAP_CAUSE_ILLEGAL :
                                   commit_ebreak  ? `RV32I_TRAP_CAUSE_EBREAK :
                                   commit_ecall   ? `RV32I_TRAP_CAUSE_ECALL :
+                                  commit_load_addr_misaligned ? `RV32I_TRAP_CAUSE_LOAD_ADDR_MISALIGNED :
                                   commit_load_fault ? `RV32I_TRAP_CAUSE_LOAD_ACCESS_FAULT :
+                                  commit_store_addr_misaligned ? `RV32I_TRAP_CAUSE_STORE_ADDR_MISALIGNED :
                                                        `RV32I_TRAP_CAUSE_STORE_ACCESS_FAULT;
   assign commit_trap_pc = commit_timer_interrupt ? commit_pc4 : commit_pc;
   assign commit_redirect_pc = commit_trap ? (csr_mtvec_q & ~32'd3) :
@@ -143,7 +158,10 @@ module rv32i_pipe_csr (
 
   assign commit_csr_write = commit_valid &&
                             !commit_illegal &&
+                            !commit_instr_addr_misaligned &&
                             !commit_instr_fault &&
+                            !commit_load_addr_misaligned &&
+                            !commit_store_addr_misaligned &&
                             commit_csr_write_req &&
                             !commit_redirect_int;
   assign commit_csr_write_data =
