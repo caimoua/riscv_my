@@ -9,7 +9,7 @@ LINKER           ?= linker/rv32i_flash.ld
 BUILD_DIR        ?= build
 BIN_DIR          ?= bin
 
-PROGRAMS         := ahb_matrix_soc
+PROGRAMS         := ahb_matrix_soc ahb_matrix_apb_soc
 
 COMMON_FLAGS     := -march=$(ARCH) -mabi=$(ABI) -nostdlib -nostartfiles -ffreestanding
 LDFLAGS          := -Wl,-T,$(LINKER) -Wl,--build-id=none

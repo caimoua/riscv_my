@@ -26,6 +26,7 @@ Status meanings:
 | Cached system AHB top | `testcases/rv32i_cached_system_ahb_top_tb.sv` | `make sim TB_FILE=./testcases/rv32i_cached_system_ahb_top_tb.sv TOP_NAME=rv32i_cached_system_ahb_top_tb` | PASS |
 | Cached AHB master CPU top | `testcases/rv32i_cached_ahb_master_top_tb.sv` | `make sim TB_FILE=./testcases/rv32i_cached_ahb_master_top_tb.sv TOP_NAME=rv32i_cached_ahb_master_top_tb` | PASS |
 | AHB matrix SoC top | `testcases/rv32i_ahb_matrix_soc_top_tb.sv` | `make sim TB_FILE=./testcases/rv32i_ahb_matrix_soc_top_tb.sv TOP_NAME=rv32i_ahb_matrix_soc_top_tb` | PASS |
+| AHB matrix + APB SoC top | `testcases/rv32i_ahb_matrix_apb_soc_top_tb.sv` | `make sim TB_FILE=./testcases/rv32i_ahb_matrix_apb_soc_top_tb.sv TOP_NAME=rv32i_ahb_matrix_apb_soc_top_tb` | PASS |
 | Timer peripheral | `testcases/rv32i_timer_tb.sv` | `make sim TB_FILE=./testcases/rv32i_timer_tb.sv TOP_NAME=rv32i_timer_tb` | PASS |
 | Cached timer MMIO | `testcases/rv32i_cached_timer_tb.sv` | `make sim TB_FILE=./testcases/rv32i_cached_timer_tb.sv TOP_NAME=rv32i_cached_timer_tb` | PASS |
 | Cached timer interrupt | `testcases/rv32i_cached_timer_irq_tb.sv` | `make sim TB_FILE=./testcases/rv32i_cached_timer_irq_tb.sv TOP_NAME=rv32i_cached_timer_irq_tb` | PASS |
@@ -46,6 +47,7 @@ Status meanings:
   - `rv32i_cached_system_ahb_top_tb`
   - `rv32i_cached_ahb_master_top_tb`
   - `rv32i_ahb_matrix_soc_top_tb`
+  - `rv32i_ahb_matrix_apb_soc_top_tb`
   - access fault tests.
 - After any CSR/trap change, run:
   - `rv32i_trap_csr_tb`
@@ -61,6 +63,7 @@ Status meanings:
 
 ## Latest Manual Update
 
+- 2026-05-18: User confirmed PASS for `rv32i_ahb_matrix_apb_soc_top_tb`.
 - 2026-05-18: User confirmed PASS for `rv32i_cached_misaligned_trap_tb`.
 - 2026-05-15: User confirmed PASS for the MEMH-loader revision of `rv32i_ahb_matrix_soc_top_tb`.
 - 2026-05-15: `rv32i_ahb_matrix_soc_top_tb` was migrated from hand-written SV machine code to `$readmemh` loading `software/bin/ahb_matrix_soc.memh`.

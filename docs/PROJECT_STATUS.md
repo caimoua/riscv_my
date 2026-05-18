@@ -61,6 +61,13 @@ rv32i_cached_ahb_master_top
   - SRAM slot at `0x2000_0000`
   - AHB peripheral slot at `0x4000_0000`
   - APB peripheral slot at `0x4200_0000`
+- AHB-to-APB SoC integration:
+  - `rv32i_ahb_to_apb`
+  - `rv32i_apb_periph_mux`
+  - `rv32i_ahb_matrix_apb_soc_top`
+  - APB timer at `0x4200_0000`
+  - APB UART at `0x4200_1000`
+  - software image `software/bin/ahb_matrix_apb_soc.memh`
 - `rv32i_pipe_core` and cached wrappers have a `RESET_PC` parameter so an SoC wrapper can boot from flash.
 - Cached system top wrapper.
 - MMIO timer peripheral with `mtime`, `mtimecmp`, `ctrl`, and `timer_irq`.

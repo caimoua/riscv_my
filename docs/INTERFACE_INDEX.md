@@ -275,6 +275,31 @@ Implemented AHB-Lite signals:
 
 The current path generates single-beat AHB-Lite transfers. Partial simple-bus writes are split into byte transfers.
 
+### `rv32i_ahb_to_apb`
+
+File: `rtl/bus/rv32i_ahb_to_apb.v`
+
+Role: AHB-Lite slave to APB4-style master bridge.
+
+AHB-Lite slave side:
+
+- Inputs: `hsel`, `haddr`, `hburst`, `hprot`, `hsize`, `htrans`, `hwdata`, `hwrite`, `hready`
+- Outputs: `hrdata`, `hreadyout`, `hresp`
+
+APB master side:
+
+- Outputs: `psel`, `penable`, `paddr`, `pwrite`, `pwdata`, `pstrb`, `pprot`
+- Inputs: `prdata`, `pready`, `pslverr`
+
+Behavior:
+
+```text
+AHB single-beat transfer
+  -> APB setup phase
+  -> APB access phase
+  -> AHB HREADYOUT/HRESP completion
+```
+
 ### `rv32i_cached_system_ahb_top`
 
 File: `rtl/top/rv32i_cached_system_ahb_top.v`
@@ -357,6 +382,35 @@ Default boot address:
 RESET_PC = 0x0800_0000
 ```
 
+### `rv32i_ahb_matrix_apb_soc_top`
+
+File: `rtl/top/rv32i_ahb_matrix_apb_soc_top.v`
+
+Role: SoC-style wrapper that keeps flash/SRAM/AHB-peripheral AHB slots external and turns the matrix APB slot into an internal APB peripheral subsystem.
+
+Internal path:
+
+```text
+rv32i_cached_ahb_master_top
+  -> rv32i_ahb_lite_matrix_1m4s
+    -> flash AHB slot
+    -> SRAM AHB slot
+    -> AHB peripheral slot
+    -> rv32i_ahb_to_apb
+      -> rv32i_apb_periph_mux
+        -> rv32i_timer
+        -> rv32i_uart
+```
+
+APB peripheral map:
+
+```text
+0x4200_0000 - 0x4200_0FFF  timer
+0x4200_1000 - 0x4200_1FFF  UART
+```
+
+Status: implemented and user-confirmed VCS PASS with `rv32i_ahb_matrix_apb_soc_top_tb`.
+
 ## Timer
 
 ### `rv32i_timer`
@@ -432,3 +486,23 @@ Default map:
 ```
 
 Unmatched sub-MMIO accesses return `ready=valid`, `rdata=0`, and assert `dbg_decode_error`.
+
+### `rv32i_apb_periph_mux`
+
+File: `rtl/periph/rv32i_apb_periph_mux.v`
+
+Role: APB peripheral decoder for timer and UART.
+
+APB side:
+
+- Inputs: `psel`, `penable`, `paddr`, `pwrite`, `pwdata`, `pstrb`, `pprot`
+- Outputs: `prdata`, `pready`, `pslverr`
+
+Peripheral map:
+
+```text
+0x4200_0000 - 0x4200_0FFF  timer
+0x4200_1000 - 0x4200_1FFF  UART
+```
+
+Unmatched APB accesses complete with `pslverr=1` and assert `dbg_decode_error`.
