@@ -1,7 +1,7 @@
 TOOLCHAIN_PREFIX ?= riscv-none-elf
 RISCV_CC         ?= $(TOOLCHAIN_PREFIX)-gcc
 RISCV_OBJCOPY    ?= $(TOOLCHAIN_PREFIX)-objcopy
-PYTHON           ?= python3
+PYTHON           ?= python
 
 ARCH             ?= rv32i
 ABI              ?= ilp32
@@ -15,11 +15,12 @@ COMMON_FLAGS     := -march=$(ARCH) -mabi=$(ABI) -nostdlib -nostartfiles -ffreest
 LDFLAGS          := -Wl,-T,$(LINKER) -Wl,--build-id=none
 
 .PHONY: all clean
+.SECONDARY: $(PROGRAMS:%=$(BUILD_DIR)/%.elf) $(PROGRAMS:%=$(BIN_DIR)/%.bin)
 
 all: $(PROGRAMS:%=$(BIN_DIR)/%.memh)
 
 $(BUILD_DIR) $(BIN_DIR):
-	mkdir -p $@
+	mkdir $@
 
 $(BUILD_DIR)/%.elf: asm/%.S $(LINKER) | $(BUILD_DIR) $(BIN_DIR)
 	$(RISCV_CC) $(COMMON_FLAGS) $(LDFLAGS) -Wl,-Map,$(BIN_DIR)/$*.map -o $@ $<

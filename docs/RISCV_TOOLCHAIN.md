@@ -32,6 +32,15 @@ cd software
 make
 ```
 
+On the current Windows workstation, the verified local installation paths are:
+
+```text
+D:\AIoT\tools\riscv-none-elf-gcc-15.2.0-1\xpack-riscv-none-elf-gcc-15.2.0-1\bin
+D:\AIoT\tools\ezwinports-make\bin
+```
+
+Both paths have been added to the user `PATH`. Open a new PowerShell before relying on the persisted environment.
+
 ## Linux / EDA Server Path
 
 Many Linux RISC-V GNU toolchain installs use the `riscv64-unknown-elf` prefix. Use:
