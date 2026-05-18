@@ -1,14 +1,14 @@
 # 仿真说明
 
-## Current AHB Matrix SoC Test
+## 当前 AHB Matrix SoC Test
 
 ```bash
 make sim TB_FILE=./testcases/rv32i_ahb_matrix_soc_top_tb.sv TOP_NAME=rv32i_ahb_matrix_soc_top_tb
 ```
 
-This test boots from the flash slot at `0x0800_0000` and routes accesses through the local AHB-Lite matrix to flash, SRAM, AHB peripheral, and APB peripheral slots.
+这个测试从 `0x0800_0000` flash slot 启动，并通过本地 AHB-Lite matrix 访问 flash、SRAM、AHB peripheral 和 APB peripheral slot。
 
-The default flash image is loaded from `../software/bin/ahb_matrix_soc.memh`. To override it:
+默认 flash image 从 `../software/bin/ahb_matrix_soc.memh` 加载。如需覆盖默认镜像：
 
 ```bash
 make sim TB_FILE=./testcases/rv32i_ahb_matrix_soc_top_tb.sv TOP_NAME=rv32i_ahb_matrix_soc_top_tb SIM_PLUSARGS="+FLASH_MEMH=../software/bin/ahb_matrix_soc.memh"
@@ -73,23 +73,23 @@ make sim TB_FILE=./testcases/rv32i_pipe_core_tb.sv TOP_NAME=rv32i_pipe_core_tb
 - branch/jump redirect 后的 flush
 - `instret/stall_cycle/flush_cycle` debug 性能计数器
 
-## Static Branch Prediction Testbench
+## 静态分支预测 Testbench
 
 ```text
 sim/testcases/rv32i_pipe_branch_predict_tb.sv
 ```
 
-Run:
+运行命令：
 
 ```bash
 make sim TB_FILE=./testcases/rv32i_pipe_branch_predict_tb.sv TOP_NAME=rv32i_pipe_branch_predict_tb
 ```
 
-Coverage:
-- IF-stage static prediction for aligned `JAL`.
-- IF-stage static prediction for aligned backward B-type branches.
-- EX-stage redirect only on predicted-PC mismatch.
-- `dbg_branch_count` and `dbg_branch_mispredict_count`.
+覆盖内容：
+- IF 阶段对已对齐 `JAL` 做静态 taken 预测。
+- IF 阶段对已对齐 backward B-type branch 做静态 taken 预测。
+- EX 阶段只在预测 PC 不匹配时 redirect。
+- `dbg_branch_count` 和 `dbg_branch_mispredict_count` 计数器。
 
 ## Trap/CSR Testbench
 

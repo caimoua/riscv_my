@@ -14,7 +14,7 @@ Status meanings:
 | --- | --- | --- | --- |
 | Single-cycle RV32I core | `testcases/rv32i_core_tb.sv` | `make sim` | PASS |
 | Pipeline hazards/control | `testcases/rv32i_pipe_core_tb.sv` | `make sim TB_FILE=./testcases/rv32i_pipe_core_tb.sv TOP_NAME=rv32i_pipe_core_tb` | PASS |
-| Static branch prediction | `testcases/rv32i_pipe_branch_predict_tb.sv` | `make sim TB_FILE=./testcases/rv32i_pipe_branch_predict_tb.sv TOP_NAME=rv32i_pipe_branch_predict_tb` | PASS |
+| 静态分支预测 | `testcases/rv32i_pipe_branch_predict_tb.sv` | `make sim TB_FILE=./testcases/rv32i_pipe_branch_predict_tb.sv TOP_NAME=rv32i_pipe_branch_predict_tb` | PASS |
 | Trap/CSR | `testcases/rv32i_trap_csr_tb.sv` | `make sim TB_FILE=./testcases/rv32i_trap_csr_tb.sv TOP_NAME=rv32i_trap_csr_tb` | PASS |
 | I-cache | `testcases/rv32i_icache_tb.sv` | `make sim TB_FILE=./testcases/rv32i_icache_tb.sv TOP_NAME=rv32i_icache_tb` | PASS |
 | D-cache | `testcases/rv32i_dcache_tb.sv` | `make sim TB_FILE=./testcases/rv32i_dcache_tb.sv TOP_NAME=rv32i_dcache_tb` | PASS |
@@ -66,7 +66,7 @@ Status meanings:
 
 ## Latest Manual Update
 
-- 2026-05-18: User confirmed PASS for `rv32i_pipe_branch_predict_tb` and refreshed `rv32i_pipe_core_tb` after static branch prediction.
+- 2026-05-18: 用户确认 `rv32i_pipe_branch_predict_tb` 以及静态分支预测后的新版 `rv32i_pipe_core_tb` 均 VCS PASS。
 - 2026-05-18: User confirmed PASS for `rv32i_ahb_matrix_apb_soc_top_tb`.
 - 2026-05-18: User confirmed PASS for `rv32i_cached_misaligned_trap_tb`.
 - 2026-05-15: User confirmed PASS for the MEMH-loader revision of `rv32i_ahb_matrix_soc_top_tb`.

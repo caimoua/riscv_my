@@ -32,12 +32,12 @@ rv32i_cached_ahb_master_top
 
 - RV32I single-cycle baseline core.
 - Five-stage pipeline core with forwarding, load-use stall, memory wait-state handling, branch/jump flush, and performance counters.
-- Static branch prediction in `rv32i_pipe_core`:
-  - aligned `JAL` predicted taken in IF
-  - aligned backward B-type branches predicted taken in IF
-  - forward B-type branches predicted not-taken
-  - `JALR` still resolved in EX
-  - branch and branch-mispredict debug counters.
+- `rv32i_pipe_core` 已加入第一版静态分支预测：
+  - 已对齐的 `JAL` 在 IF 阶段预测 taken
+  - 已对齐的 backward B-type branch 在 IF 阶段预测 taken
+  - forward B-type branch 预测 not-taken
+  - `JALR` 仍然在 EX 阶段解析
+  - 新增 branch 和 branch-mispredict debug 计数器。
 - Minimal machine-mode trap/CSR path:
   - `mtvec`, `mepc`, `mcause`
   - `mstatus.MIE/MPIE`, `mie.MTIE`, `mip.MTIP`
@@ -103,7 +103,7 @@ rv32i_cached_ahb_master_top
 
 Detailed status is tracked in `docs/VERIFICATION_MATRIX.md`.
 
-User-confirmed VCS PASS has been reported for all directed tests currently listed in `docs/VERIFICATION_MATRIX.md`, including the static branch prediction tests.
+当前 `docs/VERIFICATION_MATRIX.md` 中列出的 directed tests 均已有用户确认的 VCS PASS，包括静态分支预测测试。
 
 ## Active Design Assumptions
 
@@ -118,7 +118,7 @@ User-confirmed VCS PASS has been reported for all directed tests currently liste
 
 ## Next Candidate Work
 
-1. Add a small dynamic BHT/BTB predictor.
+1. 增加小型动态 BHT/BTB 分支预测器。
 2. If licensed vendor IP is required, keep AE350/Andes/ARM files outside the public repo or add them through a private `vendor_ip` path and filelist.
 3. Add simple-bus-to-AXI-lite adapter.
 4. Add UART RX/FIFO/interrupt if needed.

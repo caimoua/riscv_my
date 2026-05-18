@@ -1,8 +1,8 @@
 # CPU_PRJ
 
-## Current AHB Matrix SoC Work
+## 当前 AHB Matrix SoC 工作
 
-The current SoC-style integration step adds a clean-room local AHB-Lite matrix wrapper instead of copying third-party AE350/Andes/ARM IP into this repo:
+当前 SoC 集成采用项目内自研的 AHB-Lite matrix wrapper，没有把第三方 AE350/Andes/ARM IP 直接拷进仓库：
 
 ```text
 rv32i_ahb_matrix_soc_top
@@ -10,21 +10,21 @@ rv32i_ahb_matrix_soc_top
   rv32i_ahb_lite_matrix_1m4s
 ```
 
-VCS command:
+VCS 运行命令：
 
 ```bash
 cd sim
 make sim TB_FILE=./testcases/rv32i_ahb_matrix_soc_top_tb.sv TOP_NAME=rv32i_ahb_matrix_soc_top_tb
 ```
 
-The flash program for this test now lives in `software/asm/ahb_matrix_soc.S` and is loaded through `software/bin/ahb_matrix_soc.memh`. Regenerate it with:
+这个测试使用的 flash 程序位于 `software/asm/ahb_matrix_soc.S`，仿真时通过 `software/bin/ahb_matrix_soc.memh` 加载。重新生成命令：
 
 ```bash
 cd software
 make
 ```
 
-RISC-V GNU toolchain setup notes are in `docs/RISCV_TOOLCHAIN.md`.
+RISC-V GNU 工具链安装说明见 `docs/RISCV_TOOLCHAIN.md`。
 
 这是一个面向学习和面试准备的 RISC-V CPU 项目，目标是系统性练习 CPU 微架构、简单 SoC 集成和验证流程。
 
@@ -82,7 +82,7 @@ make sim
 make sim TB_FILE=./testcases/rv32i_pipe_core_tb.sv TOP_NAME=rv32i_pipe_core_tb
 ```
 
-Static branch prediction:
+静态分支预测：
 ```bash
 make sim TB_FILE=./testcases/rv32i_pipe_branch_predict_tb.sv TOP_NAME=rv32i_pipe_branch_predict_tb
 ```

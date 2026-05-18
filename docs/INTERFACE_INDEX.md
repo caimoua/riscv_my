@@ -22,7 +22,7 @@ External interfaces:
 - MMIO slave-side passthrough:
   - `mmio_valid`, `mmio_write`, `mmio_addr`, `mmio_wdata`, `mmio_wstrb`, `mmio_ready`, `mmio_rdata`
 - Debug outputs:
-  - core performance counters, including branch and branch-mispredict counters
+  - core 性能计数器，包括 branch 和 branch-mispredict 计数器
   - cache hit/miss counters
   - bus grant counters
   - bus decode error.
@@ -77,13 +77,13 @@ Debug:
 - `dbg_reg_addr`, `dbg_reg_rdata`
 - `dbg_illegal_instr`, `dbg_ecall`, `dbg_ebreak`
 
-Branch prediction:
+分支预测：
 
-- IF predicts aligned `JAL` taken.
-- IF predicts aligned backward B-type branches taken.
-- Forward B-type branches remain predicted not-taken.
-- `JALR` remains EX-resolved.
-- EX redirects only on predicted-PC mismatch or commit-time trap/interrupt redirect.
+- IF 阶段对已对齐的 `JAL` 预测 taken。
+- IF 阶段对已对齐的 backward B-type branch 预测 taken。
+- forward B-type branch 保持预测 not-taken。
+- `JALR` 仍然在 EX 阶段解析。
+- EX 只在预测 PC 不匹配，或者 commit 阶段 trap/interrupt redirect 时改变取指路径。
 
 Key internal modules:
 
