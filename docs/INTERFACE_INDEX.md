@@ -22,7 +22,7 @@ External interfaces:
 - MMIO slave-side passthrough:
   - `mmio_valid`, `mmio_write`, `mmio_addr`, `mmio_wdata`, `mmio_wstrb`, `mmio_ready`, `mmio_rdata`
 - Debug outputs:
-  - core performance counters
+  - core performance counters, including branch and branch-mispredict counters
   - cache hit/miss counters
   - bus grant counters
   - bus decode error.
@@ -72,8 +72,18 @@ Debug:
 - `dbg_instret`
 - `dbg_stall_cycle`
 - `dbg_flush_cycle`
+- `dbg_branch_count`
+- `dbg_branch_mispredict_count`
 - `dbg_reg_addr`, `dbg_reg_rdata`
 - `dbg_illegal_instr`, `dbg_ecall`, `dbg_ebreak`
+
+Branch prediction:
+
+- IF predicts aligned `JAL` taken.
+- IF predicts aligned backward B-type branches taken.
+- Forward B-type branches remain predicted not-taken.
+- `JALR` remains EX-resolved.
+- EX redirects only on predicted-PC mismatch or commit-time trap/interrupt redirect.
 
 Key internal modules:
 
@@ -322,7 +332,7 @@ External AHB-Lite master port:
 External non-bus ports:
 
 - Inputs: `clk`, `rst_n`, `timer_irq`, `dbg_reg_addr`
-- Outputs: core performance/debug counters, cache hit/miss counters, bus grant counters, `dbg_bus_error`
+- Outputs: core performance/debug counters, branch prediction counters, cache hit/miss counters, bus grant counters, `dbg_bus_error`
 
 Internal connections:
 
@@ -372,7 +382,7 @@ Role: SoC-style wrapper around `rv32i_cached_ahb_master_top` plus the local AHB-
 External ports:
 
 - Four AHB-Lite slave-side slots: `flash_*`, `sram_*`, `ahb_periph_*`, `apb_periph_*`
-- Core debug and cache/bus counters
+- Core debug, branch prediction, and cache/bus counters
 - `dbg_cpu_bus_error`
 - `dbg_matrix_decode_error`
 

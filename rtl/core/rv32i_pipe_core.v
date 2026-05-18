@@ -27,6 +27,8 @@ module rv32i_pipe_core #(
   output wire [31:0] dbg_instret,
   output wire [31:0] dbg_stall_cycle,
   output wire [31:0] dbg_flush_cycle,
+  output wire [31:0] dbg_branch_count,
+  output wire [31:0] dbg_branch_mispredict_count,
   input  wire [4:0]  dbg_reg_addr,
   output wire [31:0] dbg_reg_rdata,
   output wire        dbg_illegal_instr,
@@ -39,6 +41,8 @@ module rv32i_pipe_core #(
   reg [31:0] instret_q;
   reg [31:0] stall_cycle_q;
   reg [31:0] flush_cycle_q;
+  reg [31:0] branch_count_q;
+  reg [31:0] branch_mispredict_count_q;
   reg        if_discard_q;
 
   reg        if_id_valid_q;
@@ -46,6 +50,7 @@ module rv32i_pipe_core #(
   reg [31:0] if_id_pc4_q;
   reg [31:0] if_id_instr_q;
   reg        if_id_instr_fault_q;
+  reg [31:0] if_id_predicted_pc_q;
 
   reg        id_ex_valid_q;
   reg [31:0] id_ex_pc_q;
@@ -77,6 +82,7 @@ module rv32i_pipe_core #(
   reg        id_ex_system_mret_q;
   reg        id_ex_illegal_q;
   reg        id_ex_instr_fault_q;
+  reg [31:0] id_ex_predicted_pc_q;
 
   reg        ex_mem_valid_q;
   reg [31:0] ex_mem_pc4_q;
@@ -159,6 +165,14 @@ module rv32i_pipe_core #(
   wire [31:0] id_rs2_data_bypass;
   wire        load_use_stall;
   wire        if_stall;
+  wire [31:0] if_instr;
+  wire [6:0]  if_opcode;
+  wire [31:0] if_imm_b;
+  wire [31:0] if_imm_j;
+  wire [31:0] if_branch_target_pc;
+  wire [31:0] if_jal_target_pc;
+  wire [31:0] if_predicted_pc;
+  wire        if_predict_taken;
 
   wire [31:0] ex_alu_src_b;
   wire [31:0] ex_alu_result;
@@ -167,8 +181,13 @@ module rv32i_pipe_core #(
   wire        ex_csr_write;
   wire        ex_branch_taken;
   wire        ex_control_taken;
+  wire        ex_control_instr;
+  wire        ex_branch_instr;
+  wire        ex_prediction_mismatch;
   wire        ex_redirect;
   wire        ex_instr_addr_misaligned;
+  wire [31:0] ex_control_target_pc;
+  wire [31:0] ex_actual_next_pc;
   wire [31:0] ex_redirect_pc;
 
   wire        mem_stall;
@@ -195,6 +214,28 @@ module rv32i_pipe_core #(
   assign dbg_instret       = instret_q;
   assign dbg_stall_cycle   = stall_cycle_q;
   assign dbg_flush_cycle   = flush_cycle_q;
+  assign dbg_branch_count  = branch_count_q;
+  assign dbg_branch_mispredict_count = branch_mispredict_count_q;
+
+  assign if_instr = imem_error ? 32'h0000_0013 : imem_rdata;
+  assign if_opcode = if_instr[6:0];
+  assign if_imm_b = {{19{if_instr[31]}}, if_instr[31], if_instr[7],
+                     if_instr[30:25], if_instr[11:8], 1'b0};
+  assign if_imm_j = {{11{if_instr[31]}}, if_instr[31], if_instr[19:12],
+                     if_instr[20], if_instr[30:21], 1'b0};
+  assign if_branch_target_pc = pc_q + if_imm_b;
+  assign if_jal_target_pc = pc_q + if_imm_j;
+  assign if_predict_taken =
+    !imem_error &&
+    (((if_opcode == `RV32I_OPCODE_JAL) &&
+      (if_jal_target_pc[1:0] == 2'b00)) ||
+     ((if_opcode == `RV32I_OPCODE_BRANCH) &&
+      if_imm_b[31] &&
+      (if_branch_target_pc[1:0] == 2'b00)));
+  assign if_predicted_pc = if_predict_taken ?
+                           ((if_opcode == `RV32I_OPCODE_JAL) ?
+                            if_jal_target_pc : if_branch_target_pc) :
+                           (pc_q + 32'd4);
 
   rv32i_decoder u_decoder (
     .instr         (if_id_instr_q),
@@ -292,22 +333,30 @@ module rv32i_pipe_core #(
                            (id_ex_branch_op_q == `RV32I_BR_BLTU) ? (forward_rs1_data < forward_rs2_data) :
                            (id_ex_branch_op_q == `RV32I_BR_BGEU) ? (forward_rs1_data >= forward_rs2_data) :
                                                                    1'b0;
-  assign ex_redirect_pc = (id_ex_pc_sel_q == `RV32I_PC_JAL)  ? (id_ex_pc_q + id_ex_imm_j_q) :
-                          (id_ex_pc_sel_q == `RV32I_PC_JALR) ? ((forward_rs1_data + id_ex_imm_i_q) & ~32'd1) :
-                                                               (id_ex_pc_q + id_ex_imm_b_q);
+  assign ex_control_target_pc = (id_ex_pc_sel_q == `RV32I_PC_JAL)  ? (id_ex_pc_q + id_ex_imm_j_q) :
+                                (id_ex_pc_sel_q == `RV32I_PC_JALR) ? ((forward_rs1_data + id_ex_imm_i_q) & ~32'd1) :
+                                                                     (id_ex_pc_q + id_ex_imm_b_q);
   assign ex_control_taken = (id_ex_pc_sel_q == `RV32I_PC_JAL) ||
                             (id_ex_pc_sel_q == `RV32I_PC_JALR) ||
                             ((id_ex_pc_sel_q == `RV32I_PC_BRANCH) && ex_branch_taken);
+  assign ex_control_instr = (id_ex_pc_sel_q == `RV32I_PC_JAL) ||
+                            (id_ex_pc_sel_q == `RV32I_PC_JALR) ||
+                            (id_ex_pc_sel_q == `RV32I_PC_BRANCH);
+  assign ex_branch_instr = (id_ex_pc_sel_q == `RV32I_PC_BRANCH);
+  assign ex_actual_next_pc = ex_control_taken ? ex_control_target_pc : id_ex_pc4_q;
   assign ex_instr_addr_misaligned = id_ex_valid_q &&
                                     !id_ex_illegal_q &&
                                     !id_ex_instr_fault_q &&
                                     ex_control_taken &&
-                                    (ex_redirect_pc[1:0] != 2'b00);
-  assign ex_redirect = id_ex_valid_q &&
-                       !id_ex_illegal_q &&
-                       !id_ex_instr_fault_q &&
-                       ex_control_taken &&
-                       !ex_instr_addr_misaligned;
+                                    (ex_control_target_pc[1:0] != 2'b00);
+  assign ex_prediction_mismatch = id_ex_valid_q &&
+                                  !id_ex_illegal_q &&
+                                  !id_ex_instr_fault_q &&
+                                  ex_control_instr &&
+                                  !ex_instr_addr_misaligned &&
+                                  (id_ex_predicted_pc_q != ex_actual_next_pc);
+  assign ex_redirect = ex_prediction_mismatch;
+  assign ex_redirect_pc = ex_actual_next_pc;
 
   rv32i_alu u_alu (
     .alu_op (id_ex_alu_op_q),
@@ -395,12 +444,15 @@ module rv32i_pipe_core #(
       instret_q              <= 32'd0;
       stall_cycle_q          <= 32'd0;
       flush_cycle_q          <= 32'd0;
+      branch_count_q         <= 32'd0;
+      branch_mispredict_count_q <= 32'd0;
       if_discard_q           <= 1'b0;
       if_id_valid_q          <= 1'b0;
       if_id_pc_q             <= 32'd0;
       if_id_pc4_q            <= 32'd0;
       if_id_instr_q          <= 32'h0000_0013;
       if_id_instr_fault_q    <= 1'b0;
+      if_id_predicted_pc_q   <= 32'd0;
       id_ex_valid_q          <= 1'b0;
       id_ex_pc_q             <= 32'd0;
       id_ex_pc4_q            <= 32'd0;
@@ -431,6 +483,7 @@ module rv32i_pipe_core #(
       id_ex_system_mret_q    <= 1'b0;
       id_ex_illegal_q        <= 1'b0;
       id_ex_instr_fault_q    <= 1'b0;
+      id_ex_predicted_pc_q   <= 32'd0;
       ex_mem_valid_q         <= 1'b0;
       ex_mem_pc4_q           <= 32'd0;
       ex_mem_rd_addr_q       <= 5'd0;
@@ -494,6 +547,14 @@ module rv32i_pipe_core #(
       if (ex_redirect && !mem_stall && !commit_redirect) begin
         flush_cycle_q <= flush_cycle_q + 32'd1;
       end
+      if (id_ex_valid_q && !id_ex_illegal_q && !id_ex_instr_fault_q &&
+          ex_branch_instr && !ex_instr_addr_misaligned &&
+          !mem_stall && !commit_redirect) begin
+        branch_count_q <= branch_count_q + 32'd1;
+        if (ex_prediction_mismatch) begin
+          branch_mispredict_count_q <= branch_mispredict_count_q + 32'd1;
+        end
+      end
 
       if (commit_redirect) begin
         pc_q          <= commit_redirect_pc;
@@ -503,6 +564,7 @@ module rv32i_pipe_core #(
         if_id_pc4_q   <= 32'd0;
         if_id_instr_q <= 32'h0000_0013;
         if_id_instr_fault_q <= 1'b0;
+        if_id_predicted_pc_q <= 32'd0;
       end else if (!mem_stall) begin
         if (if_discard_q) begin
           if (imem_ready) begin
@@ -513,6 +575,7 @@ module rv32i_pipe_core #(
           if_id_pc4_q   <= 32'd0;
           if_id_instr_q <= 32'h0000_0013;
           if_id_instr_fault_q <= 1'b0;
+          if_id_predicted_pc_q <= 32'd0;
         end else if (ex_redirect) begin
           pc_q          <= ex_redirect_pc;
           if_discard_q  <= 1'b1;
@@ -521,13 +584,15 @@ module rv32i_pipe_core #(
           if_id_pc4_q   <= 32'd0;
           if_id_instr_q <= 32'h0000_0013;
           if_id_instr_fault_q <= 1'b0;
+          if_id_predicted_pc_q <= 32'd0;
         end else if (!load_use_stall && !if_stall) begin
-          pc_q          <= pc_q + 32'd4;
+          pc_q          <= if_predicted_pc;
           if_id_valid_q <= 1'b1;
           if_id_pc_q    <= pc_q;
           if_id_pc4_q   <= pc_q + 32'd4;
-          if_id_instr_q <= imem_error ? 32'h0000_0013 : imem_rdata;
+          if_id_instr_q <= if_instr;
           if_id_instr_fault_q <= imem_error;
+          if_id_predicted_pc_q <= if_predicted_pc;
         end
       end
 
@@ -562,6 +627,7 @@ module rv32i_pipe_core #(
         id_ex_system_mret_q   <= 1'b0;
         id_ex_illegal_q       <= 1'b0;
         id_ex_instr_fault_q   <= 1'b0;
+        id_ex_predicted_pc_q   <= 32'd0;
       end else if (!mem_stall) begin
         if (ex_redirect || load_use_stall || if_stall || if_discard_q) begin
           id_ex_valid_q         <= 1'b0;
@@ -594,6 +660,7 @@ module rv32i_pipe_core #(
           id_ex_system_mret_q   <= 1'b0;
           id_ex_illegal_q       <= 1'b0;
           id_ex_instr_fault_q   <= 1'b0;
+          id_ex_predicted_pc_q   <= 32'd0;
         end else begin
           id_ex_valid_q         <= if_id_valid_q;
           id_ex_pc_q            <= if_id_pc_q;
@@ -625,6 +692,7 @@ module rv32i_pipe_core #(
           id_ex_system_mret_q   <= id_system_mret;
           id_ex_illegal_q       <= id_illegal;
           id_ex_instr_fault_q   <= if_id_instr_fault_q;
+          id_ex_predicted_pc_q   <= if_id_predicted_pc_q;
         end
       end
 

@@ -32,6 +32,12 @@ rv32i_cached_ahb_master_top
 
 - RV32I single-cycle baseline core.
 - Five-stage pipeline core with forwarding, load-use stall, memory wait-state handling, branch/jump flush, and performance counters.
+- Static branch prediction in `rv32i_pipe_core`:
+  - aligned `JAL` predicted taken in IF
+  - aligned backward B-type branches predicted taken in IF
+  - forward B-type branches predicted not-taken
+  - `JALR` still resolved in EX
+  - branch and branch-mispredict debug counters.
 - Minimal machine-mode trap/CSR path:
   - `mtvec`, `mepc`, `mcause`
   - `mstatus.MIE/MPIE`, `mie.MTIE`, `mip.MTIP`
@@ -97,7 +103,7 @@ rv32i_cached_ahb_master_top
 
 Detailed status is tracked in `docs/VERIFICATION_MATRIX.md`.
 
-User-confirmed VCS PASS has been reported for all directed tests currently listed in `docs/VERIFICATION_MATRIX.md`, including the MEMH-loader revision of `rv32i_ahb_matrix_soc_top_tb`.
+User-confirmed VCS PASS has been reported for all directed tests currently listed in `docs/VERIFICATION_MATRIX.md`, including the static branch prediction tests.
 
 ## Active Design Assumptions
 
@@ -112,10 +118,11 @@ User-confirmed VCS PASS has been reported for all directed tests currently liste
 
 ## Next Candidate Work
 
-1. If licensed vendor IP is required, keep AE350/Andes/ARM files outside the public repo or add them through a private `vendor_ip` path and filelist.
-2. Add simple-bus-to-AXI-lite adapter.
-3. Add UART RX/FIFO/interrupt if needed.
-4. Consider a true multi-master AHB matrix if the project needs parallel slave access.
+1. Add a small dynamic BHT/BTB predictor.
+2. If licensed vendor IP is required, keep AE350/Andes/ARM files outside the public repo or add them through a private `vendor_ip` path and filelist.
+3. Add simple-bus-to-AXI-lite adapter.
+4. Add UART RX/FIFO/interrupt if needed.
+5. Consider a true multi-master AHB matrix if the project needs parallel slave access.
 
 ## Context Rules
 

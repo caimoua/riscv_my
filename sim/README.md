@@ -73,6 +73,24 @@ make sim TB_FILE=./testcases/rv32i_pipe_core_tb.sv TOP_NAME=rv32i_pipe_core_tb
 - branch/jump redirect 后的 flush
 - `instret/stall_cycle/flush_cycle` debug 性能计数器
 
+## Static Branch Prediction Testbench
+
+```text
+sim/testcases/rv32i_pipe_branch_predict_tb.sv
+```
+
+Run:
+
+```bash
+make sim TB_FILE=./testcases/rv32i_pipe_branch_predict_tb.sv TOP_NAME=rv32i_pipe_branch_predict_tb
+```
+
+Coverage:
+- IF-stage static prediction for aligned `JAL`.
+- IF-stage static prediction for aligned backward B-type branches.
+- EX-stage redirect only on predicted-PC mismatch.
+- `dbg_branch_count` and `dbg_branch_mispredict_count`.
+
 ## Trap/CSR Testbench
 
 ```text

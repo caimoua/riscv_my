@@ -42,6 +42,7 @@ RISC-V GNU toolchain setup notes are in `docs/RISCV_TOOLCHAIN.md`.
 
 - 已完成一版清晰、可解释的 RV32I 单周期 core。
 - 已完成基础五级流水线，包含 forwarding、load-use stall、memory wait-state、branch/jump flush 和性能计数器。
+- 已实现第一版静态分支预测，包含 IF 阶段 JAL/backward-branch 预测和 branch/mispredict 计数器；directed tests 已通过 VCS。
 - pipeline core 已完成第一版最小 trap/CSR 机制，支持 `mtvec/mepc/mcause`、`ecall/ebreak/illegal` trap、`mret` 返回和 commit 阶段 precise exception。说明见 `docs/RV32I_TRAP_CSR.md`。
 - 已完成 blocking 2-way I-cache 和 D-cache，cache line 为 4 个 32-bit word，tag/data 存储通过 SRAM-style 模型访问。说明见 `docs/RV32I_ICACHE.md` 和 `docs/RV32I_DCACHE.md`。
 - 已完成内部 memory bus，支持 I-cache/D-cache 两个 master 到 ROM/SRAM/MMIO 三类 slave 的 blocking 访问、D 优先仲裁和地址 decode。说明见 `docs/RV32I_MEM_BUS.md`。
@@ -79,6 +80,11 @@ make sim
 
 ```bash
 make sim TB_FILE=./testcases/rv32i_pipe_core_tb.sv TOP_NAME=rv32i_pipe_core_tb
+```
+
+Static branch prediction:
+```bash
+make sim TB_FILE=./testcases/rv32i_pipe_branch_predict_tb.sv TOP_NAME=rv32i_pipe_branch_predict_tb
 ```
 
 trap/CSR：

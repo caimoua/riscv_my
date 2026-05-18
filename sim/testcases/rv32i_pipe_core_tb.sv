@@ -254,11 +254,11 @@ module rv32i_pipe_core_tb;
     if (dbg_instret !== 32'd33) begin
       $fatal(1, "instret mismatch: expected 33, got %0d", dbg_instret);
     end
-    if (dbg_stall_cycle !== 32'd17) begin
-      $fatal(1, "stall_cycle mismatch: expected 17, got %0d", dbg_stall_cycle);
+    if (dbg_stall_cycle !== 32'd16) begin
+      $fatal(1, "stall_cycle mismatch: expected 16, got %0d", dbg_stall_cycle);
     end
-    if (dbg_flush_cycle !== 32'd3) begin
-      $fatal(1, "flush_cycle mismatch: expected 3, got %0d", dbg_flush_cycle);
+    if (dbg_flush_cycle !== 32'd2) begin
+      $fatal(1, "flush_cycle mismatch: expected 2, got %0d", dbg_flush_cycle);
     end
 
     $display("[PASS] rv32i_pipe_core_tb");
