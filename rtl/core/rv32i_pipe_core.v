@@ -97,6 +97,8 @@ module rv32i_pipe_core #(
   reg        id_ex_system_ecall_q;
   reg        id_ex_system_ebreak_q;
   reg        id_ex_system_mret_q;
+  reg        id_ex_muldiv_valid_q;
+  reg [2:0]  id_ex_muldiv_op_q;
   reg        id_ex_illegal_q;
   reg        id_ex_instr_fault_q;
   reg [31:0] id_ex_predicted_pc_q;
@@ -171,6 +173,8 @@ module rv32i_pipe_core #(
   wire        id_system_ecall;
   wire        id_system_ebreak;
   wire        id_system_mret;
+  wire        id_muldiv_valid;
+  wire [2:0]  id_muldiv_op;
   wire        id_illegal;
   wire [31:0] id_imm_i;
   wire [31:0] id_imm_s;
@@ -206,9 +210,15 @@ module rv32i_pipe_core #(
 
   wire [31:0] ex_alu_src_b;
   wire [31:0] ex_alu_result;
+  wire [31:0] ex_result;
   wire [31:0] ex_mem_addr;
   wire [31:0] ex_csr_rdata;
   wire        ex_csr_write;
+  wire        ex_muldiv_valid;
+  wire        ex_muldiv_ready;
+  wire        ex_muldiv_consume;
+  wire        ex_muldiv_stall;
+  wire [31:0] ex_muldiv_result;
   wire        ex_branch_taken;
   wire        ex_control_taken;
   wire        ex_control_instr;
@@ -323,6 +333,11 @@ module rv32i_pipe_core #(
     .imm_j (id_imm_j)
   );
 
+  assign id_muldiv_valid = if_id_valid_q &&
+                           (if_id_instr_q[6:0] == `RV32I_OPCODE_OP) &&
+                           (if_id_instr_q[31:25] == 7'b0000001);
+  assign id_muldiv_op = if_id_instr_q[14:12];
+
   rv32i_regfile u_regfile (
     .clk       (clk),
     .rst_n     (rst_n),
@@ -425,6 +440,32 @@ module rv32i_pipe_core #(
     .src_a  (forward_rs1_data),
     .src_b  (ex_alu_src_b),
     .result (ex_alu_result)
+  );
+
+  assign ex_muldiv_valid = id_ex_valid_q &&
+                            id_ex_muldiv_valid_q &&
+                            !id_ex_illegal_q &&
+                            !id_ex_instr_fault_q &&
+                            !commit_redirect;
+  assign ex_muldiv_stall = ex_muldiv_valid && !ex_muldiv_ready;
+  assign ex_muldiv_consume = ex_muldiv_valid &&
+                              ex_muldiv_ready &&
+                              !mem_stall &&
+                              !commit_redirect;
+  assign ex_result = id_ex_muldiv_valid_q ? ex_muldiv_result : ex_alu_result;
+
+  rv32i_muldiv u_muldiv (
+    .clk     (clk),
+    .rst_n   (rst_n),
+    .valid   (ex_muldiv_valid && !mem_stall),
+    .op      (id_ex_muldiv_op_q),
+    .lhs     (forward_rs1_data),
+    .rhs     (forward_rs2_data),
+    .consume (ex_muldiv_consume),
+    .flush   (commit_redirect),
+    .ready   (ex_muldiv_ready),
+    .busy    (),
+    .result  (ex_muldiv_result)
   );
 
   rv32i_pipe_csr u_pipe_csr (
@@ -553,6 +594,8 @@ module rv32i_pipe_core #(
       id_ex_system_ecall_q   <= 1'b0;
       id_ex_system_ebreak_q  <= 1'b0;
       id_ex_system_mret_q    <= 1'b0;
+      id_ex_muldiv_valid_q   <= 1'b0;
+      id_ex_muldiv_op_q      <= `RV32I_MULDIV_MUL;
       id_ex_illegal_q        <= 1'b0;
       id_ex_instr_fault_q    <= 1'b0;
       id_ex_predicted_pc_q   <= 32'd0;
@@ -614,7 +657,8 @@ module rv32i_pipe_core #(
           !commit_redirect) begin
         instret_q <= instret_q + 32'd1;
       end
-      if (load_use_stall || mem_stall || if_stall || if_discard_q) begin
+      if (load_use_stall || mem_stall || ex_muldiv_stall ||
+          if_stall || if_discard_q) begin
         stall_cycle_q <= stall_cycle_q + 32'd1;
       end
       if (ex_redirect && !mem_stall && !commit_redirect) begin
@@ -653,7 +697,7 @@ module rv32i_pipe_core #(
         if_id_instr_fault_q <= 1'b0;
         if_id_predicted_pc_q <= 32'd0;
         if_id_btb_hit_q <= 1'b0;
-      end else if (!mem_stall) begin
+      end else if (!mem_stall && !ex_muldiv_stall) begin
         if (if_discard_q) begin
           if (imem_ready) begin
             if_discard_q <= 1'b0;
@@ -716,11 +760,13 @@ module rv32i_pipe_core #(
         id_ex_system_ecall_q  <= 1'b0;
         id_ex_system_ebreak_q <= 1'b0;
         id_ex_system_mret_q   <= 1'b0;
+        id_ex_muldiv_valid_q  <= 1'b0;
+        id_ex_muldiv_op_q     <= `RV32I_MULDIV_MUL;
         id_ex_illegal_q       <= 1'b0;
         id_ex_instr_fault_q   <= 1'b0;
         id_ex_predicted_pc_q   <= 32'd0;
         id_ex_btb_hit_q        <= 1'b0;
-      end else if (!mem_stall) begin
+      end else if (!mem_stall && !ex_muldiv_stall) begin
         if (ex_redirect || load_use_stall || if_stall || if_discard_q) begin
           id_ex_valid_q         <= 1'b0;
           id_ex_pc_q            <= 32'd0;
@@ -750,6 +796,8 @@ module rv32i_pipe_core #(
           id_ex_system_ecall_q  <= 1'b0;
           id_ex_system_ebreak_q <= 1'b0;
           id_ex_system_mret_q   <= 1'b0;
+          id_ex_muldiv_valid_q  <= 1'b0;
+          id_ex_muldiv_op_q     <= `RV32I_MULDIV_MUL;
           id_ex_illegal_q       <= 1'b0;
           id_ex_instr_fault_q   <= 1'b0;
           id_ex_predicted_pc_q   <= 32'd0;
@@ -768,14 +816,14 @@ module rv32i_pipe_core #(
           id_ex_imm_b_q         <= id_imm_b;
           id_ex_imm_u_q         <= id_imm_u;
           id_ex_imm_j_q         <= id_imm_j;
-          id_ex_reg_we_q        <= id_reg_we;
+          id_ex_reg_we_q        <= id_reg_we || id_muldiv_valid;
           id_ex_alu_src_imm_q   <= id_alu_src_imm;
           id_ex_alu_op_q        <= id_alu_op;
-          id_ex_wb_sel_q        <= id_wb_sel;
-          id_ex_pc_sel_q        <= id_pc_sel;
+          id_ex_wb_sel_q        <= id_muldiv_valid ? `RV32I_WB_ALU : id_wb_sel;
+          id_ex_pc_sel_q        <= id_muldiv_valid ? `RV32I_PC_NEXT : id_pc_sel;
           id_ex_branch_op_q     <= id_branch_op;
-          id_ex_mem_valid_q     <= id_mem_valid;
-          id_ex_mem_write_q     <= id_mem_write;
+          id_ex_mem_valid_q     <= id_muldiv_valid ? 1'b0 : id_mem_valid;
+          id_ex_mem_write_q     <= id_muldiv_valid ? 1'b0 : id_mem_write;
           id_ex_mem_size_q      <= id_mem_size;
           id_ex_mem_unsigned_q  <= id_mem_unsigned;
           id_ex_csr_addr_q      <= id_csr_addr;
@@ -783,7 +831,9 @@ module rv32i_pipe_core #(
           id_ex_system_ecall_q  <= id_system_ecall;
           id_ex_system_ebreak_q <= id_system_ebreak;
           id_ex_system_mret_q   <= id_system_mret;
-          id_ex_illegal_q       <= id_illegal;
+          id_ex_muldiv_valid_q  <= id_muldiv_valid;
+          id_ex_muldiv_op_q     <= id_muldiv_op;
+          id_ex_illegal_q       <= id_illegal && !id_muldiv_valid;
           id_ex_instr_fault_q   <= if_id_instr_fault_q;
           id_ex_predicted_pc_q   <= if_id_predicted_pc_q;
           id_ex_btb_hit_q        <= if_id_btb_hit_q;
@@ -840,30 +890,57 @@ module rv32i_pipe_core #(
         mem_wb_store_addr_misaligned_q <= 1'b0;
         mem_wb_store_fault_q   <= 1'b0;
       end else if (!mem_stall) begin
-        ex_mem_valid_q         <= id_ex_valid_q;
-        ex_mem_pc4_q           <= id_ex_pc4_q;
-        ex_mem_rd_addr_q       <= id_ex_rd_addr_q;
-        ex_mem_alu_result_q    <= ex_alu_result;
-        ex_mem_store_data_q    <= forward_rs2_data;
-        ex_mem_mem_addr_q      <= ex_mem_addr;
-        ex_mem_imm_u_q         <= id_ex_imm_u_q;
-        ex_mem_csr_rdata_q     <= ex_csr_rdata;
-        ex_mem_csr_wdata_q     <= forward_rs1_data;
-        ex_mem_csr_addr_q      <= id_ex_csr_addr_q;
-        ex_mem_csr_op_q        <= id_ex_csr_op_q;
-        ex_mem_csr_write_q     <= ex_csr_write;
-        ex_mem_reg_we_q        <= id_ex_reg_we_q;
-        ex_mem_wb_sel_q        <= id_ex_wb_sel_q;
-        ex_mem_mem_valid_q     <= id_ex_mem_valid_q;
-        ex_mem_mem_write_q     <= id_ex_mem_write_q;
-        ex_mem_mem_size_q      <= id_ex_mem_size_q;
-        ex_mem_mem_unsigned_q  <= id_ex_mem_unsigned_q;
-        ex_mem_system_ecall_q  <= id_ex_system_ecall_q;
-        ex_mem_system_ebreak_q <= id_ex_system_ebreak_q;
-        ex_mem_system_mret_q   <= id_ex_system_mret_q;
-        ex_mem_illegal_q       <= id_ex_illegal_q;
-        ex_mem_instr_addr_misaligned_q <= ex_instr_addr_misaligned;
-        ex_mem_instr_fault_q   <= id_ex_instr_fault_q;
+        if (ex_muldiv_stall) begin
+          ex_mem_valid_q         <= 1'b0;
+          ex_mem_pc4_q           <= 32'd0;
+          ex_mem_rd_addr_q       <= 5'd0;
+          ex_mem_alu_result_q    <= 32'd0;
+          ex_mem_store_data_q    <= 32'd0;
+          ex_mem_mem_addr_q      <= 32'd0;
+          ex_mem_imm_u_q         <= 32'd0;
+          ex_mem_csr_rdata_q     <= 32'd0;
+          ex_mem_csr_wdata_q     <= 32'd0;
+          ex_mem_csr_addr_q      <= 12'd0;
+          ex_mem_csr_op_q        <= `RV32I_CSR_OP_NONE;
+          ex_mem_csr_write_q     <= 1'b0;
+          ex_mem_reg_we_q        <= 1'b0;
+          ex_mem_wb_sel_q        <= `RV32I_WB_ALU;
+          ex_mem_mem_valid_q     <= 1'b0;
+          ex_mem_mem_write_q     <= 1'b0;
+          ex_mem_mem_size_q      <= `RV32I_MEM_WORD;
+          ex_mem_mem_unsigned_q  <= 1'b0;
+          ex_mem_system_ecall_q  <= 1'b0;
+          ex_mem_system_ebreak_q <= 1'b0;
+          ex_mem_system_mret_q   <= 1'b0;
+          ex_mem_illegal_q       <= 1'b0;
+          ex_mem_instr_addr_misaligned_q <= 1'b0;
+          ex_mem_instr_fault_q   <= 1'b0;
+        end else begin
+          ex_mem_valid_q         <= id_ex_valid_q;
+          ex_mem_pc4_q           <= id_ex_pc4_q;
+          ex_mem_rd_addr_q       <= id_ex_rd_addr_q;
+          ex_mem_alu_result_q    <= ex_result;
+          ex_mem_store_data_q    <= forward_rs2_data;
+          ex_mem_mem_addr_q      <= ex_mem_addr;
+          ex_mem_imm_u_q         <= id_ex_imm_u_q;
+          ex_mem_csr_rdata_q     <= ex_csr_rdata;
+          ex_mem_csr_wdata_q     <= forward_rs1_data;
+          ex_mem_csr_addr_q      <= id_ex_csr_addr_q;
+          ex_mem_csr_op_q        <= id_ex_csr_op_q;
+          ex_mem_csr_write_q     <= ex_csr_write;
+          ex_mem_reg_we_q        <= id_ex_reg_we_q;
+          ex_mem_wb_sel_q        <= id_ex_wb_sel_q;
+          ex_mem_mem_valid_q     <= id_ex_mem_valid_q;
+          ex_mem_mem_write_q     <= id_ex_mem_write_q;
+          ex_mem_mem_size_q      <= id_ex_mem_size_q;
+          ex_mem_mem_unsigned_q  <= id_ex_mem_unsigned_q;
+          ex_mem_system_ecall_q  <= id_ex_system_ecall_q;
+          ex_mem_system_ebreak_q <= id_ex_system_ebreak_q;
+          ex_mem_system_mret_q   <= id_ex_system_mret_q;
+          ex_mem_illegal_q       <= id_ex_illegal_q;
+          ex_mem_instr_addr_misaligned_q <= ex_instr_addr_misaligned;
+          ex_mem_instr_fault_q   <= id_ex_instr_fault_q;
+        end
 
         mem_wb_valid_q         <= ex_mem_valid_q;
         mem_wb_pc4_q           <= ex_mem_pc4_q;

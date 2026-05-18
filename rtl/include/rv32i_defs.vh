@@ -25,6 +25,15 @@
 `define RV32I_ALU_SLT  4'd8
 `define RV32I_ALU_SLTU 4'd9
 
+`define RV32I_MULDIV_MUL    3'b000
+`define RV32I_MULDIV_MULH   3'b001
+`define RV32I_MULDIV_MULHSU 3'b010
+`define RV32I_MULDIV_MULHU  3'b011
+`define RV32I_MULDIV_DIV    3'b100
+`define RV32I_MULDIV_DIVU   3'b101
+`define RV32I_MULDIV_REM    3'b110
+`define RV32I_MULDIV_REMU   3'b111
+
 `define RV32I_WB_ALU    3'b000
 `define RV32I_WB_LUI    3'b001
 `define RV32I_WB_AUIPC  3'b010

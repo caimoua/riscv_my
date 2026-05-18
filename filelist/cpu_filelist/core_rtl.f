@@ -3,6 +3,7 @@
 ../rtl/core/rv32i_imm_gen.v
 ../rtl/core/rv32i_decoder.v
 ../rtl/core/rv32i_core.v
+../rtl/core/rv32i_muldiv.v
 ../rtl/core/rv32i_pipe_csr.v
 ../rtl/core/rv32i_pipe_lsu.v
 ../rtl/core/rv32i_pipe_hazard.v

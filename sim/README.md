@@ -102,6 +102,25 @@ make sim TB_FILE=./testcases/rv32i_pipe_dynamic_branch_predict_tb.sv TOP_NAME=rv
 - 后续同一条 forward branch 通过 BTB+BHT 预测 taken。
 - 检查 `dbg_btb_hit_count`、`dbg_btb_miss_count` 和 `dbg_bht_update_count`。
 
+## RV32M 乘除法扩展 Testbench
+
+```text
+sim/testcases/rv32i_pipe_muldiv_tb.sv
+```
+
+运行命令：
+```bash
+make sim TB_FILE=./testcases/rv32i_pipe_muldiv_tb.sv TOP_NAME=rv32i_pipe_muldiv_tb
+```
+
+覆盖内容：
+- `mul/mulh/mulhsu/mulhu`
+- `div/divu/rem/remu`
+- divide by zero
+- `INT_MIN / -1` overflow
+- M 指令后紧跟消费者指令的 forwarding
+- 多周期执行期间的 pipeline stall
+
 覆盖内容：
 - IF 阶段对已对齐 `JAL` 做静态 taken 预测。
 - IF 阶段对已对齐 backward B-type branch 做静态 taken 预测。

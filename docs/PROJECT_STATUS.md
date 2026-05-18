@@ -46,6 +46,11 @@ rv32i_cached_ahb_master_top
   - B-type branch 优先使用 BTB+BHT，BTB miss 时回退到静态 backward-taken 规则。
   - `dbg_btb_hit_count`, `dbg_btb_miss_count`, `dbg_bht_update_count` 已透出。
   - `rv32i_pipe_dynamic_branch_predict_tb` 已由用户确认 VCS PASS。
+- RV32M 乘除法扩展：
+  - 支持 `mul/mulh/mulhsu/mulhu/div/divu/rem/remu`。
+  - 新增 EX 阶段 `rv32i_muldiv` 多周期执行单元。
+  - M 指令结果复用 ALU writeback/forwarding 路径。
+  - `rv32i_pipe_muldiv_tb` 已由用户确认 VCS PASS。
 - 最小 machine-mode trap/CSR 路径：
   - `mtvec`, `mepc`, `mcause`
   - `mstatus.MIE/MPIE`, `mie.MTIE`, `mip.MTIP`
@@ -110,7 +115,7 @@ rv32i_cached_ahb_master_top
 
 ## 设计假设
 
-- 只支持 RV32I。
+- 流水线 core 已支持 RV32IM 指令子集。
 - 32-bit 固定长度指令。
 - 不支持 compressed instruction。
 - machine mode only。

@@ -120,11 +120,19 @@ Debug interface：
 - `JALR`：仍在 EX 阶段解析。
 - EX 阶段发现预测 PC 与真实下一条 PC 不一致时产生 `ex_redirect` 并 flush 前端。
 
+RV32M：
+
+- `opcode=0110011` 且 `funct7=0000001` 的 M 扩展指令在 `rv32i_pipe_core` 内部识别。
+- `rv32i_muldiv` 位于 EX 阶段。
+- M 指令等待 `rv32i_muldiv.ready`，等待期间 IF 和 ID/EX 保持，EX/MEM 插入 bubble，MEM/WB drain。
+- M 指令结果复用 `RV32I_WB_ALU` writeback/forwarding 路径。
+
 关键内部模块：
 
 - `rv32i_pipe_hazard`
 - `rv32i_pipe_lsu`
 - `rv32i_pipe_csr`
+- `rv32i_muldiv`
 - `rv32i_regfile`
 - `rv32i_decoder`
 - `rv32i_imm_gen`

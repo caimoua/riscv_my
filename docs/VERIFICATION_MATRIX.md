@@ -16,6 +16,7 @@
 | 流水线 hazard/control | `testcases/rv32i_pipe_core_tb.sv` | `make sim TB_FILE=./testcases/rv32i_pipe_core_tb.sv TOP_NAME=rv32i_pipe_core_tb` | PASS |
 | 静态分支预测 | `testcases/rv32i_pipe_branch_predict_tb.sv` | `make sim TB_FILE=./testcases/rv32i_pipe_branch_predict_tb.sv TOP_NAME=rv32i_pipe_branch_predict_tb` | PASS |
 | 动态 BHT/BTB 分支预测 | `testcases/rv32i_pipe_dynamic_branch_predict_tb.sv` | `make sim TB_FILE=./testcases/rv32i_pipe_dynamic_branch_predict_tb.sv TOP_NAME=rv32i_pipe_dynamic_branch_predict_tb` | PASS |
+| RV32M 乘除法扩展 | `testcases/rv32i_pipe_muldiv_tb.sv` | `make sim TB_FILE=./testcases/rv32i_pipe_muldiv_tb.sv TOP_NAME=rv32i_pipe_muldiv_tb` | PASS |
 | Trap/CSR | `testcases/rv32i_trap_csr_tb.sv` | `make sim TB_FILE=./testcases/rv32i_trap_csr_tb.sv TOP_NAME=rv32i_trap_csr_tb` | PASS |
 | I-cache | `testcases/rv32i_icache_tb.sv` | `make sim TB_FILE=./testcases/rv32i_icache_tb.sv TOP_NAME=rv32i_icache_tb` | PASS |
 | D-cache | `testcases/rv32i_dcache_tb.sv` | `make sim TB_FILE=./testcases/rv32i_dcache_tb.sv TOP_NAME=rv32i_dcache_tb` | PASS |
@@ -43,6 +44,7 @@
 RTL 接口或 core 控制流改动后，至少运行：
 
 - `rv32i_pipe_core_tb`
+- `rv32i_pipe_muldiv_tb`
 - `rv32i_pipe_branch_predict_tb`
 - `rv32i_pipe_dynamic_branch_predict_tb`
 - `rv32i_mem_bus_tb`
@@ -73,6 +75,8 @@ MMIO 改动后，至少运行：
 
 ## 最近人工更新
 
+- 2026-05-18：用户确认 `rv32i_pipe_muldiv_tb` VCS PASS：`cycle=212`、`instret=31`、`stall_cycle=177`、`flush_cycle=0`。
+- 2026-05-18：用户确认 RV32M 后的 `rv32i_pipe_core_tb` 和 `rv32i_pipe_branch_predict_tb` 回归 VCS PASS。
 - 2026-05-18：用户确认 `rv32i_pipe_dynamic_branch_predict_tb` VCS PASS：`branch_count=8`、`branch_mispredict_count=2`、`btb_hit=6`、`btb_miss=2`、`bht_update=8`。
 - 2026-05-18：用户确认动态预测后的 `rv32i_pipe_branch_predict_tb` VCS PASS。
 - 2026-05-18：用户确认 `rv32i_pipe_branch_predict_tb` 以及静态分支预测后的新版 `rv32i_pipe_core_tb` 均 VCS PASS。
