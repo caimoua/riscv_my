@@ -85,6 +85,23 @@ sim/testcases/rv32i_pipe_branch_predict_tb.sv
 make sim TB_FILE=./testcases/rv32i_pipe_branch_predict_tb.sv TOP_NAME=rv32i_pipe_branch_predict_tb
 ```
 
+## 动态 BHT/BTB 分支预测 Testbench
+
+```text
+sim/testcases/rv32i_pipe_dynamic_branch_predict_tb.sv
+```
+
+运行命令：
+```bash
+make sim TB_FILE=./testcases/rv32i_pipe_dynamic_branch_predict_tb.sv TOP_NAME=rv32i_pipe_dynamic_branch_predict_tb
+```
+
+覆盖内容：
+- 固定 PC 的 forward `beq` 重复 taken。
+- 第一次 BTB miss 后训练 BHT/BTB。
+- 后续同一条 forward branch 通过 BTB+BHT 预测 taken。
+- 检查 `dbg_btb_hit_count`、`dbg_btb_miss_count` 和 `dbg_bht_update_count`。
+
 覆盖内容：
 - IF 阶段对已对齐 `JAL` 做静态 taken 预测。
 - IF 阶段对已对齐 backward B-type branch 做静态 taken 预测。

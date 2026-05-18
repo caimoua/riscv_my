@@ -29,12 +29,19 @@ module rv32i_pipe_core #(
   output wire [31:0] dbg_flush_cycle,
   output wire [31:0] dbg_branch_count,
   output wire [31:0] dbg_branch_mispredict_count,
+  output wire [31:0] dbg_btb_hit_count,
+  output wire [31:0] dbg_btb_miss_count,
+  output wire [31:0] dbg_bht_update_count,
   input  wire [4:0]  dbg_reg_addr,
   output wire [31:0] dbg_reg_rdata,
   output wire        dbg_illegal_instr,
   output wire        dbg_ecall,
   output wire        dbg_ebreak
 );
+
+  localparam BP_INDEX_BITS = 6;
+  localparam BP_ENTRIES = (1 << BP_INDEX_BITS);
+  localparam BP_TAG_BITS = 32 - BP_INDEX_BITS - 2;
 
   reg [31:0] pc_q;
   reg [31:0] cycle_q;
@@ -43,7 +50,16 @@ module rv32i_pipe_core #(
   reg [31:0] flush_cycle_q;
   reg [31:0] branch_count_q;
   reg [31:0] branch_mispredict_count_q;
+  reg [31:0] btb_hit_count_q;
+  reg [31:0] btb_miss_count_q;
+  reg [31:0] bht_update_count_q;
   reg        if_discard_q;
+
+  reg [1:0] bht [0:BP_ENTRIES-1];
+  reg       btb_valid [0:BP_ENTRIES-1];
+  reg [BP_TAG_BITS-1:0] btb_tag [0:BP_ENTRIES-1];
+  reg [31:0] btb_target [0:BP_ENTRIES-1];
+  integer bp_i;
 
   reg        if_id_valid_q;
   reg [31:0] if_id_pc_q;
@@ -51,6 +67,7 @@ module rv32i_pipe_core #(
   reg [31:0] if_id_instr_q;
   reg        if_id_instr_fault_q;
   reg [31:0] if_id_predicted_pc_q;
+  reg        if_id_btb_hit_q;
 
   reg        id_ex_valid_q;
   reg [31:0] id_ex_pc_q;
@@ -83,6 +100,7 @@ module rv32i_pipe_core #(
   reg        id_ex_illegal_q;
   reg        id_ex_instr_fault_q;
   reg [31:0] id_ex_predicted_pc_q;
+  reg        id_ex_btb_hit_q;
 
   reg        ex_mem_valid_q;
   reg [31:0] ex_mem_pc4_q;
@@ -173,6 +191,18 @@ module rv32i_pipe_core #(
   wire [31:0] if_jal_target_pc;
   wire [31:0] if_predicted_pc;
   wire        if_predict_taken;
+  wire        if_is_jal;
+  wire        if_is_branch;
+  wire        if_jal_predict_taken;
+  wire        if_dynamic_branch_predict_taken;
+  wire        if_static_branch_predict_taken;
+  wire [BP_INDEX_BITS-1:0] if_bp_index;
+  wire [BP_TAG_BITS-1:0] if_bp_tag;
+  wire [31:0] if_btb_target_pc;
+  wire [1:0] if_bht_counter;
+  wire        if_bht_predict_taken;
+  wire        if_btb_hit;
+  wire        if_btb_target_aligned;
 
   wire [31:0] ex_alu_src_b;
   wire [31:0] ex_alu_result;
@@ -183,9 +213,12 @@ module rv32i_pipe_core #(
   wire        ex_control_taken;
   wire        ex_control_instr;
   wire        ex_branch_instr;
+  wire        ex_branch_update;
   wire        ex_prediction_mismatch;
   wire        ex_redirect;
   wire        ex_instr_addr_misaligned;
+  wire [BP_INDEX_BITS-1:0] ex_bp_index;
+  wire [BP_TAG_BITS-1:0] ex_bp_tag;
   wire [31:0] ex_control_target_pc;
   wire [31:0] ex_actual_next_pc;
   wire [31:0] ex_redirect_pc;
@@ -216,6 +249,9 @@ module rv32i_pipe_core #(
   assign dbg_flush_cycle   = flush_cycle_q;
   assign dbg_branch_count  = branch_count_q;
   assign dbg_branch_mispredict_count = branch_mispredict_count_q;
+  assign dbg_btb_hit_count = btb_hit_count_q;
+  assign dbg_btb_miss_count = btb_miss_count_q;
+  assign dbg_bht_update_count = bht_update_count_q;
 
   assign if_instr = imem_error ? 32'h0000_0013 : imem_rdata;
   assign if_opcode = if_instr[6:0];
@@ -225,17 +261,34 @@ module rv32i_pipe_core #(
                      if_instr[20], if_instr[30:21], 1'b0};
   assign if_branch_target_pc = pc_q + if_imm_b;
   assign if_jal_target_pc = pc_q + if_imm_j;
+  assign if_is_jal = (if_opcode == `RV32I_OPCODE_JAL);
+  assign if_is_branch = (if_opcode == `RV32I_OPCODE_BRANCH);
+  assign if_bp_index = pc_q[BP_INDEX_BITS+1:2];
+  assign if_bp_tag = pc_q[31:BP_INDEX_BITS+2];
+  assign if_bht_counter = bht[if_bp_index];
+  assign if_bht_predict_taken = if_bht_counter[1];
+  assign if_btb_hit = btb_valid[if_bp_index] &&
+                      (btb_tag[if_bp_index] == if_bp_tag);
+  assign if_btb_target_pc = btb_target[if_bp_index];
+  assign if_btb_target_aligned = (if_btb_target_pc[1:0] == 2'b00);
+  assign if_jal_predict_taken = if_is_jal &&
+                                (if_jal_target_pc[1:0] == 2'b00);
+  assign if_dynamic_branch_predict_taken =
+    if_is_branch && if_btb_hit && if_bht_predict_taken &&
+    if_btb_target_aligned;
+  assign if_static_branch_predict_taken =
+    if_is_branch && !if_btb_hit && if_imm_b[31] &&
+    (if_branch_target_pc[1:0] == 2'b00);
   assign if_predict_taken =
     !imem_error &&
-    (((if_opcode == `RV32I_OPCODE_JAL) &&
-      (if_jal_target_pc[1:0] == 2'b00)) ||
-     ((if_opcode == `RV32I_OPCODE_BRANCH) &&
-      if_imm_b[31] &&
-      (if_branch_target_pc[1:0] == 2'b00)));
-  assign if_predicted_pc = if_predict_taken ?
-                           ((if_opcode == `RV32I_OPCODE_JAL) ?
-                            if_jal_target_pc : if_branch_target_pc) :
-                           (pc_q + 32'd4);
+    (if_jal_predict_taken ||
+     if_dynamic_branch_predict_taken ||
+     if_static_branch_predict_taken);
+  assign if_predicted_pc =
+    (!if_predict_taken) ? (pc_q + 32'd4) :
+    if_jal_predict_taken ? if_jal_target_pc :
+    if_dynamic_branch_predict_taken ? if_btb_target_pc :
+                                      if_branch_target_pc;
 
   rv32i_decoder u_decoder (
     .instr         (if_id_instr_q),
@@ -349,6 +402,15 @@ module rv32i_pipe_core #(
                                     !id_ex_instr_fault_q &&
                                     ex_control_taken &&
                                     (ex_control_target_pc[1:0] != 2'b00);
+  assign ex_branch_update = id_ex_valid_q &&
+                            !id_ex_illegal_q &&
+                            !id_ex_instr_fault_q &&
+                            ex_branch_instr &&
+                            !ex_instr_addr_misaligned &&
+                            !mem_stall &&
+                            !commit_redirect;
+  assign ex_bp_index = id_ex_pc_q[BP_INDEX_BITS+1:2];
+  assign ex_bp_tag = id_ex_pc_q[31:BP_INDEX_BITS+2];
   assign ex_prediction_mismatch = id_ex_valid_q &&
                                   !id_ex_illegal_q &&
                                   !id_ex_instr_fault_q &&
@@ -446,6 +508,15 @@ module rv32i_pipe_core #(
       flush_cycle_q          <= 32'd0;
       branch_count_q         <= 32'd0;
       branch_mispredict_count_q <= 32'd0;
+      btb_hit_count_q        <= 32'd0;
+      btb_miss_count_q       <= 32'd0;
+      bht_update_count_q     <= 32'd0;
+      for (bp_i = 0; bp_i < BP_ENTRIES; bp_i = bp_i + 1) begin
+        bht[bp_i]        <= 2'b01;
+        btb_valid[bp_i]  <= 1'b0;
+        btb_tag[bp_i]    <= {BP_TAG_BITS{1'b0}};
+        btb_target[bp_i] <= 32'd0;
+      end
       if_discard_q           <= 1'b0;
       if_id_valid_q          <= 1'b0;
       if_id_pc_q             <= 32'd0;
@@ -453,6 +524,7 @@ module rv32i_pipe_core #(
       if_id_instr_q          <= 32'h0000_0013;
       if_id_instr_fault_q    <= 1'b0;
       if_id_predicted_pc_q   <= 32'd0;
+      if_id_btb_hit_q        <= 1'b0;
       id_ex_valid_q          <= 1'b0;
       id_ex_pc_q             <= 32'd0;
       id_ex_pc4_q            <= 32'd0;
@@ -484,6 +556,7 @@ module rv32i_pipe_core #(
       id_ex_illegal_q        <= 1'b0;
       id_ex_instr_fault_q    <= 1'b0;
       id_ex_predicted_pc_q   <= 32'd0;
+      id_ex_btb_hit_q        <= 1'b0;
       ex_mem_valid_q         <= 1'b0;
       ex_mem_pc4_q           <= 32'd0;
       ex_mem_rd_addr_q       <= 5'd0;
@@ -547,10 +620,24 @@ module rv32i_pipe_core #(
       if (ex_redirect && !mem_stall && !commit_redirect) begin
         flush_cycle_q <= flush_cycle_q + 32'd1;
       end
-      if (id_ex_valid_q && !id_ex_illegal_q && !id_ex_instr_fault_q &&
-          ex_branch_instr && !ex_instr_addr_misaligned &&
-          !mem_stall && !commit_redirect) begin
+      if (ex_branch_update) begin
         branch_count_q <= branch_count_q + 32'd1;
+        bht_update_count_q <= bht_update_count_q + 32'd1;
+        if (id_ex_btb_hit_q) begin
+          btb_hit_count_q <= btb_hit_count_q + 32'd1;
+        end else begin
+          btb_miss_count_q <= btb_miss_count_q + 32'd1;
+        end
+        if (ex_branch_taken) begin
+          if (bht[ex_bp_index] != 2'b11) begin
+            bht[ex_bp_index] <= bht[ex_bp_index] + 2'd1;
+          end
+          btb_valid[ex_bp_index]  <= 1'b1;
+          btb_tag[ex_bp_index]    <= ex_bp_tag;
+          btb_target[ex_bp_index] <= ex_control_target_pc;
+        end else if (bht[ex_bp_index] != 2'b00) begin
+          bht[ex_bp_index] <= bht[ex_bp_index] - 2'd1;
+        end
         if (ex_prediction_mismatch) begin
           branch_mispredict_count_q <= branch_mispredict_count_q + 32'd1;
         end
@@ -565,6 +652,7 @@ module rv32i_pipe_core #(
         if_id_instr_q <= 32'h0000_0013;
         if_id_instr_fault_q <= 1'b0;
         if_id_predicted_pc_q <= 32'd0;
+        if_id_btb_hit_q <= 1'b0;
       end else if (!mem_stall) begin
         if (if_discard_q) begin
           if (imem_ready) begin
@@ -576,6 +664,7 @@ module rv32i_pipe_core #(
           if_id_instr_q <= 32'h0000_0013;
           if_id_instr_fault_q <= 1'b0;
           if_id_predicted_pc_q <= 32'd0;
+          if_id_btb_hit_q <= 1'b0;
         end else if (ex_redirect) begin
           pc_q          <= ex_redirect_pc;
           if_discard_q  <= 1'b1;
@@ -585,6 +674,7 @@ module rv32i_pipe_core #(
           if_id_instr_q <= 32'h0000_0013;
           if_id_instr_fault_q <= 1'b0;
           if_id_predicted_pc_q <= 32'd0;
+          if_id_btb_hit_q <= 1'b0;
         end else if (!load_use_stall && !if_stall) begin
           pc_q          <= if_predicted_pc;
           if_id_valid_q <= 1'b1;
@@ -593,6 +683,7 @@ module rv32i_pipe_core #(
           if_id_instr_q <= if_instr;
           if_id_instr_fault_q <= imem_error;
           if_id_predicted_pc_q <= if_predicted_pc;
+          if_id_btb_hit_q <= !imem_error && if_is_branch && if_btb_hit;
         end
       end
 
@@ -628,6 +719,7 @@ module rv32i_pipe_core #(
         id_ex_illegal_q       <= 1'b0;
         id_ex_instr_fault_q   <= 1'b0;
         id_ex_predicted_pc_q   <= 32'd0;
+        id_ex_btb_hit_q        <= 1'b0;
       end else if (!mem_stall) begin
         if (ex_redirect || load_use_stall || if_stall || if_discard_q) begin
           id_ex_valid_q         <= 1'b0;
@@ -661,6 +753,7 @@ module rv32i_pipe_core #(
           id_ex_illegal_q       <= 1'b0;
           id_ex_instr_fault_q   <= 1'b0;
           id_ex_predicted_pc_q   <= 32'd0;
+          id_ex_btb_hit_q        <= 1'b0;
         end else begin
           id_ex_valid_q         <= if_id_valid_q;
           id_ex_pc_q            <= if_id_pc_q;
@@ -693,6 +786,7 @@ module rv32i_pipe_core #(
           id_ex_illegal_q       <= id_illegal;
           id_ex_instr_fault_q   <= if_id_instr_fault_q;
           id_ex_predicted_pc_q   <= if_id_predicted_pc_q;
+          id_ex_btb_hit_q        <= if_id_btb_hit_q;
         end
       end
 

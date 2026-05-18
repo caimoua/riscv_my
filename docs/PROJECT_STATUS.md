@@ -1,12 +1,14 @@
-# Project Status
+# 项目状态
 
-Last updated: 2026-05-18
+最后更新：2026-05-18
 
-This file is the first context entry for future work. Read this before scanning RTL or testbench files.
+这是后续 Codex 会话的第一入口。继续工作前先读这个文件，再按需读取 `docs/INTERFACE_INDEX.md` 和 `docs/VERIFICATION_MATRIX.md`，避免每次重新扫描大量 RTL。
 
-## Current Baseline
+## 当前基线
 
-The project is an educational RV32I CPU and small SoC integration project. The current main system is:
+这是一个用于学习和迭代的 RV32I CPU / 小型 SoC 项目。当前主要系统边界有两类。
+
+传统 cached system top：
 
 ```text
 rv32i_cached_system_top
@@ -17,7 +19,7 @@ rv32i_cached_system_top
   external ROM / SRAM / MMIO peripherals
 ```
 
-The preferred integration-style CPU subsystem boundary is now:
+更推荐作为 CPU 子系统交付边界的是：
 
 ```text
 rv32i_cached_ahb_master_top
@@ -28,107 +30,109 @@ rv32i_cached_ahb_master_top
   external AHB-Lite master interface
 ```
 
-## Completed
+## 已完成
 
-- RV32I single-cycle baseline core.
-- Five-stage pipeline core with forwarding, load-use stall, memory wait-state handling, branch/jump flush, and performance counters.
-- `rv32i_pipe_core` 已加入第一版静态分支预测：
-  - 已对齐的 `JAL` 在 IF 阶段预测 taken
-  - 已对齐的 backward B-type branch 在 IF 阶段预测 taken
-  - forward B-type branch 预测 not-taken
-  - `JALR` 仍然在 EX 阶段解析
-  - 新增 branch 和 branch-mispredict debug 计数器。
-- Minimal machine-mode trap/CSR path:
+- RV32I 单周期 baseline core。
+- 五级流水线 core，包含 forwarding、load-use stall、memory wait-state、branch/jump flush 和性能计数器。
+- 第一版静态分支预测：
+  - 对齐的 `JAL` 在 IF 阶段预测 taken。
+  - 对齐的 backward B-type branch 在 IF 阶段预测 taken。
+  - forward B-type branch 预测 not-taken。
+  - `JALR` 仍在 EX 阶段解析。
+  - `dbg_branch_count` 和 `dbg_branch_mispredict_count` 已透出。
+- 小型动态 BHT/BTB 分支预测：
+  - 64 项 direct-mapped BHT，2-bit 饱和计数器。
+  - 64 项 direct-mapped BTB，记录分支 PC tag 和目标 PC。
+  - B-type branch 优先使用 BTB+BHT，BTB miss 时回退到静态 backward-taken 规则。
+  - `dbg_btb_hit_count`, `dbg_btb_miss_count`, `dbg_bht_update_count` 已透出。
+  - `rv32i_pipe_dynamic_branch_predict_tb` 已由用户确认 VCS PASS。
+- 最小 machine-mode trap/CSR 路径：
   - `mtvec`, `mepc`, `mcause`
   - `mstatus.MIE/MPIE`, `mie.MTIE`, `mip.MTIP`
-  - `ecall`, `ebreak`, illegal instruction traps
+  - `ecall`, `ebreak`, illegal instruction trap
   - `mret`
-  - precise commit at MEM/WB.
-- Blocking 2-way I-cache with 4-word cache line.
-- Blocking 2-way D-cache with 4-word cache line, write-through, no-write-allocate, and default MMIO uncached bypass.
-- Internal blocking memory bus:
-  - I-cache and D-cache masters
-  - ROM, SRAM, MMIO slaves
-  - D-priority arbitration
-  - decode error responses.
-- AHB-Lite bus path:
-  - simple-to-AHB master bridge
-  - AHB-Lite decoder
-  - AHB-to-simple slave bridge
-  - opt-in cached system AHB top wrapper.
-- AHB-Lite CPU subsystem interface:
-  - opt-in `rv32i_cached_ahb_master_top`
-  - one external AHB-Lite master port
-  - external SoC/bus fabric owns ROM/SRAM/MMIO decode.
-- Clean-room AHB-Lite 1-master / 4-slave matrix SoC wrapper:
+  - MEM/WB commit 阶段 precise trap。
+- instruction/load/store access fault。
+- instruction/load/store misaligned address trap。
+- Blocking 2-way I-cache，4-word cache line。
+- Blocking 2-way D-cache，4-word cache line，write-through，no-write-allocate，默认 MMIO uncached bypass。
+- 内部 blocking memory bus：
+  - I-cache 和 D-cache 两个 master。
+  - ROM、SRAM、MMIO 三类 slave。
+  - D 侧优先仲裁。
+  - decode error response。
+- AHB-Lite bus path：
+  - simple-to-AHB master bridge。
+  - AHB-Lite decoder。
+  - AHB-to-simple slave bridge。
+  - `rv32i_cached_system_ahb_top`。
+- 标准 CPU 子系统接口：
+  - `rv32i_cached_ahb_master_top`
+  - 对外只暴露一个 AHB-Lite master port。
+  - 外部 SoC/bus fabric 负责 ROM/SRAM/MMIO decode。
+- Clean-room AHB-Lite 1-master / 4-slave matrix SoC wrapper：
   - `rv32i_ahb_lite_matrix_1m4s`
   - `rv32i_ahb_matrix_soc_top`
   - flash slot at `0x0800_0000`
   - SRAM slot at `0x2000_0000`
   - AHB peripheral slot at `0x4000_0000`
   - APB peripheral slot at `0x4200_0000`
-- AHB-to-APB SoC integration:
+- AHB-to-APB SoC integration：
   - `rv32i_ahb_to_apb`
   - `rv32i_apb_periph_mux`
   - `rv32i_ahb_matrix_apb_soc_top`
   - APB timer at `0x4200_0000`
   - APB UART at `0x4200_1000`
   - software image `software/bin/ahb_matrix_apb_soc.memh`
-- `rv32i_pipe_core` and cached wrappers have a `RESET_PC` parameter so an SoC wrapper can boot from flash.
-- Cached system top wrapper.
-- MMIO timer peripheral with `mtime`, `mtimecmp`, `ctrl`, and `timer_irq`.
-- Machine timer interrupt flow through CSR/trap and `mret`.
-- Minimal TX-only UART MMIO peripheral.
-- External MMIO peripheral mux for timer at `0x4000_0000` and UART at `0x4000_1000`.
-- D-side load/store access fault through `d_error`.
-- I-side instruction access fault through `i_error`.
-- Misaligned address traps:
-  - instruction address misaligned: `mcause=0`
-  - load address misaligned: `mcause=4`
-  - store/AMO address misaligned: `mcause=6`
-- Presentation-quality architecture SVG: `docs/figures/rv32i_cached_system_architecture.svg`.
-- Software-driven test image flow:
+- `RESET_PC` 参数，支持 SoC wrapper 从 flash 启动。
+- MMIO timer peripheral，包含 `mtime`, `mtimecmp`, `ctrl`, `timer_irq`。
+- machine timer interrupt 路径，支持 handler 进入和 `mret` 返回。
+- 最小 TX-only UART MMIO peripheral。
+- external MMIO peripheral mux，timer at `0x4000_0000`，UART at `0x4000_1000`。
+- 论文/PPT 可用的系统结构 SVG：`docs/figures/rv32i_cached_system_architecture.svg`。
+- 软件镜像构建流：
   - `software/asm/ahb_matrix_soc.S`
   - `software/linker/rv32i_flash.ld`
   - `software/scripts/bin_to_memh.py`
   - `software/bin/ahb_matrix_soc.memh`
-  - `rv32i_ahb_matrix_soc_top_tb` now loads flash contents through `$readmemh`.
-- Local Windows RISC-V GNU toolchain flow is documented and verified:
+  - `rv32i_ahb_matrix_soc_top_tb` 通过 `$readmemh` 加载 flash 内容。
+- 本地 Windows RISC-V GNU 工具链流程已经记录并验证：
   - `riscv-none-elf-gcc`
   - `riscv-none-elf-objcopy`
   - GNU Make
-  - `make -C software` regenerates the MEMH image.
+  - `make -C software` 可重新生成 MEMH 镜像。
 
-## Verification Status Summary
+## 验证状态摘要
 
-Detailed status is tracked in `docs/VERIFICATION_MATRIX.md`.
+详细状态见 `docs/VERIFICATION_MATRIX.md`。
 
-当前 `docs/VERIFICATION_MATRIX.md` 中列出的 directed tests 均已有用户确认的 VCS PASS，包括静态分支预测测试。
+当前 `docs/VERIFICATION_MATRIX.md` 中列出的 directed tests 均已有用户报告的 VCS PASS。
 
-## Active Design Assumptions
+## 设计假设
 
-- RV32I only, 32-bit fixed-width instructions.
-- No compressed instruction support.
-- Machine mode only.
-- No virtual memory or page faults.
-- Caches and bus are blocking.
-- No outstanding transactions.
-- No burst protocol support.
-- MMIO is accessed through the bus at `0x4000_0000`.
+- 只支持 RV32I。
+- 32-bit 固定长度指令。
+- 不支持 compressed instruction。
+- machine mode only。
+- 无虚拟内存，无 page fault。
+- cache 和 bus 都是 blocking。
+- 无 outstanding transaction。
+- 暂不支持 burst。
+- CPU 子系统推荐通过 AHB-Lite master port 接入外部 SoC。
 
-## Next Candidate Work
+## 下一步候选
 
-1. 增加小型动态 BHT/BTB 分支预测器。
-2. If licensed vendor IP is required, keep AE350/Andes/ARM files outside the public repo or add them through a private `vendor_ip` path and filelist.
-3. Add simple-bus-to-AXI-lite adapter.
-4. Add UART RX/FIFO/interrupt if needed.
-5. Consider a true multi-master AHB matrix if the project needs parallel slave access.
+1. 根据波形观察动态预测收益，决定是否继续做更完整的 BHT/BTB 参数化或 BTB 替换策略。
+2. 增加 AXI-Lite adapter。
+3. 扩展 UART RX/FIFO/interrupt。
+4. 如果项目需要并行 slave 访问，再考虑真正 multi-master AHB matrix。
 
-## Context Rules
+## 上下文规则
 
-For future Codex sessions:
+后续 Codex 会话：
 
-1. Read this file first.
-2. Then read `docs/INTERFACE_INDEX.md`.
-3. Then read only the relevant RTL/testbench files for the task.
-4. Update this file and `docs/VERIFICATION_MATRIX.md` after every completed feature.
+1. 先读本文件。
+2. 再读 `docs/INTERFACE_INDEX.md`。
+3. 再按任务读取相关 RTL/testbench。
+4. 新增测试在用户给出 VCS PASS 前只能标记为 `PENDING`。
+5. 用户确认 PASS 后，再更新 `docs/VERIFICATION_MATRIX.md`、本文件，并提交。

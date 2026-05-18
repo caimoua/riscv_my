@@ -1,20 +1,21 @@
-# Verification Matrix
+# 验证矩阵
 
-Last updated: 2026-05-18
+最后更新：2026-05-18
 
-Status meanings:
+状态含义：
 
-- `PASS`: user has reported a successful VCS run, or the test existed before the current management-doc pass and was already part of the passing regression.
-- `PENDING`: testbench exists but still needs a fresh VCS run from the user.
-- `TODO`: planned but not implemented.
+- `PASS`：用户已经报告 VCS 运行通过，或者该测试在本轮工程管理文档整理前已经属于通过的回归集合。
+- `PENDING`：testbench 已经存在，但还需要用户重新运行 VCS 确认。
+- `TODO`：计划中，尚未实现。
 
 ## Directed Tests
 
-| Area | Testbench | Command from `sim/` | Status |
+| 覆盖范围 | Testbench | 在 `sim/` 下运行的命令 | 状态 |
 | --- | --- | --- | --- |
-| Single-cycle RV32I core | `testcases/rv32i_core_tb.sv` | `make sim` | PASS |
-| Pipeline hazards/control | `testcases/rv32i_pipe_core_tb.sv` | `make sim TB_FILE=./testcases/rv32i_pipe_core_tb.sv TOP_NAME=rv32i_pipe_core_tb` | PASS |
+| 单周期 RV32I core | `testcases/rv32i_core_tb.sv` | `make sim` | PASS |
+| 流水线 hazard/control | `testcases/rv32i_pipe_core_tb.sv` | `make sim TB_FILE=./testcases/rv32i_pipe_core_tb.sv TOP_NAME=rv32i_pipe_core_tb` | PASS |
 | 静态分支预测 | `testcases/rv32i_pipe_branch_predict_tb.sv` | `make sim TB_FILE=./testcases/rv32i_pipe_branch_predict_tb.sv TOP_NAME=rv32i_pipe_branch_predict_tb` | PASS |
+| 动态 BHT/BTB 分支预测 | `testcases/rv32i_pipe_dynamic_branch_predict_tb.sv` | `make sim TB_FILE=./testcases/rv32i_pipe_dynamic_branch_predict_tb.sv TOP_NAME=rv32i_pipe_dynamic_branch_predict_tb` | PASS |
 | Trap/CSR | `testcases/rv32i_trap_csr_tb.sv` | `make sim TB_FILE=./testcases/rv32i_trap_csr_tb.sv TOP_NAME=rv32i_trap_csr_tb` | PASS |
 | I-cache | `testcases/rv32i_icache_tb.sv` | `make sim TB_FILE=./testcases/rv32i_icache_tb.sv TOP_NAME=rv32i_icache_tb` | PASS |
 | D-cache | `testcases/rv32i_dcache_tb.sv` | `make sim TB_FILE=./testcases/rv32i_dcache_tb.sv TOP_NAME=rv32i_dcache_tb` | PASS |
@@ -33,46 +34,54 @@ Status meanings:
 | Cached timer interrupt | `testcases/rv32i_cached_timer_irq_tb.sv` | `make sim TB_FILE=./testcases/rv32i_cached_timer_irq_tb.sv TOP_NAME=rv32i_cached_timer_irq_tb` | PASS |
 | UART peripheral | `testcases/rv32i_uart_tb.sv` | `make sim TB_FILE=./testcases/rv32i_uart_tb.sv TOP_NAME=rv32i_uart_tb` | PASS |
 | Cached UART MMIO | `testcases/rv32i_cached_uart_tb.sv` | `make sim TB_FILE=./testcases/rv32i_cached_uart_tb.sv TOP_NAME=rv32i_cached_uart_tb` | PASS |
-| D-side load/store access fault | `testcases/rv32i_cached_access_fault_tb.sv` | `make sim TB_FILE=./testcases/rv32i_cached_access_fault_tb.sv TOP_NAME=rv32i_cached_access_fault_tb` | PASS |
-| I-side instruction access fault | `testcases/rv32i_cached_instr_access_fault_tb.sv` | `make sim TB_FILE=./testcases/rv32i_cached_instr_access_fault_tb.sv TOP_NAME=rv32i_cached_instr_access_fault_tb` | PASS |
+| D 侧 load/store access fault | `testcases/rv32i_cached_access_fault_tb.sv` | `make sim TB_FILE=./testcases/rv32i_cached_access_fault_tb.sv TOP_NAME=rv32i_cached_access_fault_tb` | PASS |
+| I 侧 instruction access fault | `testcases/rv32i_cached_instr_access_fault_tb.sv` | `make sim TB_FILE=./testcases/rv32i_cached_instr_access_fault_tb.sv TOP_NAME=rv32i_cached_instr_access_fault_tb` | PASS |
 | Misaligned address traps | `testcases/rv32i_cached_misaligned_trap_tb.sv` | `make sim TB_FILE=./testcases/rv32i_cached_misaligned_trap_tb.sv TOP_NAME=rv32i_cached_misaligned_trap_tb` | PASS |
 
-## Regression Notes
+## 回归建议
 
-- After any RTL interface change, run at least:
-  - `rv32i_pipe_core_tb`
-  - `rv32i_pipe_branch_predict_tb`
-  - `rv32i_mem_bus_tb`
-  - `rv32i_mem_bus_ahb_tb`
-  - `rv32i_icache_tb`
-  - `rv32i_dcache_tb`
-  - `rv32i_cached_system_top_tb`
-  - `rv32i_cached_system_ahb_top_tb`
-  - `rv32i_cached_ahb_master_top_tb`
-  - `rv32i_ahb_matrix_soc_top_tb`
-  - `rv32i_ahb_matrix_apb_soc_top_tb`
-  - access fault tests.
-- After any CSR/trap change, run:
-  - `rv32i_trap_csr_tb`
-  - `rv32i_cached_timer_irq_tb`
-  - `rv32i_cached_access_fault_tb`
-  - `rv32i_cached_instr_access_fault_tb`
-  - `rv32i_cached_misaligned_trap_tb`.
-- After any MMIO change, run:
-  - timer tests
-  - cached system top test
-  - `rv32i_uart_tb`
-  - `rv32i_cached_uart_tb`.
+RTL 接口或 core 控制流改动后，至少运行：
 
-## Latest Manual Update
+- `rv32i_pipe_core_tb`
+- `rv32i_pipe_branch_predict_tb`
+- `rv32i_pipe_dynamic_branch_predict_tb`
+- `rv32i_mem_bus_tb`
+- `rv32i_mem_bus_ahb_tb`
+- `rv32i_icache_tb`
+- `rv32i_dcache_tb`
+- `rv32i_cached_system_top_tb`
+- `rv32i_cached_system_ahb_top_tb`
+- `rv32i_cached_ahb_master_top_tb`
+- `rv32i_ahb_matrix_soc_top_tb`
+- `rv32i_ahb_matrix_apb_soc_top_tb`
+- access fault 相关测试。
 
-- 2026-05-18: 用户确认 `rv32i_pipe_branch_predict_tb` 以及静态分支预测后的新版 `rv32i_pipe_core_tb` 均 VCS PASS。
-- 2026-05-18: User confirmed PASS for `rv32i_ahb_matrix_apb_soc_top_tb`.
-- 2026-05-18: User confirmed PASS for `rv32i_cached_misaligned_trap_tb`.
-- 2026-05-15: User confirmed PASS for the MEMH-loader revision of `rv32i_ahb_matrix_soc_top_tb`.
-- 2026-05-15: `rv32i_ahb_matrix_soc_top_tb` was migrated from hand-written SV machine code to `$readmemh` loading `software/bin/ahb_matrix_soc.memh`.
-- 2026-05-15: User confirmed PASS for `rv32i_ahb_matrix_soc_top_tb`.
-- 2026-05-15: User confirmed PASS for `rv32i_cached_ahb_master_top_tb`.
-- 2026-05-15: User confirmed PASS for `rv32i_mem_bus_ahb_tb` and `rv32i_cached_system_ahb_top_tb`.
-- 2026-05-15: User confirmed PASS for `rv32i_uart_tb` and `rv32i_cached_uart_tb`.
-- 2026-05-15: User confirmed PASS for `rv32i_mem_bus_tb` and `rv32i_cached_instr_access_fault_tb`.
+CSR/trap 改动后，至少运行：
+
+- `rv32i_trap_csr_tb`
+- `rv32i_cached_timer_irq_tb`
+- `rv32i_cached_access_fault_tb`
+- `rv32i_cached_instr_access_fault_tb`
+- `rv32i_cached_misaligned_trap_tb`
+
+MMIO 改动后，至少运行：
+
+- timer 相关测试
+- cached system top 测试
+- `rv32i_uart_tb`
+- `rv32i_cached_uart_tb`
+
+## 最近人工更新
+
+- 2026-05-18：用户确认 `rv32i_pipe_dynamic_branch_predict_tb` VCS PASS：`branch_count=8`、`branch_mispredict_count=2`、`btb_hit=6`、`btb_miss=2`、`bht_update=8`。
+- 2026-05-18：用户确认动态预测后的 `rv32i_pipe_branch_predict_tb` VCS PASS。
+- 2026-05-18：用户确认 `rv32i_pipe_branch_predict_tb` 以及静态分支预测后的新版 `rv32i_pipe_core_tb` 均 VCS PASS。
+- 2026-05-18：用户确认 `rv32i_ahb_matrix_apb_soc_top_tb` VCS PASS。
+- 2026-05-18：用户确认 `rv32i_cached_misaligned_trap_tb` VCS PASS。
+- 2026-05-15：用户确认 `$readmemh` 版本 `rv32i_ahb_matrix_soc_top_tb` VCS PASS。
+- 2026-05-15：`rv32i_ahb_matrix_soc_top_tb` 已改为从 `software/bin/ahb_matrix_soc.memh` 加载 flash 内容。
+- 2026-05-15：用户确认 `rv32i_ahb_matrix_soc_top_tb` VCS PASS。
+- 2026-05-15：用户确认 `rv32i_cached_ahb_master_top_tb` VCS PASS。
+- 2026-05-15：用户确认 `rv32i_mem_bus_ahb_tb` 和 `rv32i_cached_system_ahb_top_tb` VCS PASS。
+- 2026-05-15：用户确认 `rv32i_uart_tb` 和 `rv32i_cached_uart_tb` VCS PASS。
+- 2026-05-15：用户确认 `rv32i_mem_bus_tb` 和 `rv32i_cached_instr_access_fault_tb` VCS PASS。

@@ -1,33 +1,31 @@
-# Interface Index
+# 接口索引
 
-Last updated: 2026-05-18
+最后更新：2026-05-18
 
-This file records stable module boundaries so future work does not need to rediscover common ports by scanning many RTL files.
+本文记录稳定模块边界，后续工作不需要每次重新扫描大量 RTL。
 
-## Top-Level System
+## 顶层系统
 
 ### `rv32i_cached_system_top`
 
-File: `rtl/top/rv32i_cached_system_top.v`
+文件：`rtl/top/rv32i_cached_system_top.v`
 
-Role: reusable cached system wrapper.
+用途：可复用 cached system wrapper。
 
-External interfaces:
+外部接口：
 
-- `timer_irq`: external timer interrupt input to pipeline CSR/trap.
-- ROM slave-side passthrough:
-  - `rom_valid`, `rom_write`, `rom_addr`, `rom_wdata`, `rom_wstrb`, `rom_ready`, `rom_rdata`
-- SRAM slave-side passthrough:
-  - `sram_valid`, `sram_write`, `sram_addr`, `sram_wdata`, `sram_wstrb`, `sram_ready`, `sram_rdata`
-- MMIO slave-side passthrough:
-  - `mmio_valid`, `mmio_write`, `mmio_addr`, `mmio_wdata`, `mmio_wstrb`, `mmio_ready`, `mmio_rdata`
-- Debug outputs:
-  - core 性能计数器，包括 branch 和 branch-mispredict 计数器
-  - cache hit/miss counters
-  - bus grant counters
-  - bus decode error.
+- `timer_irq`：外部 timer interrupt 输入 core CSR/trap。
+- ROM passthrough：`rom_valid`, `rom_write`, `rom_addr`, `rom_wdata`, `rom_wstrb`, `rom_ready`, `rom_rdata`
+- SRAM passthrough：`sram_valid`, `sram_write`, `sram_addr`, `sram_wdata`, `sram_wstrb`, `sram_ready`, `sram_rdata`
+- MMIO passthrough：`mmio_valid`, `mmio_write`, `mmio_addr`, `mmio_wdata`, `mmio_wstrb`, `mmio_ready`, `mmio_rdata`
+- Debug 输出：
+  - core 性能计数器
+  - branch / mispredict / BTB / BHT 计数器
+  - cache hit/miss 计数器
+  - bus grant 计数器
+  - bus decode error
 
-Internal connections:
+内部连接：
 
 ```text
 core imem -> I-cache -> bus I master
@@ -39,33 +37,67 @@ timer_irq -> core CSR/trap
 MMIO external port -> optional timer/UART peripheral mux
 ```
 
+### `rv32i_cached_ahb_master_top`
+
+文件：`rtl/top/rv32i_cached_ahb_master_top.v`
+
+用途：推荐的 CPU 子系统边界。内部包含 core、I-cache、D-cache 和 simple-to-AHB master bus，对外只暴露一个 AHB-Lite master interface。
+
+外部 AHB-Lite master port：
+
+- Outputs：`ahb_haddr`, `ahb_hburst`, `ahb_hprot`, `ahb_hsize`, `ahb_htrans`, `ahb_hwdata`, `ahb_hwrite`
+- Inputs：`ahb_hrdata`, `ahb_hready`, `ahb_hresp`
+
+### `rv32i_ahb_matrix_soc_top`
+
+文件：`rtl/top/rv32i_ahb_matrix_soc_top.v`
+
+用途：clean-room AHB-Lite 1-master / 4-slave matrix SoC wrapper。
+
+slot：
+
+- flash：`0x0800_0000`
+- SRAM：`0x2000_0000`
+- AHB peripheral：`0x4000_0000`
+- APB peripheral：`0x4200_0000`
+
+### `rv32i_ahb_matrix_apb_soc_top`
+
+文件：`rtl/top/rv32i_ahb_matrix_apb_soc_top.v`
+
+用途：在 AHB matrix SoC 的 APB slot 后面接 AHB-to-APB bridge、APB mux、timer 和 UART。
+
+APB 外设：
+
+- timer：`0x4200_0000`
+- UART：`0x4200_1000`
+
 ## Core
 
 ### `rv32i_pipe_core`
 
-File: `rtl/core/rv32i_pipe_core.v`
+文件：`rtl/core/rv32i_pipe_core.v`
 
-Role: five-stage RV32I pipeline.
+用途：五级流水 RV32I core。
 
-Instruction-side interface:
+Instruction-side interface：
 
-- Outputs: `imem_valid`, `imem_addr`
-- Inputs: `imem_ready`, `imem_rdata`, `imem_error`
-- `imem_error` is captured as an instruction fault token and committed precisely.
+- Outputs：`imem_valid`, `imem_addr`
+- Inputs：`imem_ready`, `imem_rdata`, `imem_error`
+- `imem_error` 会作为 instruction access fault token 流入流水线，并在 commit 阶段精确提交。
 
-Data-side interface:
+Data-side interface：
 
-- Outputs: `dmem_valid`, `dmem_write`, `dmem_addr`, `dmem_wdata`, `dmem_wstrb`
-- Inputs: `dmem_ready`, `dmem_rdata`, `dmem_error`
-- `dmem_error` is converted by LSU into load/store fault flags.
-- Load/store address misalignment is caught in the LSU before issuing a D-bus request.
-- Taken branch/jump target misalignment is caught in EX and committed as a precise instruction-address-misaligned trap.
+- Outputs：`dmem_valid`, `dmem_write`, `dmem_addr`, `dmem_wdata`, `dmem_wstrb`
+- Inputs：`dmem_ready`, `dmem_rdata`, `dmem_error`
+- `dmem_error` 由 LSU 转换为 load/store access fault。
+- load/store address misaligned 在 LSU 发出 D-bus 请求前检测。
 
-Interrupt input:
+Interrupt input：
 
 - `timer_irq`
 
-Debug:
+Debug interface：
 
 - `dbg_pc`
 - `dbg_cycle`
@@ -74,18 +106,21 @@ Debug:
 - `dbg_flush_cycle`
 - `dbg_branch_count`
 - `dbg_branch_mispredict_count`
+- `dbg_btb_hit_count`
+- `dbg_btb_miss_count`
+- `dbg_bht_update_count`
 - `dbg_reg_addr`, `dbg_reg_rdata`
 - `dbg_illegal_instr`, `dbg_ecall`, `dbg_ebreak`
 
 分支预测：
 
-- IF 阶段对已对齐的 `JAL` 预测 taken。
-- IF 阶段对已对齐的 backward B-type branch 预测 taken。
-- forward B-type branch 保持预测 not-taken。
-- `JALR` 仍然在 EX 阶段解析。
-- EX 只在预测 PC 不匹配，或者 commit 阶段 trap/interrupt redirect 时改变取指路径。
+- `JAL`：若目标地址对齐，在 IF 阶段直接预测 taken。
+- B-type branch：优先查 BTB，BTB 命中且 BHT 计数器最高位为 1 时预测 taken。
+- B-type branch：BTB 未命中时回退到静态规则，backward branch 预测 taken，forward branch 预测 not-taken。
+- `JALR`：仍在 EX 阶段解析。
+- EX 阶段发现预测 PC 与真实下一条 PC 不一致时产生 `ex_redirect` 并 flush 前端。
 
-Key internal modules:
+关键内部模块：
 
 - `rv32i_pipe_hazard`
 - `rv32i_pipe_lsu`
@@ -99,21 +134,21 @@ Key internal modules:
 
 ### `rv32i_pipe_csr`
 
-File: `rtl/core/rv32i_pipe_csr.v`
+文件：`rtl/core/rv32i_pipe_csr.v`
 
-Role: architectural CSR state and commit-time trap/interrupt redirect.
+用途：保存架构 CSR 状态，并在 commit 阶段生成 trap/interrupt redirect。
 
-Implemented CSRs:
+已实现 CSR：
 
-- `mstatus`: only MIE/MPIE
-- `mie`: only MTIE
+- `mstatus`：只实现 MIE/MPIE
+- `mie`：只实现 MTIE
 - `mtvec`
 - `mepc`
 - `mcause`
-- `mip`: MTIP is derived from `timer_irq`
+- `mip`：MTIP 由 `timer_irq` 派生
 - `cycle`
 
-Commit exception inputs:
+commit exception inputs：
 
 - `commit_illegal`
 - `commit_ecall`
@@ -125,7 +160,7 @@ Commit exception inputs:
 - `commit_store_addr_misaligned`
 - `commit_store_fault`
 
-Supported causes:
+支持的 `mcause`：
 
 ```text
 0             instruction address misaligned
@@ -140,296 +175,69 @@ Supported causes:
 0x80000007    machine timer interrupt
 ```
 
-## Caches
+## Cache
 
 ### `rv32i_icache`
 
-File: `rtl/mem/rv32i_icache.v`
+文件：`rtl/mem/rv32i_icache.v`
 
-Role: blocking instruction cache.
+用途：blocking instruction cache。
 
-CPU side:
-
-- `cpu_valid`
-- `cpu_addr`
-- `cpu_ready`
-- `cpu_rdata`
-- `cpu_error`
-
-Memory side:
-
-- `mem_valid`
-- `mem_addr`
-- `mem_ready`
-- `mem_rdata`
-- `mem_error`
-
-On `mem_error`, refill is aborted and `cpu_error` is returned to core.
+- 2-way set associative。
+- 4-word cache line。
+- CPU side：`cpu_valid`, `cpu_addr`, `cpu_ready`, `cpu_rdata`, `cpu_error`
+- Memory side：`mem_valid`, `mem_addr`, `mem_ready`, `mem_rdata`, `mem_error`
+- `mem_error` 会终止 refill 并返回给 core。
 
 ### `rv32i_dcache`
 
-File: `rtl/mem/rv32i_dcache.v`
+文件：`rtl/mem/rv32i_dcache.v`
 
-Role: blocking data cache.
+用途：blocking data cache。
 
-CPU side:
+- 2-way set associative。
+- 4-word cache line。
+- write-through。
+- no-write-allocate。
+- 默认 MMIO uncached bypass。
+- CPU side：`cpu_valid`, `cpu_write`, `cpu_addr`, `cpu_wdata`, `cpu_wstrb`, `cpu_ready`, `cpu_rdata`, `cpu_error`
+- Memory side：`mem_valid`, `mem_write`, `mem_addr`, `mem_wdata`, `mem_wstrb`, `mem_ready`, `mem_rdata`, `mem_error`
 
-- `cpu_valid`
-- `cpu_write`
-- `cpu_addr`
-- `cpu_wdata`
-- `cpu_wstrb`
-- `cpu_ready`
-- `cpu_rdata`
-- `cpu_error`
-
-Memory side:
-
-- `mem_valid`
-- `mem_write`
-- `mem_addr`
-- `mem_wdata`
-- `mem_wstrb`
-- `mem_ready`
-- `mem_rdata`
-- `mem_error`
-
-Default MMIO bypass sends accesses in the MMIO region directly to the bus without caching.
-
-## Bus
+## Bus / SoC
 
 ### `rv32i_mem_bus`
 
-File: `rtl/bus/rv32i_mem_bus.v`
+文件：`rtl/bus/rv32i_mem_bus.v`
 
-Role: simple internal blocking memory bus.
+用途：内部 simple blocking memory bus。
 
-I master:
+- I master：来自 I-cache。
+- D master：来自 D-cache。
+- slaves：ROM、SRAM、MMIO。
+- arbitration：D 侧优先。
+- unmapped 地址返回 decode error。
 
-- `i_valid`
-- `i_addr`
-- `i_ready`
-- `i_rdata`
-- `i_error`
+### `rv32i_ahb_master_bus`
 
-D master:
+文件：`rtl/bus/rv32i_ahb_master_bus.v`
 
-- `d_valid`
-- `d_write`
-- `d_addr`
-- `d_wdata`
-- `d_wstrb`
-- `d_ready`
-- `d_rdata`
-- `d_error`
-
-Slaves:
-
-- ROM
-- SRAM
-- MMIO
-
-Default memory map:
-
-```text
-0x0000_0000 - 0x0FFF_FFFF  ROM
-0x2000_0000 - 0x2FFF_FFFF  SRAM
-0x4000_0000 - 0x4FFF_FFFF  MMIO
-other addresses             decode error
-```
-
-Decode error behavior:
-
-```text
-ready = 1
-rdata = 0
-i_error or d_error = 1
-dbg_decode_error = 1
-```
-
-### `rv32i_mem_bus_ahb`
-
-File: `rtl/bus/rv32i_mem_bus_ahb.v`
-
-Role: AHB-Lite version of the internal memory bus.
-
-The external simple interfaces match `rv32i_mem_bus`:
-
-- I master
-- D master
-- ROM
-- SRAM
-- MMIO
-
-Internal AHB-Lite path:
-
-```text
-simple I/D request arbiter
-  -> rv32i_simple_to_ahb
-  -> rv32i_ahb_lite_decoder
-  -> rv32i_ahb_to_simple for ROM/SRAM/MMIO
-```
-
-Implemented AHB-Lite signals:
-
-- `HADDR`
-- `HBURST`
-- `HPROT`
-- `HSIZE`
-- `HTRANS`
-- `HWRITE`
-- `HWDATA`
-- `HRDATA`
-- `HREADY`
-- `HRESP`
-
-The current path generates single-beat AHB-Lite transfers. Partial simple-bus writes are split into byte transfers.
-
-### `rv32i_ahb_to_apb`
-
-File: `rtl/bus/rv32i_ahb_to_apb.v`
-
-Role: AHB-Lite slave to APB4-style master bridge.
-
-AHB-Lite slave side:
-
-- Inputs: `hsel`, `haddr`, `hburst`, `hprot`, `hsize`, `htrans`, `hwdata`, `hwrite`, `hready`
-- Outputs: `hrdata`, `hreadyout`, `hresp`
-
-APB master side:
-
-- Outputs: `psel`, `penable`, `paddr`, `pwrite`, `pwdata`, `pstrb`, `pprot`
-- Inputs: `prdata`, `pready`, `pslverr`
-
-Behavior:
-
-```text
-AHB single-beat transfer
-  -> APB setup phase
-  -> APB access phase
-  -> AHB HREADYOUT/HRESP completion
-```
-
-### `rv32i_cached_system_ahb_top`
-
-File: `rtl/top/rv32i_cached_system_ahb_top.v`
-
-Role: cached system wrapper using `rv32i_mem_bus_ahb`.
-
-The external port list intentionally matches `rv32i_cached_system_top`, so testbenches can switch between the simple-bus and AHB-Lite bus path without changing memory/peripheral models.
-
-### `rv32i_cached_ahb_master_top`
-
-File: `rtl/top/rv32i_cached_ahb_master_top.v`
-
-Role: integration-style cached CPU subsystem with an external AHB-Lite master interface.
-
-External AHB-Lite master port:
-
-- Outputs: `ahb_haddr`, `ahb_hburst`, `ahb_hprot`, `ahb_hsize`, `ahb_htrans`, `ahb_hwdata`, `ahb_hwrite`
-- Inputs: `ahb_hrdata`, `ahb_hready`, `ahb_hresp`
-
-External non-bus ports:
-
-- Inputs: `clk`, `rst_n`, `timer_irq`, `dbg_reg_addr`
-- Outputs: core performance/debug counters, branch prediction counters, cache hit/miss counters, bus grant counters, `dbg_bus_error`
-
-Internal connections:
-
-```text
-core imem -> I-cache -> rv32i_ahb_master_bus
-core dmem -> D-cache -> rv32i_ahb_master_bus
-rv32i_ahb_master_bus -> external AHB-Lite master port
-external AHB fabric -> ROM/SRAM/MMIO/peripherals
-```
-
-This top is the cleaner CPU-IP boundary. It does not expose ROM/SRAM/MMIO simple ports; memory and peripheral decode is owned by the external SoC fabric.
+用途：把 core/cache 的 simple blocking memory request 转成单 outstanding AHB-Lite master transaction。
 
 ### `rv32i_ahb_lite_matrix_1m4s`
 
-File: `rtl/bus/rv32i_ahb_lite_matrix_1m4s.v`
+文件：`rtl/bus/rv32i_ahb_lite_matrix_1m4s.v`
 
-Role: clean-room AHB-Lite single-master / four-slave decoder matrix for the current SoC integration step.
+用途：clean-room 1-master / 4-slave AHB-Lite matrix/decode。
 
-Master side:
-
-- Inputs: `m_haddr`, `m_hburst`, `m_hprot`, `m_hsize`, `m_htrans`, `m_hwdata`, `m_hwrite`
-- Outputs: `m_hrdata`, `m_hready`, `m_hresp`
-
-Slave side:
-
-- `s0_*`: flash slot
-- `s1_*`: SRAM slot
-- `s2_*`: AHB peripheral slot
-- `s3_*`: APB peripheral slot, still exposed as an AHB-Lite slave-side port so an AHB-to-APB bridge can be attached later.
-
-Default map:
-
-```text
-0x0800_0000 - 0x0FFF_FFFF  flash
-0x2000_0000 - 0x2FFF_FFFF  SRAM
-0x4000_0000 - 0x41FF_FFFF  AHB peripherals
-0x4200_0000 - 0x43FF_FFFF  APB peripherals
-other addresses             AHB ERROR response
-```
-
-### `rv32i_ahb_matrix_soc_top`
-
-File: `rtl/top/rv32i_ahb_matrix_soc_top.v`
-
-Role: SoC-style wrapper around `rv32i_cached_ahb_master_top` plus the local AHB-Lite matrix.
-
-External ports:
-
-- Four AHB-Lite slave-side slots: `flash_*`, `sram_*`, `ahb_periph_*`, `apb_periph_*`
-- Core debug, branch prediction, and cache/bus counters
-- `dbg_cpu_bus_error`
-- `dbg_matrix_decode_error`
-
-Default boot address:
-
-```text
-RESET_PC = 0x0800_0000
-```
-
-### `rv32i_ahb_matrix_apb_soc_top`
-
-File: `rtl/top/rv32i_ahb_matrix_apb_soc_top.v`
-
-Role: SoC-style wrapper that keeps flash/SRAM/AHB-peripheral AHB slots external and turns the matrix APB slot into an internal APB peripheral subsystem.
-
-Internal path:
-
-```text
-rv32i_cached_ahb_master_top
-  -> rv32i_ahb_lite_matrix_1m4s
-    -> flash AHB slot
-    -> SRAM AHB slot
-    -> AHB peripheral slot
-    -> rv32i_ahb_to_apb
-      -> rv32i_apb_periph_mux
-        -> rv32i_timer
-        -> rv32i_uart
-```
-
-APB peripheral map:
-
-```text
-0x4200_0000 - 0x4200_0FFF  timer
-0x4200_1000 - 0x4200_1FFF  UART
-```
-
-Status: implemented and user-confirmed VCS PASS with `rv32i_ahb_matrix_apb_soc_top_tb`.
-
-## Timer
+## MMIO 外设
 
 ### `rv32i_timer`
 
-File: `rtl/periph/rv32i_timer.v`
+文件：`rtl/periph/rv32i_timer.v`
 
-Role: minimal MMIO timer.
+base：`0x4000_0000` 或 APB SoC 中的 `0x4200_0000`。
 
-Registers:
+寄存器：
 
 - `mtime_lo`
 - `mtime_hi`
@@ -437,82 +245,10 @@ Registers:
 - `mtimecmp_hi`
 - `ctrl`
 
-Output:
-
-- `timer_irq`
-
-Typical integration:
-
-```text
-rv32i_cached_system_top MMIO port -> rv32i_mmio_periph_mux -> rv32i_timer
-timer_irq -> rv32i_cached_system_top.timer_irq
-```
-
-## UART
-
 ### `rv32i_uart`
 
-File: `rtl/periph/rv32i_uart.v`
+文件：`rtl/periph/rv32i_uart.v`
 
-Role: minimal TX-only MMIO UART model.
+base：`0x4000_1000` 或 APB SoC 中的 `0x4200_1000`。
 
-Registers, relative to UART base:
-
-```text
-0x00 TXDATA  write byte0 emits one tx_valid pulse; read returns last TX byte
-0x04 STATUS  bit0 tx_ready, currently constant 1
-```
-
-Bus interface:
-
-- `valid`, `write`, `addr`, `wdata`, `wstrb`
-- `ready`, `rdata`
-
-TX/debug outputs:
-
-- `tx_valid`
-- `tx_data`
-- `dbg_tx_count`
-- `dbg_last_tx`
-
-Typical integration:
-
-```text
-rv32i_cached_system_top MMIO port -> rv32i_mmio_periph_mux -> rv32i_uart
-UART base address: 0x4000_1000
-```
-
-### `rv32i_mmio_periph_mux`
-
-File: `rtl/periph/rv32i_mmio_periph_mux.v`
-
-Role: simple external MMIO peripheral decoder for timer and UART.
-
-Default map:
-
-```text
-0x4000_0000 - 0x4000_0FFF  timer
-0x4000_1000 - 0x4000_1FFF  UART
-```
-
-Unmatched sub-MMIO accesses return `ready=valid`, `rdata=0`, and assert `dbg_decode_error`.
-
-### `rv32i_apb_periph_mux`
-
-File: `rtl/periph/rv32i_apb_periph_mux.v`
-
-Role: APB peripheral decoder for timer and UART.
-
-APB side:
-
-- Inputs: `psel`, `penable`, `paddr`, `pwrite`, `pwdata`, `pstrb`, `pprot`
-- Outputs: `prdata`, `pready`, `pslverr`
-
-Peripheral map:
-
-```text
-0x4200_0000 - 0x4200_0FFF  timer
-0x4200_1000 - 0x4200_1FFF  UART
-```
-
-Unmatched APB accesses complete with `pslverr=1` and assert `dbg_decode_error`.
+当前是最小 TX-only UART，用于 MMIO 输出验证。

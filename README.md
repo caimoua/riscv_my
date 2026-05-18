@@ -87,6 +87,11 @@ make sim TB_FILE=./testcases/rv32i_pipe_core_tb.sv TOP_NAME=rv32i_pipe_core_tb
 make sim TB_FILE=./testcases/rv32i_pipe_branch_predict_tb.sv TOP_NAME=rv32i_pipe_branch_predict_tb
 ```
 
+动态 BHT/BTB 分支预测（新增，等待 VCS 确认）：
+```bash
+make sim TB_FILE=./testcases/rv32i_pipe_dynamic_branch_predict_tb.sv TOP_NAME=rv32i_pipe_dynamic_branch_predict_tb
+```
+
 trap/CSR：
 
 ```bash
