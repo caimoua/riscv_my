@@ -280,6 +280,7 @@ perf_flush_event
 - 每个时序块只写自己所属的 pipeline register，避免多 always 驱动同一个寄存器。
 - 行为目标保持不变：commit redirect 清空全线，mem stall 保持 EX/MEM 和 MEM/WB，mul/div stall 让 EX/MEM 插入 bubble 且 MEM/WB drain。
 - 该结构性改动已由用户确认 VCS 回归 PASS。
+- 重复的 stage bubble/flush 清零逻辑已抽成 `clear_if_id`、`clear_id_ex`、`clear_ex_mem`、`clear_mem_wb` 本地 task，并由用户确认 VCS 回归 PASS。
 
 ### Phase 6：补 assertion 和组合场景测试
 
@@ -310,10 +311,10 @@ perf_flush_event
 
 ## 当前建议
 
-当前 Phase 5 第一轮：拆流水线寄存器 always 块已经完成。
+当前 Phase 5 第二轮：抽出重复 stage bubble/flush 清零逻辑已经完成。
 
 原因：
 
 - Phase 1 的 `rv32i_branch_predictor` 已抽出并通过用户 VCS 回归确认。
 - Phase 2 的 M 扩展识别已并入 decoder，`rv32i_pipe_core` 顶层补丁逻辑已减少。
-- Phase 5 第一轮已经拆成 stage 级时序块并完成回归；下一步可以继续抽出重复 bubble/flush 清零逻辑，或者进入 Phase 6 补 assertion。
+- Phase 5 第二轮已经把重复清零逻辑集中到本地 task 并完成回归；下一步可以进入 Phase 6 补 assertion。

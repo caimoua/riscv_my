@@ -139,6 +139,7 @@ RV32M：
 - PC/IFID、ID/EX、EX/MEM、MEM/WB 的时序更新已经拆成独立 `always @(posedge clk or negedge rst_n)` 块。
 - `rv32i_pipe_ctrl` 统一产生 advance/bubble/flush 控制，stage 寄存器块只根据这些命名控制信号更新。
 - `mem_stall` 时 EX/MEM 和 MEM/WB 保持；`ex_muldiv_stall` 时 EX/MEM 插入 bubble，MEM/WB 从旧 EX/MEM drain。
+- stage bubble/flush 的清零赋值集中在 `clear_if_id`、`clear_id_ex`、`clear_ex_mem`、`clear_mem_wb` 本地 task 中。
 
 关键内部模块：
 

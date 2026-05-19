@@ -557,11 +557,9 @@ module rv32i_pipe_core #(
                      !mem_wb_store_addr_misaligned_q &&
                      !mem_wb_store_fault_q;
 
-  // PC and IF/ID own fetch redirection and stale fetch response discard.
-  always @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      pc_q                 <= RESET_PC;
-      if_discard_q         <= 1'b0;
+  // Keep bubble/flush contents in one place so stage blocks stay readable.
+  task clear_if_id;
+    begin
       if_id_valid_q        <= 1'b0;
       if_id_pc_q           <= 32'd0;
       if_id_pc4_q          <= 32'd0;
@@ -569,56 +567,11 @@ module rv32i_pipe_core #(
       if_id_instr_fault_q  <= 1'b0;
       if_id_predicted_pc_q <= 32'd0;
       if_id_btb_hit_q      <= 1'b0;
-    end else begin
-      if (pipe_commit_flush) begin
-        pc_q                 <= commit_redirect_pc;
-        if_discard_q         <= 1'b1;
-        if_id_valid_q        <= 1'b0;
-        if_id_pc_q           <= 32'd0;
-        if_id_pc4_q          <= 32'd0;
-        if_id_instr_q        <= 32'h0000_0013;
-        if_id_instr_fault_q  <= 1'b0;
-        if_id_predicted_pc_q <= 32'd0;
-        if_id_btb_hit_q      <= 1'b0;
-      end else if (pipe_front_advance) begin
-        if (pipe_if_discard_flush) begin
-          if (imem_ready) begin
-            if_discard_q <= 1'b0;
-          end
-          if_id_valid_q        <= 1'b0;
-          if_id_pc_q           <= 32'd0;
-          if_id_pc4_q          <= 32'd0;
-          if_id_instr_q        <= 32'h0000_0013;
-          if_id_instr_fault_q  <= 1'b0;
-          if_id_predicted_pc_q <= 32'd0;
-          if_id_btb_hit_q      <= 1'b0;
-        end else if (pipe_if_redirect_flush) begin
-          pc_q                 <= ex_redirect_pc;
-          if_discard_q         <= 1'b1;
-          if_id_valid_q        <= 1'b0;
-          if_id_pc_q           <= 32'd0;
-          if_id_pc4_q          <= 32'd0;
-          if_id_instr_q        <= 32'h0000_0013;
-          if_id_instr_fault_q  <= 1'b0;
-          if_id_predicted_pc_q <= 32'd0;
-          if_id_btb_hit_q      <= 1'b0;
-        end else if (pipe_if_normal_load) begin
-          pc_q                 <= if_predicted_pc;
-          if_id_valid_q        <= 1'b1;
-          if_id_pc_q           <= pc_q;
-          if_id_pc4_q          <= pc_q + 32'd4;
-          if_id_instr_q        <= if_instr;
-          if_id_instr_fault_q  <= imem_error;
-          if_id_predicted_pc_q <= if_predicted_pc;
-          if_id_btb_hit_q      <= !imem_error && if_is_branch && if_btb_hit;
-        end
-      end
     end
-  end
+  endtask
 
-  // ID/EX carries decoded controls; bubbles clear write/mem/system side effects.
-  always @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
+  task clear_id_ex;
+    begin
       id_ex_valid_q         <= 1'b0;
       id_ex_pc_q            <= 32'd0;
       id_ex_pc4_q           <= 32'd0;
@@ -653,78 +606,111 @@ module rv32i_pipe_core #(
       id_ex_instr_fault_q   <= 1'b0;
       id_ex_predicted_pc_q  <= 32'd0;
       id_ex_btb_hit_q       <= 1'b0;
+    end
+  endtask
+
+  task clear_ex_mem;
+    begin
+      ex_mem_valid_q         <= 1'b0;
+      ex_mem_pc4_q           <= 32'd0;
+      ex_mem_rd_addr_q       <= 5'd0;
+      ex_mem_alu_result_q    <= 32'd0;
+      ex_mem_store_data_q    <= 32'd0;
+      ex_mem_mem_addr_q      <= 32'd0;
+      ex_mem_imm_u_q         <= 32'd0;
+      ex_mem_csr_rdata_q     <= 32'd0;
+      ex_mem_csr_wdata_q     <= 32'd0;
+      ex_mem_csr_addr_q      <= 12'd0;
+      ex_mem_csr_op_q        <= `RV32I_CSR_OP_NONE;
+      ex_mem_csr_write_q     <= 1'b0;
+      ex_mem_reg_we_q        <= 1'b0;
+      ex_mem_wb_sel_q        <= `RV32I_WB_ALU;
+      ex_mem_mem_valid_q     <= 1'b0;
+      ex_mem_mem_write_q     <= 1'b0;
+      ex_mem_mem_size_q      <= `RV32I_MEM_WORD;
+      ex_mem_mem_unsigned_q  <= 1'b0;
+      ex_mem_system_ecall_q  <= 1'b0;
+      ex_mem_system_ebreak_q <= 1'b0;
+      ex_mem_system_mret_q   <= 1'b0;
+      ex_mem_illegal_q       <= 1'b0;
+      ex_mem_instr_addr_misaligned_q <= 1'b0;
+      ex_mem_instr_fault_q   <= 1'b0;
+    end
+  endtask
+
+  task clear_mem_wb;
+    begin
+      mem_wb_valid_q         <= 1'b0;
+      mem_wb_pc4_q           <= 32'd0;
+      mem_wb_rd_addr_q       <= 5'd0;
+      mem_wb_alu_result_q    <= 32'd0;
+      mem_wb_load_data_q     <= 32'd0;
+      mem_wb_imm_u_q         <= 32'd0;
+      mem_wb_csr_rdata_q     <= 32'd0;
+      mem_wb_csr_wdata_q     <= 32'd0;
+      mem_wb_csr_addr_q      <= 12'd0;
+      mem_wb_csr_op_q        <= `RV32I_CSR_OP_NONE;
+      mem_wb_csr_write_q     <= 1'b0;
+      mem_wb_reg_we_q        <= 1'b0;
+      mem_wb_wb_sel_q        <= `RV32I_WB_ALU;
+      mem_wb_system_ecall_q  <= 1'b0;
+      mem_wb_system_ebreak_q <= 1'b0;
+      mem_wb_system_mret_q   <= 1'b0;
+      mem_wb_illegal_q       <= 1'b0;
+      mem_wb_instr_addr_misaligned_q <= 1'b0;
+      mem_wb_instr_fault_q   <= 1'b0;
+      mem_wb_load_addr_misaligned_q  <= 1'b0;
+      mem_wb_load_fault_q    <= 1'b0;
+      mem_wb_store_addr_misaligned_q <= 1'b0;
+      mem_wb_store_fault_q   <= 1'b0;
+    end
+  endtask
+
+  // PC and IF/ID own fetch redirection and stale fetch response discard.
+  always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      pc_q                 <= RESET_PC;
+      if_discard_q         <= 1'b0;
+      clear_if_id;
     end else begin
       if (pipe_commit_flush) begin
-        id_ex_valid_q         <= 1'b0;
-        id_ex_pc_q            <= 32'd0;
-        id_ex_pc4_q           <= 32'd0;
-        id_ex_rs1_addr_q      <= 5'd0;
-        id_ex_rs2_addr_q      <= 5'd0;
-        id_ex_rd_addr_q       <= 5'd0;
-        id_ex_rs1_data_q      <= 32'd0;
-        id_ex_rs2_data_q      <= 32'd0;
-        id_ex_imm_i_q         <= 32'd0;
-        id_ex_imm_s_q         <= 32'd0;
-        id_ex_imm_b_q         <= 32'd0;
-        id_ex_imm_u_q         <= 32'd0;
-        id_ex_imm_j_q         <= 32'd0;
-        id_ex_reg_we_q        <= 1'b0;
-        id_ex_alu_src_imm_q   <= 1'b0;
-        id_ex_alu_op_q        <= `RV32I_ALU_ADD;
-        id_ex_wb_sel_q        <= `RV32I_WB_ALU;
-        id_ex_pc_sel_q        <= `RV32I_PC_NEXT;
-        id_ex_branch_op_q     <= `RV32I_BR_BEQ;
-        id_ex_mem_valid_q     <= 1'b0;
-        id_ex_mem_write_q     <= 1'b0;
-        id_ex_mem_size_q      <= `RV32I_MEM_WORD;
-        id_ex_mem_unsigned_q  <= 1'b0;
-        id_ex_csr_addr_q      <= 12'd0;
-        id_ex_csr_op_q        <= `RV32I_CSR_OP_NONE;
-        id_ex_system_ecall_q  <= 1'b0;
-        id_ex_system_ebreak_q <= 1'b0;
-        id_ex_system_mret_q   <= 1'b0;
-        id_ex_muldiv_valid_q  <= 1'b0;
-        id_ex_muldiv_op_q     <= `RV32I_MULDIV_MUL;
-        id_ex_illegal_q       <= 1'b0;
-        id_ex_instr_fault_q   <= 1'b0;
-        id_ex_predicted_pc_q  <= 32'd0;
-        id_ex_btb_hit_q       <= 1'b0;
+        pc_q         <= commit_redirect_pc;
+        if_discard_q <= 1'b1;
+        clear_if_id;
+      end else if (pipe_front_advance) begin
+        if (pipe_if_discard_flush) begin
+          if (imem_ready) begin
+            if_discard_q <= 1'b0;
+          end
+          clear_if_id;
+        end else if (pipe_if_redirect_flush) begin
+          pc_q         <= ex_redirect_pc;
+          if_discard_q <= 1'b1;
+          clear_if_id;
+        end else if (pipe_if_normal_load) begin
+          pc_q                 <= if_predicted_pc;
+          if_id_valid_q        <= 1'b1;
+          if_id_pc_q           <= pc_q;
+          if_id_pc4_q          <= pc_q + 32'd4;
+          if_id_instr_q        <= if_instr;
+          if_id_instr_fault_q  <= imem_error;
+          if_id_predicted_pc_q <= if_predicted_pc;
+          if_id_btb_hit_q      <= !imem_error && if_is_branch && if_btb_hit;
+        end
+      end
+    end
+  end
+
+  // ID/EX carries decoded controls; bubbles clear write/mem/system side effects.
+  always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      clear_id_ex;
+    end else begin
+      if (pipe_commit_flush) begin
+        clear_id_ex;
       end else if (pipe_id_ex_advance) begin
         if (pipe_id_ex_bubble) begin
-          id_ex_valid_q         <= 1'b0;
-          id_ex_pc_q            <= 32'd0;
-          id_ex_pc4_q           <= 32'd0;
-          id_ex_rs1_addr_q      <= 5'd0;
-          id_ex_rs2_addr_q      <= 5'd0;
-          id_ex_rd_addr_q       <= 5'd0;
-          id_ex_rs1_data_q      <= 32'd0;
-          id_ex_rs2_data_q      <= 32'd0;
-          id_ex_imm_i_q         <= 32'd0;
-          id_ex_imm_s_q         <= 32'd0;
-          id_ex_imm_b_q         <= 32'd0;
-          id_ex_imm_u_q         <= 32'd0;
-          id_ex_imm_j_q         <= 32'd0;
-          id_ex_reg_we_q        <= 1'b0;
-          id_ex_alu_src_imm_q   <= 1'b0;
-          id_ex_alu_op_q        <= `RV32I_ALU_ADD;
-          id_ex_wb_sel_q        <= `RV32I_WB_ALU;
-          id_ex_pc_sel_q        <= `RV32I_PC_NEXT;
-          id_ex_branch_op_q     <= `RV32I_BR_BEQ;
-          id_ex_mem_valid_q     <= 1'b0;
-          id_ex_mem_write_q     <= 1'b0;
-          id_ex_mem_size_q      <= `RV32I_MEM_WORD;
-          id_ex_mem_unsigned_q  <= 1'b0;
-          id_ex_csr_addr_q      <= 12'd0;
-          id_ex_csr_op_q        <= `RV32I_CSR_OP_NONE;
-          id_ex_system_ecall_q  <= 1'b0;
-          id_ex_system_ebreak_q <= 1'b0;
-          id_ex_system_mret_q   <= 1'b0;
-          id_ex_muldiv_valid_q  <= 1'b0;
-          id_ex_muldiv_op_q     <= `RV32I_MULDIV_MUL;
-          id_ex_illegal_q       <= 1'b0;
-          id_ex_instr_fault_q   <= 1'b0;
-          id_ex_predicted_pc_q  <= 32'd0;
-          id_ex_btb_hit_q       <= 1'b0;
+          clear_id_ex;
         end else begin
           id_ex_valid_q         <= if_id_valid_q;
           id_ex_pc_q            <= if_id_pc_q;
@@ -768,82 +754,13 @@ module rv32i_pipe_core #(
   // EX/MEM accepts execute results, or a bubble while a multi-cycle op waits.
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-      ex_mem_valid_q         <= 1'b0;
-      ex_mem_pc4_q           <= 32'd0;
-      ex_mem_rd_addr_q       <= 5'd0;
-      ex_mem_alu_result_q    <= 32'd0;
-      ex_mem_store_data_q    <= 32'd0;
-      ex_mem_mem_addr_q      <= 32'd0;
-      ex_mem_imm_u_q         <= 32'd0;
-      ex_mem_csr_rdata_q     <= 32'd0;
-      ex_mem_csr_wdata_q     <= 32'd0;
-      ex_mem_csr_addr_q      <= 12'd0;
-      ex_mem_csr_op_q        <= `RV32I_CSR_OP_NONE;
-      ex_mem_csr_write_q     <= 1'b0;
-      ex_mem_reg_we_q        <= 1'b0;
-      ex_mem_wb_sel_q        <= `RV32I_WB_ALU;
-      ex_mem_mem_valid_q     <= 1'b0;
-      ex_mem_mem_write_q     <= 1'b0;
-      ex_mem_mem_size_q      <= `RV32I_MEM_WORD;
-      ex_mem_mem_unsigned_q  <= 1'b0;
-      ex_mem_system_ecall_q  <= 1'b0;
-      ex_mem_system_ebreak_q <= 1'b0;
-      ex_mem_system_mret_q   <= 1'b0;
-      ex_mem_illegal_q       <= 1'b0;
-      ex_mem_instr_addr_misaligned_q <= 1'b0;
-      ex_mem_instr_fault_q   <= 1'b0;
+      clear_ex_mem;
     end else begin
       if (pipe_commit_flush) begin
-        ex_mem_valid_q         <= 1'b0;
-        ex_mem_pc4_q           <= 32'd0;
-        ex_mem_rd_addr_q       <= 5'd0;
-        ex_mem_alu_result_q    <= 32'd0;
-        ex_mem_store_data_q    <= 32'd0;
-        ex_mem_mem_addr_q      <= 32'd0;
-        ex_mem_imm_u_q         <= 32'd0;
-        ex_mem_csr_rdata_q     <= 32'd0;
-        ex_mem_csr_wdata_q     <= 32'd0;
-        ex_mem_csr_addr_q      <= 12'd0;
-        ex_mem_csr_op_q        <= `RV32I_CSR_OP_NONE;
-        ex_mem_csr_write_q     <= 1'b0;
-        ex_mem_reg_we_q        <= 1'b0;
-        ex_mem_wb_sel_q        <= `RV32I_WB_ALU;
-        ex_mem_mem_valid_q     <= 1'b0;
-        ex_mem_mem_write_q     <= 1'b0;
-        ex_mem_mem_size_q      <= `RV32I_MEM_WORD;
-        ex_mem_mem_unsigned_q  <= 1'b0;
-        ex_mem_system_ecall_q  <= 1'b0;
-        ex_mem_system_ebreak_q <= 1'b0;
-        ex_mem_system_mret_q   <= 1'b0;
-        ex_mem_illegal_q       <= 1'b0;
-        ex_mem_instr_addr_misaligned_q <= 1'b0;
-        ex_mem_instr_fault_q   <= 1'b0;
+        clear_ex_mem;
       end else if (pipe_ex_mem_advance) begin
         if (pipe_ex_mem_bubble) begin
-          ex_mem_valid_q         <= 1'b0;
-          ex_mem_pc4_q           <= 32'd0;
-          ex_mem_rd_addr_q       <= 5'd0;
-          ex_mem_alu_result_q    <= 32'd0;
-          ex_mem_store_data_q    <= 32'd0;
-          ex_mem_mem_addr_q      <= 32'd0;
-          ex_mem_imm_u_q         <= 32'd0;
-          ex_mem_csr_rdata_q     <= 32'd0;
-          ex_mem_csr_wdata_q     <= 32'd0;
-          ex_mem_csr_addr_q      <= 12'd0;
-          ex_mem_csr_op_q        <= `RV32I_CSR_OP_NONE;
-          ex_mem_csr_write_q     <= 1'b0;
-          ex_mem_reg_we_q        <= 1'b0;
-          ex_mem_wb_sel_q        <= `RV32I_WB_ALU;
-          ex_mem_mem_valid_q     <= 1'b0;
-          ex_mem_mem_write_q     <= 1'b0;
-          ex_mem_mem_size_q      <= `RV32I_MEM_WORD;
-          ex_mem_mem_unsigned_q  <= 1'b0;
-          ex_mem_system_ecall_q  <= 1'b0;
-          ex_mem_system_ebreak_q <= 1'b0;
-          ex_mem_system_mret_q   <= 1'b0;
-          ex_mem_illegal_q       <= 1'b0;
-          ex_mem_instr_addr_misaligned_q <= 1'b0;
-          ex_mem_instr_fault_q   <= 1'b0;
+          clear_ex_mem;
         end else begin
           ex_mem_valid_q         <= id_ex_valid_q;
           ex_mem_pc4_q           <= id_ex_pc4_q;
@@ -877,54 +794,10 @@ module rv32i_pipe_core #(
   // MEM/WB drains from old EX/MEM when EX is held by mul/div, and holds on memory stalls.
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-      mem_wb_valid_q         <= 1'b0;
-      mem_wb_pc4_q           <= 32'd0;
-      mem_wb_rd_addr_q       <= 5'd0;
-      mem_wb_alu_result_q    <= 32'd0;
-      mem_wb_load_data_q     <= 32'd0;
-      mem_wb_imm_u_q         <= 32'd0;
-      mem_wb_csr_rdata_q     <= 32'd0;
-      mem_wb_csr_wdata_q     <= 32'd0;
-      mem_wb_csr_addr_q      <= 12'd0;
-      mem_wb_csr_op_q        <= `RV32I_CSR_OP_NONE;
-      mem_wb_csr_write_q     <= 1'b0;
-      mem_wb_reg_we_q        <= 1'b0;
-      mem_wb_wb_sel_q        <= `RV32I_WB_ALU;
-      mem_wb_system_ecall_q  <= 1'b0;
-      mem_wb_system_ebreak_q <= 1'b0;
-      mem_wb_system_mret_q   <= 1'b0;
-      mem_wb_illegal_q       <= 1'b0;
-      mem_wb_instr_addr_misaligned_q <= 1'b0;
-      mem_wb_instr_fault_q   <= 1'b0;
-      mem_wb_load_addr_misaligned_q  <= 1'b0;
-      mem_wb_load_fault_q    <= 1'b0;
-      mem_wb_store_addr_misaligned_q <= 1'b0;
-      mem_wb_store_fault_q   <= 1'b0;
+      clear_mem_wb;
     end else begin
       if (pipe_commit_flush) begin
-        mem_wb_valid_q         <= 1'b0;
-        mem_wb_pc4_q           <= 32'd0;
-        mem_wb_rd_addr_q       <= 5'd0;
-        mem_wb_alu_result_q    <= 32'd0;
-        mem_wb_load_data_q     <= 32'd0;
-        mem_wb_imm_u_q         <= 32'd0;
-        mem_wb_csr_rdata_q     <= 32'd0;
-        mem_wb_csr_wdata_q     <= 32'd0;
-        mem_wb_csr_addr_q      <= 12'd0;
-        mem_wb_csr_op_q        <= `RV32I_CSR_OP_NONE;
-        mem_wb_csr_write_q     <= 1'b0;
-        mem_wb_reg_we_q        <= 1'b0;
-        mem_wb_wb_sel_q        <= `RV32I_WB_ALU;
-        mem_wb_system_ecall_q  <= 1'b0;
-        mem_wb_system_ebreak_q <= 1'b0;
-        mem_wb_system_mret_q   <= 1'b0;
-        mem_wb_illegal_q       <= 1'b0;
-        mem_wb_instr_addr_misaligned_q <= 1'b0;
-        mem_wb_instr_fault_q   <= 1'b0;
-        mem_wb_load_addr_misaligned_q  <= 1'b0;
-        mem_wb_load_fault_q    <= 1'b0;
-        mem_wb_store_addr_misaligned_q <= 1'b0;
-        mem_wb_store_fault_q   <= 1'b0;
+        clear_mem_wb;
       end else if (pipe_ex_mem_advance) begin
         mem_wb_valid_q         <= ex_mem_valid_q;
         mem_wb_pc4_q           <= ex_mem_pc4_q;
