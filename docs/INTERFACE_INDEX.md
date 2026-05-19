@@ -135,6 +135,7 @@ RV32M：
 
 关键内部模块：
 
+- `rv32i_branch_predictor`
 - `rv32i_pipe_hazard`
 - `rv32i_pipe_lsu`
 - `rv32i_pipe_csr`
@@ -143,6 +144,38 @@ RV32M：
 - `rv32i_decoder`
 - `rv32i_imm_gen`
 - `rv32i_alu`
+
+### `rv32i_branch_predictor`
+
+文件：`rtl/core/rv32i_branch_predictor.v`
+
+用途：封装 IF 阶段预测和 EX 阶段训练的分支预测器。
+
+主要参数：
+
+- `INDEX_BITS`：BHT/BTB index 位宽，默认 6，对应 64 项 direct-mapped BHT/BTB。
+
+IF 查询接口：
+
+- Inputs：`if_pc`, `if_instr`, `if_error`
+- Outputs：`if_predicted_pc`, `if_predict_taken`, `if_is_branch`, `if_btb_hit`
+
+EX 更新接口：
+
+- Inputs：`ex_update_valid`, `ex_pc`, `ex_taken`, `ex_target_pc`, `ex_fetch_btb_hit`
+
+Debug 输出：
+
+- `dbg_btb_hit_count`
+- `dbg_btb_miss_count`
+- `dbg_bht_update_count`
+
+行为：
+
+- `JAL` 仍在 IF 阶段直接从立即数生成 taken 预测，不依赖 BTB。
+- B-type branch 优先走 BTB+BHT。
+- BTB miss 的 B-type branch 回退到静态 backward-taken 规则。
+- BHT/BTB 只在 EX 阶段对有效 B-type branch 更新。
 
 ## CSR / Trap
 

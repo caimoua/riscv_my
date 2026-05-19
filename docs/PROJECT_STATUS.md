@@ -43,11 +43,14 @@ rv32i_cached_ahb_master_top
 - 小型动态 BHT/BTB 分支预测：
   - 默认 64 项 direct-mapped BHT，2-bit 饱和计数器。
   - 默认 64 项 direct-mapped BTB，记录分支 PC tag 和目标 PC。
+  - BHT/BTB 已从 `rv32i_pipe_core` 抽成独立 `rv32i_branch_predictor` 模块。
   - `BRANCH_PRED_INDEX_BITS` 参数已从 core 透传到 cached/AHB/SoC wrapper，用于调整 BHT/BTB 表项数量。
   - B-type branch 优先使用 BTB+BHT，BTB miss 时回退到静态 backward-taken 规则。
   - `dbg_btb_hit_count`, `dbg_btb_miss_count`, `dbg_bht_update_count` 已透出。
   - `rv32i_pipe_dynamic_branch_predict_tb` 已由用户确认 VCS PASS。
   - `rv32i_pipe_branch_predict_param_tb` 已由用户确认 VCS PASS。
+  - `rv32i_branch_predictor_tb` 已由用户确认 VCS PASS。
+  - 抽出 `rv32i_branch_predictor` 后的分支预测和 pipeline core 集成回归已由用户确认 VCS PASS。
 - RV32M 乘除法扩展：
   - 支持 `mul/mulh/mulhsu/mulhu/div/divu/rem/remu`。
   - 新增 EX 阶段 `rv32i_muldiv` 多周期执行单元。
@@ -129,8 +132,8 @@ rv32i_cached_ahb_master_top
 
 ## 下一步候选
 
-1. 将 BHT/BTB 从 `rv32i_pipe_core` 抽成独立 `rv32i_branch_predictor` 模块。
-2. 把 M 扩展识别正式并入 decoder，减少 core 顶层补丁逻辑。
+1. 把 M 扩展识别正式并入 decoder，减少 core 顶层补丁逻辑。
+2. 抽出性能计数器模块，继续减轻 `rv32i_pipe_core` 顶层负担。
 3. 增加 AXI-Lite adapter。
 4. 扩展 UART RX/FIFO/interrupt。
 5. 如果项目需要并行 slave 访问，再考虑真正 multi-master AHB matrix。

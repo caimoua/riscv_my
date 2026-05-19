@@ -15,6 +15,7 @@
 | 单周期 RV32I core | `testcases/rv32i_core_tb.sv` | `make sim` | PASS |
 | 流水线 hazard/control | `testcases/rv32i_pipe_core_tb.sv` | `make sim TB_FILE=./testcases/rv32i_pipe_core_tb.sv TOP_NAME=rv32i_pipe_core_tb` | PASS |
 | 静态分支预测 | `testcases/rv32i_pipe_branch_predict_tb.sv` | `make sim TB_FILE=./testcases/rv32i_pipe_branch_predict_tb.sv TOP_NAME=rv32i_pipe_branch_predict_tb` | PASS |
+| Standalone branch predictor | `testcases/rv32i_branch_predictor_tb.sv` | `make sim TB_FILE=./testcases/rv32i_branch_predictor_tb.sv TOP_NAME=rv32i_branch_predictor_tb` | PASS |
 | 动态 BHT/BTB 分支预测 | `testcases/rv32i_pipe_dynamic_branch_predict_tb.sv` | `make sim TB_FILE=./testcases/rv32i_pipe_dynamic_branch_predict_tb.sv TOP_NAME=rv32i_pipe_dynamic_branch_predict_tb` | PASS |
 | 参数化 BHT/BTB 分支预测 | `testcases/rv32i_pipe_branch_predict_param_tb.sv` | `make sim TB_FILE=./testcases/rv32i_pipe_branch_predict_param_tb.sv TOP_NAME=rv32i_pipe_branch_predict_param_tb` | PASS |
 | RV32M 乘除法扩展 | `testcases/rv32i_pipe_muldiv_tb.sv` | `make sim TB_FILE=./testcases/rv32i_pipe_muldiv_tb.sv TOP_NAME=rv32i_pipe_muldiv_tb` | PASS |
@@ -46,6 +47,7 @@ RTL 接口或 core 控制流改动后，至少运行：
 
 - `rv32i_pipe_core_tb`
 - `rv32i_pipe_muldiv_tb`
+- `rv32i_branch_predictor_tb`
 - `rv32i_pipe_branch_predict_tb`
 - `rv32i_pipe_dynamic_branch_predict_tb`
 - `rv32i_pipe_branch_predict_param_tb`
@@ -77,6 +79,8 @@ MMIO 改动后，至少运行：
 
 ## 最近人工更新
 
+- 2026-05-19：用户确认抽出 `rv32i_branch_predictor` 后的分支预测集成回归 VCS PASS：`rv32i_pipe_branch_predict_tb`、`rv32i_pipe_dynamic_branch_predict_tb`、`rv32i_pipe_branch_predict_param_tb`、`rv32i_pipe_core_tb`。
+- 2026-05-19：用户确认 `rv32i_branch_predictor_tb` VCS PASS：`btb_hit=1`、`btb_miss=1`、`bht_update=2`。
 - 2026-05-19：用户确认 `rv32i_pipe_branch_predict_param_tb` VCS PASS：`cycle=36`、`instret=26`、`branch_count=8`、`branch_mispredict_count=2`、`btb_hit=6`、`btb_miss=2`、`bht_update=8`。
 - 2026-05-18：用户确认 `rv32i_pipe_muldiv_tb` VCS PASS：`cycle=212`、`instret=31`、`stall_cycle=177`、`flush_cycle=0`。
 - 2026-05-18：用户确认 RV32M 后的 `rv32i_pipe_core_tb` 和 `rv32i_pipe_branch_predict_tb` 回归 VCS PASS。

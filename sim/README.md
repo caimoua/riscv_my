@@ -85,6 +85,23 @@ sim/testcases/rv32i_pipe_branch_predict_tb.sv
 make sim TB_FILE=./testcases/rv32i_pipe_branch_predict_tb.sv TOP_NAME=rv32i_pipe_branch_predict_tb
 ```
 
+## Standalone Branch Predictor Testbench
+
+```text
+sim/testcases/rv32i_branch_predictor_tb.sv
+```
+
+运行命令：
+```bash
+make sim TB_FILE=./testcases/rv32i_branch_predictor_tb.sv TOP_NAME=rv32i_branch_predictor_tb
+```
+
+覆盖内容：
+- 4 项 BHT/BTB 配置下的 IF 查询和 EX 更新。
+- forward branch 从 BTB miss 到 trained BTB hit 的过程。
+- taken / not-taken 更新对 BHT 计数器的影响。
+- `JAL` 立即数预测和 `if_error` 抑制预测。
+
 ## 动态 BHT/BTB 分支预测 Testbench
 
 ```text

@@ -1,6 +1,6 @@
 # RV32I 分支预测
 
-本文记录 `rv32i_pipe_core` 当前的分支预测实现。
+本文记录 `rv32i_pipe_core` 当前的分支预测实现。BHT/BTB 逻辑已经抽成独立 `rv32i_branch_predictor` 模块，core 只保存预测 PC 和 fetch-time BTB hit token。
 
 ## 当前状态
 
@@ -31,6 +31,27 @@ branch_count=8 branch_mispredict_count=2
 btb_hit=6 btb_miss=2 bht_update=8 branch_pred_index_bits=2
 ```
 
+Standalone 分支预测器模块测试已经在 2026-05-19 由用户确认 VCS PASS：
+
+```bash
+make sim TB_FILE=./testcases/rv32i_branch_predictor_tb.sv TOP_NAME=rv32i_branch_predictor_tb
+```
+
+已确认的 standalone BPU PASS 摘要：
+
+```text
+btb_hit=1 btb_miss=1 bht_update=2
+```
+
+抽出 standalone BPU 后，以下集成回归已经在 2026-05-19 由用户确认 VCS PASS：
+
+```bash
+make sim TB_FILE=./testcases/rv32i_pipe_branch_predict_tb.sv TOP_NAME=rv32i_pipe_branch_predict_tb
+make sim TB_FILE=./testcases/rv32i_pipe_dynamic_branch_predict_tb.sv TOP_NAME=rv32i_pipe_dynamic_branch_predict_tb
+make sim TB_FILE=./testcases/rv32i_pipe_branch_predict_param_tb.sv TOP_NAME=rv32i_pipe_branch_predict_param_tb
+make sim TB_FILE=./testcases/rv32i_pipe_core_tb.sv TOP_NAME=rv32i_pipe_core_tb
+```
+
 已确认的动态预测 PASS 摘要：
 
 ```text
@@ -41,7 +62,11 @@ btb_hit=6 btb_miss=2 bht_update=8
 
 ## 预测结构
 
-当前 core 在原来的静态预测基础上增加了一个很小的动态预测器：
+当前 core 在原来的静态预测基础上增加了一个很小的动态预测器。预测器位于：
+
+```text
+rtl/core/rv32i_branch_predictor.v
+```
 
 - BHT：默认 64 项 direct-mapped 表，每项是 2-bit 饱和计数器。
 - BTB：默认 64 项 direct-mapped 表，记录分支 PC tag 和预测目标 PC。
@@ -55,13 +80,13 @@ btb_hit=6 btb_miss=2 bht_update=8
 
 ## 参数化接口
 
-`rv32i_pipe_core` 新增参数：
+`rv32i_pipe_core` 对外保留参数：
 
 ```verilog
 parameter BRANCH_PRED_INDEX_BITS = 6
 ```
 
-默认值 6 对应 64 项 BHT 和 64 项 BTB。当前建议取值不小于 1。这个参数已经从以下 wrapper 透传：
+该参数会传给内部 `rv32i_branch_predictor.INDEX_BITS`。默认值 6 对应 64 项 BHT 和 64 项 BTB。当前建议取值不小于 1。这个参数已经从以下 wrapper 透传：
 
 - `rv32i_cached_system_top`
 - `rv32i_cached_system_ahb_top`
@@ -91,6 +116,8 @@ BHT/BTB 在 EX 阶段训练，条件是这条 B-type 分支有效、不是 illeg
 - 实际 taken：BHT 计数器加 1，最大到 `2'b11`；BTB 写入该分支 PC 的 tag 和目标 PC。
 - 实际 not-taken：BHT 计数器减 1，最小到 `2'b00`；BTB 目标保留。
 - reset 后 BHT 初始化为 `2'b01`，也就是 weak not-taken。
+
+`rv32i_pipe_core` 负责生成 `ex_update_valid`，`rv32i_branch_predictor` 负责更新 BHT/BTB 和 BTB/BHT 相关 debug 计数器。
 
 ## Debug 计数器
 
@@ -130,4 +157,13 @@ dbg_bht_update_count         BHT 被训练更新的次数
 - `BRANCH_PRED_INDEX_BITS=2`，即 4 项 BHT/BTB。
 - forward `beq` 和 backward `bne` 被放到不同 predictor index，避免故意 alias。
 - 预期仍然能学习 forward taken branch，并在循环退出时产生一次 mispredict。
+- 该测试已经由用户确认 VCS PASS。
+
+`rv32i_branch_predictor_tb` 覆盖 standalone BPU 路径：
+
+- reset 后 forward branch 因 BTB miss 预测 not-taken。
+- taken update 安装 BTB entry，并让 BHT 进入 taken 预测。
+- not-taken update 保留 BTB entry，但让 BHT 回到 not-taken 预测。
+- `JAL` 不依赖 BTB，仍直接由立即数预测 taken。
+- `if_error` 会抑制预测。
 - 该测试已经由用户确认 VCS PASS。
