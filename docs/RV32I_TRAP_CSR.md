@@ -754,7 +754,7 @@ assign ex_csr_rdata = (ex_csr_addr == `RV32I_CSR_MSTATUS) ? csr_mstatus_q :
                                                            32'd0;
 ```
 
-主流水核实例化时把 `id_ex_csr_addr_q` 接到 `ex_csr_addr`，把 `cycle_q` 接到 `cycle_value`。原因是 CSR 读值要作为 `rd` 的写回数据，所以需要进入后面的 EX/MEM、MEM/WB。
+主流水核实例化时把 `id_ex_csr_addr_q` 接到 `ex_csr_addr`，把 `rv32i_perf_counter` 输出的 `perf_cycle_count` 接到 `cycle_value`。原因是 CSR 读值要作为 `rd` 的写回数据，所以需要进入后面的 EX/MEM、MEM/WB。
 
 CSR 写不在 EX 做，而是在 MEM/WB commit 点做：
 

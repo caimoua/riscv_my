@@ -16,6 +16,7 @@
 | 流水线 hazard/control | `testcases/rv32i_pipe_core_tb.sv` | `make sim TB_FILE=./testcases/rv32i_pipe_core_tb.sv TOP_NAME=rv32i_pipe_core_tb` | PASS |
 | 静态分支预测 | `testcases/rv32i_pipe_branch_predict_tb.sv` | `make sim TB_FILE=./testcases/rv32i_pipe_branch_predict_tb.sv TOP_NAME=rv32i_pipe_branch_predict_tb` | PASS |
 | Standalone branch predictor | `testcases/rv32i_branch_predictor_tb.sv` | `make sim TB_FILE=./testcases/rv32i_branch_predictor_tb.sv TOP_NAME=rv32i_branch_predictor_tb` | PASS |
+| Standalone performance counter | `testcases/rv32i_perf_counter_tb.sv` | `make sim TB_FILE=./testcases/rv32i_perf_counter_tb.sv TOP_NAME=rv32i_perf_counter_tb` | PASS |
 | 动态 BHT/BTB 分支预测 | `testcases/rv32i_pipe_dynamic_branch_predict_tb.sv` | `make sim TB_FILE=./testcases/rv32i_pipe_dynamic_branch_predict_tb.sv TOP_NAME=rv32i_pipe_dynamic_branch_predict_tb` | PASS |
 | 参数化 BHT/BTB 分支预测 | `testcases/rv32i_pipe_branch_predict_param_tb.sv` | `make sim TB_FILE=./testcases/rv32i_pipe_branch_predict_param_tb.sv TOP_NAME=rv32i_pipe_branch_predict_param_tb` | PASS |
 | RV32M 乘除法扩展 | `testcases/rv32i_pipe_muldiv_tb.sv` | `make sim TB_FILE=./testcases/rv32i_pipe_muldiv_tb.sv TOP_NAME=rv32i_pipe_muldiv_tb` | PASS |
@@ -47,6 +48,7 @@
 RTL 接口或 core 控制流改动后，至少运行：
 
 - `rv32i_pipe_core_tb`
+- `rv32i_perf_counter_tb`
 - `rv32i_decoder_muldiv_tb`
 - `rv32i_pipe_muldiv_tb`
 - `rv32i_branch_predictor_tb`
@@ -81,6 +83,8 @@ MMIO 改动后，至少运行：
 
 ## 最近人工更新
 
+- 2026-05-19：用户确认 `rv32i_perf_counter_tb` VCS PASS：standalone performance counter events and reset passed。
+- 2026-05-19：用户确认性能计数器抽出后的 `rv32i_pipe_core_tb`、`rv32i_pipe_branch_predict_tb`、`rv32i_pipe_dynamic_branch_predict_tb`、`rv32i_pipe_branch_predict_param_tb` 回归 VCS PASS。
 - 2026-05-19：用户确认 `rv32i_decoder_muldiv_tb` VCS PASS：`ENABLE_M` 打开时接受全部 RV32M `funct3`，默认 RV32I decoder 对 M 编码报告 illegal。
 - 2026-05-19：用户确认 RV32M decoder 重构后的 `rv32i_pipe_muldiv_tb` 和 `rv32i_pipe_core_tb` 回归 VCS PASS。
 - 2026-05-19：用户确认抽出 `rv32i_branch_predictor` 后的分支预测集成回归 VCS PASS：`rv32i_pipe_branch_predict_tb`、`rv32i_pipe_dynamic_branch_predict_tb`、`rv32i_pipe_branch_predict_param_tb`、`rv32i_pipe_core_tb`。

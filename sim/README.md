@@ -73,6 +73,24 @@ make sim TB_FILE=./testcases/rv32i_pipe_core_tb.sv TOP_NAME=rv32i_pipe_core_tb
 - branch/jump redirect 后的 flush
 - `instret/stall_cycle/flush_cycle` debug 性能计数器
 
+## Standalone Performance Counter Testbench
+
+```text
+sim/testcases/rv32i_perf_counter_tb.sv
+```
+
+运行命令：
+
+```bash
+make sim TB_FILE=./testcases/rv32i_perf_counter_tb.sv TOP_NAME=rv32i_perf_counter_tb
+```
+
+覆盖内容：
+
+- `cycle` 每个有效周期递增。
+- `instret/stall/flush/branch/mispredict` event 可同周期独立累加。
+- 异步 reset 清零全部计数器。
+
 ## 静态分支预测 Testbench
 
 ```text

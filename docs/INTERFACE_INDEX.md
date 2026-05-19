@@ -141,6 +141,7 @@ RV32M：
 - `rv32i_pipe_lsu`
 - `rv32i_pipe_csr`
 - `rv32i_muldiv`
+- `rv32i_perf_counter`
 - `rv32i_regfile`
 - `rv32i_decoder`
 - `rv32i_imm_gen`
@@ -197,6 +198,29 @@ M 扩展输出：
 
 - 单周期 `rv32i_core` 使用默认 `ENABLE_M=0`，保持 RV32I-only baseline。
 - 流水线 `rv32i_pipe_core` 使用 `ENABLE_M=1`，并把 `muldiv_valid/muldiv_op` 送入 ID/EX。
+
+### `rv32i_perf_counter`
+
+文件：`rtl/core/rv32i_perf_counter.v`
+
+用途：独立保存 core debug 性能计数器，`rv32i_pipe_core` 只生成事件脉冲。
+
+事件输入：
+
+- `instret_event`：一条有效指令进入退休统计点。
+- `stall_event`：本周期发生 load-use、memory wait-state、mul/div wait 或 fetch discard 等停顿。
+- `flush_event`：本周期发生预测错误/控制流重定向统计事件。
+- `branch_event`：一条有效 B-type branch 在 EX 阶段被解析并更新 predictor。
+- `branch_mispredict_event`：该 B-type branch 发生预测错误。
+
+计数器输出：
+
+- `cycle_count`
+- `instret_count`
+- `stall_cycle_count`
+- `flush_cycle_count`
+- `branch_count`
+- `branch_mispredict_count`
 
 ## CSR / Trap
 

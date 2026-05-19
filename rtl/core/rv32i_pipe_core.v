@@ -41,12 +41,6 @@ module rv32i_pipe_core #(
 );
 
   reg [31:0] pc_q;
-  reg [31:0] cycle_q;
-  reg [31:0] instret_q;
-  reg [31:0] stall_cycle_q;
-  reg [31:0] flush_cycle_q;
-  reg [31:0] branch_count_q;
-  reg [31:0] branch_mispredict_count_q;
   reg        if_discard_q;
 
   reg        if_id_valid_q;
@@ -179,6 +173,17 @@ module rv32i_pipe_core #(
   wire [31:0] if_predicted_pc;
   wire        if_is_branch;
   wire        if_btb_hit;
+  wire        perf_instret_event;
+  wire        perf_stall_event;
+  wire        perf_flush_event;
+  wire        perf_branch_event;
+  wire        perf_branch_mispredict_event;
+  wire [31:0] perf_cycle_count;
+  wire [31:0] perf_instret_count;
+  wire [31:0] perf_stall_cycle_count;
+  wire [31:0] perf_flush_cycle_count;
+  wire [31:0] perf_branch_count;
+  wire [31:0] perf_branch_mispredict_count;
 
   wire [31:0] ex_alu_src_b;
   wire [31:0] ex_alu_result;
@@ -223,14 +228,47 @@ module rv32i_pipe_core #(
   assign if_stall   = imem_valid && !imem_ready;
 
   assign dbg_pc            = pc_q;
-  assign dbg_cycle         = cycle_q;
-  assign dbg_instret       = instret_q;
-  assign dbg_stall_cycle   = stall_cycle_q;
-  assign dbg_flush_cycle   = flush_cycle_q;
-  assign dbg_branch_count  = branch_count_q;
-  assign dbg_branch_mispredict_count = branch_mispredict_count_q;
+  assign dbg_cycle         = perf_cycle_count;
+  assign dbg_instret       = perf_instret_count;
+  assign dbg_stall_cycle   = perf_stall_cycle_count;
+  assign dbg_flush_cycle   = perf_flush_cycle_count;
+  assign dbg_branch_count  = perf_branch_count;
+  assign dbg_branch_mispredict_count = perf_branch_mispredict_count;
 
   assign if_instr = imem_error ? 32'h0000_0013 : imem_rdata;
+
+  assign perf_instret_event = ex_mem_valid_q &&
+                              !ex_mem_illegal_q &&
+                              !ex_mem_instr_addr_misaligned_q &&
+                              !ex_mem_instr_fault_q &&
+                              !mem_stall &&
+                              !mem_load_addr_misaligned &&
+                              !mem_load_fault &&
+                              !mem_store_addr_misaligned &&
+                              !mem_store_fault &&
+                              !commit_redirect;
+  assign perf_stall_event = load_use_stall || mem_stall || ex_muldiv_stall ||
+                            if_stall || if_discard_q;
+  assign perf_flush_event = ex_redirect && !mem_stall && !commit_redirect;
+  assign perf_branch_event = ex_branch_update;
+  assign perf_branch_mispredict_event = ex_branch_update &&
+                                        ex_prediction_mismatch;
+
+  rv32i_perf_counter u_perf_counter (
+    .clk                      (clk),
+    .rst_n                    (rst_n),
+    .instret_event            (perf_instret_event),
+    .stall_event              (perf_stall_event),
+    .flush_event              (perf_flush_event),
+    .branch_event             (perf_branch_event),
+    .branch_mispredict_event  (perf_branch_mispredict_event),
+    .cycle_count              (perf_cycle_count),
+    .instret_count            (perf_instret_count),
+    .stall_cycle_count        (perf_stall_cycle_count),
+    .flush_cycle_count        (perf_flush_cycle_count),
+    .branch_count             (perf_branch_count),
+    .branch_mispredict_count  (perf_branch_mispredict_count)
+  );
 
   rv32i_branch_predictor #(
     .INDEX_BITS(BRANCH_PRED_INDEX_BITS)
@@ -422,7 +460,7 @@ module rv32i_pipe_core #(
   rv32i_pipe_csr u_pipe_csr (
     .clk                  (clk),
     .rst_n                (rst_n),
-    .cycle_value          (cycle_q),
+    .cycle_value          (perf_cycle_count),
     .timer_irq            (timer_irq),
     .ex_csr_addr          (id_ex_csr_addr_q),
     .ex_csr_rdata         (ex_csr_rdata),
@@ -494,12 +532,6 @@ module rv32i_pipe_core #(
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       pc_q                   <= RESET_PC;
-      cycle_q                <= 32'd0;
-      instret_q              <= 32'd0;
-      stall_cycle_q          <= 32'd0;
-      flush_cycle_q          <= 32'd0;
-      branch_count_q         <= 32'd0;
-      branch_mispredict_count_q <= 32'd0;
       if_discard_q           <= 1'b0;
       if_id_valid_q          <= 1'b0;
       if_id_pc_q             <= 32'd0;
@@ -590,29 +622,6 @@ module rv32i_pipe_core #(
       mem_wb_store_addr_misaligned_q <= 1'b0;
       mem_wb_store_fault_q   <= 1'b0;
     end else begin
-      cycle_q <= cycle_q + 32'd1;
-
-      if (ex_mem_valid_q && !ex_mem_illegal_q &&
-          !ex_mem_instr_addr_misaligned_q && !ex_mem_instr_fault_q && !mem_stall &&
-          !mem_load_addr_misaligned && !mem_load_fault &&
-          !mem_store_addr_misaligned && !mem_store_fault &&
-          !commit_redirect) begin
-        instret_q <= instret_q + 32'd1;
-      end
-      if (load_use_stall || mem_stall || ex_muldiv_stall ||
-          if_stall || if_discard_q) begin
-        stall_cycle_q <= stall_cycle_q + 32'd1;
-      end
-      if (ex_redirect && !mem_stall && !commit_redirect) begin
-        flush_cycle_q <= flush_cycle_q + 32'd1;
-      end
-      if (ex_branch_update) begin
-        branch_count_q <= branch_count_q + 32'd1;
-        if (ex_prediction_mismatch) begin
-          branch_mispredict_count_q <= branch_mispredict_count_q + 32'd1;
-        end
-      end
-
       if (commit_redirect) begin
         pc_q          <= commit_redirect_pc;
         if_discard_q  <= 1'b1;

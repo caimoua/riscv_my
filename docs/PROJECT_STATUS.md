@@ -34,6 +34,9 @@ rv32i_cached_ahb_master_top
 
 - RV32I 单周期 baseline core。
 - 五级流水线 core，包含 forwarding、load-use stall、memory wait-state、branch/jump flush 和性能计数器。
+  - 性能计数器已从 `rv32i_pipe_core` 抽成独立 `rv32i_perf_counter` 模块。
+  - `rv32i_perf_counter_tb` 已由用户确认 VCS PASS。
+  - 性能计数器抽出后的 `rv32i_pipe_core_tb`、静态/动态/参数化分支预测回归已由用户确认 VCS PASS。
 - 第一版静态分支预测：
   - 对齐的 `JAL` 在 IF 阶段预测 taken。
   - 对齐的 backward B-type branch 在 IF 阶段预测 taken。
@@ -120,7 +123,7 @@ rv32i_cached_ahb_master_top
 
 详细状态见 `docs/VERIFICATION_MATRIX.md`。
 
-当前 `docs/VERIFICATION_MATRIX.md` 中列出的 directed tests 均已有用户报告的 VCS PASS。
+当前 directed tests 均已有用户报告的 VCS PASS；新增测试后仍按 `PENDING` 到用户确认 PASS 的流程推进。
 
 ## 设计假设
 
@@ -136,10 +139,11 @@ rv32i_cached_ahb_master_top
 
 ## 下一步候选
 
-1. 抽出性能计数器模块，继续减轻 `rv32i_pipe_core` 顶层负担。
-2. 增加 AXI-Lite adapter。
-3. 扩展 UART RX/FIFO/interrupt。
-4. 如果项目需要并行 slave 访问，再考虑真正 multi-master AHB matrix。
+1. 建立统一 pipeline control，继续显式化 stall/flush 优先级。
+2. 增加 pipeline control standalone directed test，并回归 core/branch/perf 相关测试。
+3. 增加 AXI-Lite adapter。
+4. 扩展 UART RX/FIFO/interrupt。
+5. 如果项目需要并行 slave 访问，再考虑真正 multi-master AHB matrix。
 
 ## 上下文规则
 

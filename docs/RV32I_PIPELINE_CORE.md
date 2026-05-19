@@ -94,7 +94,7 @@ ex_mem_addr = id_ex_mem_write_q ? (forward_rs1_data + id_ex_imm_s_q)
 CSR 读数据也在 EX 阶段取样：
 
 ```verilog
-ex_csr_rdata = (id_ex_csr_addr_q == `RV32I_CSR_CYCLE) ? cycle_q : 32'd0;
+ex_csr_rdata = (id_ex_csr_addr_q == `RV32I_CSR_CYCLE) ? perf_cycle_count : 32'd0;
 ```
 
 EX 阶段的结果进入 `EX/MEM` 流水寄存器。
@@ -529,22 +529,38 @@ not-taken branch 不需要 flush，因为默认取指本来就是顺序 `pc + 4`
 
 ## 8. 性能计数器
 
-当前流水线 core 新增了三个 debug 计数器：
+当前流水线 core 的 debug 性能计数器已经抽成独立模块：
 
 ```text
+rtl/core/rv32i_perf_counter.v
+```
+
+`rv32i_pipe_core` 只负责生成事件脉冲，`rv32i_perf_counter` 负责寄存和累加计数值。当前主要 debug 计数器包括：
+
+```text
+dbg_cycle        core 运行周期数
 dbg_instret      退休指令数
-dbg_stall_cycle  流水线停顿周期数，包括 load-use stall 和指令/数据存储器等待停顿
-dbg_flush_cycle  branch/jump redirect 次数
+dbg_stall_cycle  流水线停顿周期数，包括 load-use、memory wait-state、mul/div wait 和 fetch discard
+dbg_flush_cycle  控制流预测错误或 redirect 统计次数
+dbg_branch_count B-type branch 解析/训练次数
+dbg_branch_mispredict_count B-type branch 预测错误次数
 ```
 
 `dbg_instret` 统计真正进入 WB/commit 位置的有效合法指令。错误路径上被 flush 掉的指令不会进入退休点，所以不会被计入。
 
-当前 RTL 的实现是：
+当前 `rv32i_pipe_core` 生成的 `instret_event` 条件可以理解为：
 
 ```verilog
-if (ex_mem_valid_q && !ex_mem_illegal_q && !mem_stall) begin
-  instret_q <= instret_q + 32'd1;
-end
+ex_mem_valid_q &&
+!ex_mem_illegal_q &&
+!ex_mem_instr_addr_misaligned_q &&
+!ex_mem_instr_fault_q &&
+!mem_stall &&
+!mem_load_addr_misaligned &&
+!mem_load_fault &&
+!mem_store_addr_misaligned &&
+!mem_store_fault &&
+!commit_redirect
 ```
 
 这里用 `EX/MEM` 当前拍进入 `MEM/WB` 的指令来计数。加上 `!mem_stall` 是因为 memory wait-state 期间 `EX/MEM` 会保持不变，同一条访存指令不能被重复计入退休数。这样计数器和 `dbg_ebreak/dbg_ecall` 这类 WB 阶段事件在同一拍对齐，testbench 可以在看到 `ebreak` 时直接检查 `instret`。
@@ -552,22 +568,25 @@ end
 `dbg_stall_cycle` 统计所有会让流水线停止推进的周期：
 
 ```verilog
-if (load_use_stall || mem_stall || if_stall) begin
-  stall_cycle_q <= stall_cycle_q + 32'd1;
-end
+load_use_stall || mem_stall || ex_muldiv_stall || if_stall || if_discard_q
 ```
 
-其中 `load_use_stall` 来自数据相关，`if_stall` 来自指令存储器没有 ready，`mem_stall` 来自数据存储器没有 ready。
+其中 `load_use_stall` 来自数据相关，`if_stall` 来自指令存储器没有 ready，`mem_stall` 来自数据存储器没有 ready，`ex_muldiv_stall` 来自 RV32M 多周期执行单元等待结果，`if_discard_q` 来自 redirect 后丢弃旧取指响应的等待周期。
 
 `dbg_flush_cycle` 统计控制流 redirect：
 
 ```verilog
-if (ex_redirect && !mem_stall) begin
-  flush_cycle_q <= flush_cycle_q + 32'd1;
-end
+ex_redirect && !mem_stall && !commit_redirect
 ```
 
-加上 `!mem_stall` 是为了避免同一条 EX 阶段 redirect 指令在 memory stall 期间被重复统计。memory stall 解除后，这条 branch/jump 会继续推进并只统计一次 flush。
+加上 `!mem_stall` 是为了避免同一条 EX 阶段 redirect 指令在 memory stall 期间被重复统计。加上 `!commit_redirect` 是为了让 commit 阶段 trap/interrupt/mret redirect 保持更高优先级。
+
+`dbg_branch_count` 和 `dbg_branch_mispredict_count` 来自 B-type branch 的 EX 阶段更新事件：
+
+```text
+branch_event = ex_branch_update
+branch_mispredict_event = ex_branch_update && ex_prediction_mismatch
+```
 
 这三个计数器的意义不只是“多几个 debug 信号”，而是让流水线行为可以量化。例如：
 
@@ -655,8 +674,8 @@ x20 = 0x00000074
 x21 = 0x00000088
 x22 = 0x00000084
 instret = 33
-stall_cycle = 14
-flush_cycle = 3
+stall_cycle = 16
+flush_cycle = 2
 ```
 
 `x12` 的值来自 `auipc x12, 0x1`：
@@ -683,12 +702,13 @@ x12 = 0x00000034 + 0x00001000 = 0x00001034
 36 - 3 = 33
 ```
 
-`stall_cycle = 14` 由三部分组成：
+`stall_cycle = 16` 由四部分组成：
 
 ```text
 4 个 load-use stall
 3 个指令存储器 wait-state stall
 7 个数据存储器 wait-state stall
+2 个 redirect 后 discard 旧取指响应的 stall
 ```
 
 四个直接 load-use 场景是：
@@ -722,19 +742,20 @@ lw x18, 0(x0)
 sw x2, 0(x18)
 ```
 
-所以数据存储器 wait-state 贡献 7 个 stall 周期，总 stall 周期数是：
+所以数据存储器 wait-state 贡献 7 个 stall 周期。当前分支预测打开后，redirect 后还会通过 `if_discard_q` 丢弃旧取指响应，贡献 2 个 stall 周期。总 stall 周期数是：
 
 ```text
-4 + 3 + 7 = 14
+4 + 3 + 7 + 2 = 16
 ```
 
-`flush_cycle = 3` 对应三次 redirect：
+`flush_cycle = 2` 对应两次预测错误 redirect：
 
 ```text
 bne taken
-jal
 jalr
 ```
+
+`jal` 目标已对齐，会在 IF 阶段被预测 taken，因此不会再计入 `flush_cycle`。
 
 ## 10. 模块拆分进展
 
@@ -745,7 +766,11 @@ rv32i_pipe_core.v
   五级流水主体：
   IF/ID、ID/EX、EX/MEM、MEM/WB 流水寄存器
   forwarding、load-use stall、flush 优先级
-  PC 更新、writeback、性能计数器
+  PC 更新、writeback、性能事件生成
+
+rv32i_perf_counter.v
+  性能计数器：
+  cycle/instret/stall/flush/branch/mispredict
 
 rv32i_pipe_csr.v
   machine CSR 和 trap：

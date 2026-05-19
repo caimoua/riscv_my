@@ -16,7 +16,7 @@
 
 - `rv32i_pipe_core` 顶层承担过多功能。
 - 主要时序 always 块过大。
-- 分支预测器、M 扩展识别、性能计数器、stall/flush 优先级仍和 core 顶层耦合较深。
+- stall/flush 优先级和流水线寄存器更新仍和 core 顶层耦合较深。
 - 缺少 assertion 和更细粒度模块级验证。
 
 ## 当前主要问题
@@ -32,7 +32,7 @@
 - ALU 输入选择和分支比较
 - CSR/trap 调用
 - LSU 调用
-- 性能计数器
+- 性能事件生成
 - stall/flush 控制
 
 短期内这很直观，但随着功能继续增加，review、调试和局部修改都会变难。
@@ -213,6 +213,23 @@ branch_event
 mispredict_event
 ```
 
+验证重点：
+
+```bash
+make sim TB_FILE=./testcases/rv32i_perf_counter_tb.sv TOP_NAME=rv32i_perf_counter_tb
+make sim TB_FILE=./testcases/rv32i_pipe_core_tb.sv TOP_NAME=rv32i_pipe_core_tb
+make sim TB_FILE=./testcases/rv32i_pipe_branch_predict_tb.sv TOP_NAME=rv32i_pipe_branch_predict_tb
+make sim TB_FILE=./testcases/rv32i_pipe_dynamic_branch_predict_tb.sv TOP_NAME=rv32i_pipe_dynamic_branch_predict_tb
+make sim TB_FILE=./testcases/rv32i_pipe_branch_predict_param_tb.sv TOP_NAME=rv32i_pipe_branch_predict_param_tb
+```
+
+当前状态：
+
+- `rv32i_perf_counter.v` 已新增。
+- `rv32i_pipe_core` 已改为生成性能事件脉冲，并实例化 `rv32i_perf_counter`。
+- `rv32i_perf_counter_tb` 已由用户确认 VCS PASS。
+- 性能计数器抽出后的 `rv32i_pipe_core_tb`、静态/动态/参数化分支预测回归已由用户确认 VCS PASS。
+
 ### Phase 4：建立统一 pipeline control
 
 新增：
@@ -276,14 +293,10 @@ front_stall
 
 ## 当前建议
 
-Phase 2：RV32M 识别并入 decoder 已完成并通过用户 VCS 回归确认。
-
-原因：
-
-下一步建议进入 Phase 3：抽出性能计数器模块。
+当前 Phase 3：抽出性能计数器模块已经完成，下一步进入 Phase 4：建立统一 pipeline control。
 
 原因：
 
 - Phase 1 的 `rv32i_branch_predictor` 已抽出并通过用户 VCS 回归确认。
 - Phase 2 的 M 扩展识别已并入 decoder，`rv32i_pipe_core` 顶层补丁逻辑已减少。
-- 性能计数器独立化风险相对可控，能继续减轻 `rv32i_pipe_core` 顶层负担。
+- Phase 4 会先只抽出 stall/flush 优先级判断，保持现有流水线寄存器更新行为不变，降低重构风险。
