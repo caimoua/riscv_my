@@ -30,6 +30,23 @@ rv32i_cached_ahb_master_top
   external AHB-Lite master interface
 ```
 
+## 项目大路线
+
+后续大方向固定为三阶段，详细路线见 `docs/RV32I_PROJECT_ROADMAP.md`。
+
+```text
+Stage A：可交付 CPU IP
+  先把 rv32i_cached_ahb_master_top 打磨成可集成、可验证、可文档化的 CPU 子系统。
+
+Stage B：可运行 SoC / FPGA demo
+  再把 CPU 子系统放入小型 SoC，形成 boot、UART、timer、SRAM/flash 和 FPGA 展示路径。
+
+Stage C：性能优化型 CPU core
+  最后基于可测量 workload 做分支、取指、cache、总线和 CPI 优化。
+```
+
+当前正式进入 Stage A。近期优先级是：自动化回归、汇编/C 测试流、IP 交付文档、ISA 基础测试、lint/综合基础检查。
+
 ## 已完成
 
 - RV32I 单周期 baseline core。
@@ -145,12 +162,12 @@ rv32i_cached_ahb_master_top
 
 ## 下一步候选
 
-1. 继续为 `mem_stall + ex_muldiv_stall`、`ex_redirect + commit_redirect` 等组合场景补 directed test。
-2. 继续补充 stage 级注释，尤其是 trap redirect、mul/div stall、memory stall 的优先级。
-3. 抽薄 IF/fetch token 或整理取指返回语义，为后续更真实总线/延迟模型打基础。
-4. 增加 AXI-Lite adapter。
-5. 扩展 UART RX/FIFO/interrupt。
-6. 如果项目需要并行 slave 访问，再考虑真正 multi-master AHB matrix。
+1. Stage A1：建立自动化回归入口，统一 smoke/core/cache/SoC/full regression。
+2. Stage A2：把更多 directed test 迁移到汇编/C 软件镜像流，减少手写机器码。
+3. Stage A5：补齐 CPU IP 交付文档，重点写清楚 `rv32i_cached_ahb_master_top` 的接口、假设和限制。
+4. Stage A3：引入 RV32I/RV32M ISA 基础测试子集。
+5. Stage A4：建立 lint / 综合 / 时序基础检查流程。
+6. Stage B/C 的 SoC/FPGA demo 和性能优化等 Stage A 收敛后再展开。
 
 ## 上下文规则
 

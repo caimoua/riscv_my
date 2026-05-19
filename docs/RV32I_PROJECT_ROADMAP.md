@@ -1,0 +1,294 @@
+# RV32I 项目路线图
+
+最后更新：2026-05-19
+
+本文记录项目后续的大方向。当前策略是先把已有 CPU 做成可交付 IP，再把它放进可运行 SoC/FPGA demo，最后再进入性能优化。
+
+## 路线总览
+
+```text
+Stage A：可交付 CPU IP
+  目标：让 rv32i_cached_ahb_master_top 成为别人可以集成、可以验证、可以阅读文档的 CPU 子系统。
+
+Stage B：可运行 SoC / FPGA demo
+  目标：用该 CPU 子系统组成一个小型 SoC，能从软件镜像启动，通过 UART/timer 等外设展示运行结果。
+
+Stage C：性能优化型 CPU core
+  目标：在可测量基线上优化分支、取指、cache、总线和 CPI。
+```
+
+推荐顺序固定为 A -> B -> C。除非某个功能阻塞当前阶段，否则不优先扩展零散外设或微架构功能。
+
+## Stage A：可交付 CPU IP
+
+### 目标形态
+
+交付边界以 `rv32i_cached_ahb_master_top` 为主：
+
+```text
+rv32i_cached_ahb_master_top
+  rv32i_pipe_core
+  rv32i_icache
+  rv32i_dcache
+  rv32i_ahb_master_bus
+  external AHB-Lite master interface
+```
+
+它应该像一个可复用 IP：
+
+- 对外接口清楚，只暴露标准 AHB-Lite master 和必要 debug/perf 信号。
+- 内部支持 RV32IM、五级流水、cache、trap/interrupt、access fault、misaligned trap。
+- 有自动化回归入口。
+- 有软件构建入口。
+- 有接口文档、验证矩阵、设计假设和限制说明。
+- 有 assertion 和 directed tests 保护关键控制流。
+
+### A1：自动化回归
+
+目标：
+
+- 建立一条一键回归命令，统一运行核心 directed tests。
+- 区分 smoke、core、cache、SoC、full regression。
+- 回归结果可以输出简单日志摘要。
+
+建议产物：
+
+```text
+sim/regress/
+  regression_list.mk 或 regression_list.txt
+  run_regression.ps1
+  run_regression.sh
+```
+
+优先覆盖：
+
+- `rv32i_pipe_core_tb`
+- branch predictor 相关测试
+- RV32M 测试
+- trap/CSR 测试
+- cache/bus 测试
+- cached AHB master top 测试
+
+验收标准：
+
+- 能用一个命令跑完核心回归。
+- 失败时能快速定位到具体 testbench。
+- 文档里记录命令和推荐使用方式。
+
+### A2：汇编/C 测试流
+
+目标：
+
+- 减少手写机器码。
+- 用 RISC-V GNU 工具链生成 `.memh`。
+- directed testbench 尽量加载软件镜像。
+
+建议产物：
+
+```text
+software/asm/
+software/c/
+software/linker/
+software/scripts/
+software/bin/
+```
+
+优先做：
+
+- 把一个现有手写机器码 test 改成汇编镜像版本。
+- 保留原 test 作为对照，直到新流程稳定。
+- 增加一个最小 C 程序，验证启动、SRAM、UART 输出。
+
+验收标准：
+
+- `make -C software` 能稳定生成 `.memh`。
+- 至少一个 core/cache/SoC testbench 从 `.memh` 加载程序。
+- README 写清楚工具链路径和构建命令。
+
+### A3：RISC-V ISA 基础测试
+
+目标：
+
+- 引入更系统的 ISA 级验证，不只依赖手写 directed test。
+- 先覆盖 RV32I，再覆盖 RV32M 的关键行为。
+
+建议范围：
+
+- 算术逻辑
+- branch/jump
+- load/store
+- CSR/trap 的项目内自定义测试
+- RV32M mul/div/rem 边界
+
+验收标准：
+
+- 可以把 ISA test 编译成当前 memory map 可加载的镜像。
+- 至少形成一组稳定 smoke ISA regression。
+
+### A4：lint / 综合 / 时序基础检查
+
+目标：
+
+- 证明这个设计不只是能仿真，也具备基本综合交付能力。
+
+优先检查：
+
+- 语法和 lint warning。
+- 综合是否能通过。
+- latch、多驱动、未连接端口、位宽截断。
+- 关键路径大致分布，尤其是 IF 分支预测路径、mul/div stall 控制、cache/bus ready path。
+
+验收标准：
+
+- 有一份基础综合脚本或说明。
+- 有一份当前 warning 清单。
+- 明确哪些 warning 可接受，哪些需要修。
+
+### A5：IP 交付文档
+
+目标：
+
+- 让后来的人不用读完整代码也能集成。
+
+建议文档：
+
+- `docs/PROJECT_STATUS.md`
+- `docs/INTERFACE_INDEX.md`
+- `docs/VERIFICATION_MATRIX.md`
+- `docs/RV32I_CACHED_AHB_MASTER_TOP.md`
+- `docs/RV32I_PIPE_CORE.md`
+- `docs/RV32I_LIMITATIONS.md`
+
+验收标准：
+
+- 写清楚支持的 ISA、异常、中断、cache、bus、memory map 假设。
+- 写清楚不支持 compressed、privilege mode、MMU、outstanding transaction、burst。
+- 写清楚推荐 top 和不推荐直接作为交付边界的 legacy top。
+
+## Stage B：可运行 SoC / FPGA demo
+
+### 目标形态
+
+用 Stage A 的 CPU IP 组成一个最小可运行平台：
+
+```text
+CPU subsystem
+  AHB-Lite master
+AHB matrix
+  flash / ROM
+  SRAM
+  APB bridge
+    timer
+    UART
+    GPIO
+```
+
+### B1：稳定 SoC memory map
+
+目标：
+
+- 固定 boot address、flash、SRAM、APB base。
+- 软件 linker script 和 RTL decode 保持一致。
+
+建议：
+
+- flash：`0x0800_0000`
+- SRAM：`0x2000_0000`
+- APB timer：`0x4200_0000`
+- APB UART：`0x4200_1000`
+
+### B2：启动和 UART demo
+
+目标：
+
+- 从 flash/ROM 启动。
+- 初始化 SRAM。
+- UART 打印字符串。
+- timer interrupt 可选打开。
+
+验收标准：
+
+- 仿真中可看到 UART 输出。
+- 文档记录软件构建、加载和仿真命令。
+
+### B3：FPGA 准备
+
+目标：
+
+- 把 SoC 放到 FPGA 工程中，接时钟、复位、UART pin。
+
+优先做：
+
+- FPGA top wrapper。
+- block RAM 初始化。
+- UART TX 输出。
+- 简单 LED/GPIO。
+
+验收标准：
+
+- 板上能看到 UART 输出或 LED 状态变化。
+
+## Stage C：性能优化型 CPU core
+
+### 目标形态
+
+在已有可运行平台上做可量化优化，而不是凭感觉改微架构。
+
+### C1：性能基线
+
+目标：
+
+- 固定一组 benchmark。
+- 输出 cycle、instret、stall、flush、branch/mispredict、cache miss。
+
+候选：
+
+- 简化 CoreMark-like loop。
+- Dhrystone-like integer workload。
+- memcpy/memset。
+- branch-heavy loop。
+
+### C2：取指和分支优化
+
+候选方向：
+
+- 更清晰的 fetch token。
+- IF 阶段时序优化。
+- 更大的 BHT/BTB。
+- return address stack。
+- JAL/JALR 预测增强。
+
+### C3：cache 和 memory 优化
+
+候选方向：
+
+- I-cache prefetch。
+- D-cache write buffer。
+- refill burst。
+- AHB/AXI burst。
+- 更细 stall reason counter。
+
+### C4：结果展示
+
+目标：
+
+- 每个优化都有 before/after 数据。
+- 不只说“加了功能”，还要说“CPI 从多少变到多少，miss/mispredict 如何变化”。
+
+## 当前执行建议
+
+当前立即进入 Stage A。
+
+第一步建议做 A1：自动化回归。原因：
+
+- 项目已有很多 directed tests，但目前主要靠手动逐个运行。
+- 后续任何重构、软件测试流、SoC demo、性能优化都依赖稳定回归。
+- 自动化回归可以显著降低每轮 Codex 上下文和人工操作成本。
+
+Stage A 的推荐近期顺序：
+
+1. A1：自动化回归。
+2. A2：汇编/C 测试流。
+3. A5：补交付文档。
+4. A3：ISA 基础测试。
+5. A4：lint / 综合 / 时序基础检查。
