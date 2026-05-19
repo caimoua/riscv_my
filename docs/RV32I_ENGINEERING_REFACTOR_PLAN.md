@@ -241,18 +241,30 @@ rtl/core/rv32i_pipe_ctrl.v
 目标：
 
 - 显式管理 `commit_redirect`、`ex_redirect`、`mem_stall`、`ex_muldiv_stall`、`load_use_stall`、`if_stall`、`if_discard` 的优先级。
-- 输出统一的 enable/flush 控制信号。
+- 输出统一的 advance/bubble/flush 控制信号。
 
-建议输出：
+当前输出：
 
 ```text
-pc_en
-if_id_flush
-id_ex_flush
-ex_mem_flush
-mem_wb_flush
-front_stall
+commit_flush
+front_advance
+if_discard_flush
+if_redirect_flush
+if_normal_load
+id_ex_advance
+id_ex_bubble
+ex_mem_advance
+ex_mem_bubble
+perf_stall_event
+perf_flush_event
 ```
+
+当前状态：
+
+- `rv32i_pipe_ctrl.v` 已新增。
+- `rv32i_pipe_core` 已改为实例化 `rv32i_pipe_ctrl`，流水线寄存器内容和数据通路暂未拆分。
+- `rv32i_pipe_ctrl_tb` 已由用户确认 VCS PASS。
+- pipeline control 抽出后的 core/perf/branch/muldiv 回归已由用户确认 VCS PASS。
 
 ### Phase 5：拆流水线寄存器 always 块
 
@@ -293,10 +305,10 @@ front_stall
 
 ## 当前建议
 
-当前 Phase 3：抽出性能计数器模块已经完成，下一步进入 Phase 4：建立统一 pipeline control。
+当前 Phase 4：建立统一 pipeline control 已经完成，下一步进入 Phase 5：拆流水线寄存器 always 块。
 
 原因：
 
 - Phase 1 的 `rv32i_branch_predictor` 已抽出并通过用户 VCS 回归确认。
 - Phase 2 的 M 扩展识别已并入 decoder，`rv32i_pipe_core` 顶层补丁逻辑已减少。
-- Phase 4 会先只抽出 stall/flush 优先级判断，保持现有流水线寄存器更新行为不变，降低重构风险。
+- Phase 5 应继续保持小步推进，优先拆出 PC/IFID 或性能风险最低的一段，并在每一步后回归 core/branch/muldiv/trap 相关测试。

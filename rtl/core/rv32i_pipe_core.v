@@ -220,6 +220,16 @@ module rv32i_pipe_core #(
   wire        commit_redirect;
   wire [31:0] commit_redirect_pc;
 
+  wire        pipe_commit_flush;
+  wire        pipe_front_advance;
+  wire        pipe_if_discard_flush;
+  wire        pipe_if_redirect_flush;
+  wire        pipe_if_normal_load;
+  wire        pipe_id_ex_advance;
+  wire        pipe_id_ex_bubble;
+  wire        pipe_ex_mem_advance;
+  wire        pipe_ex_mem_bubble;
+
   wire [31:0] forward_rs1_data;
   wire [31:0] forward_rs2_data;
 
@@ -247,12 +257,30 @@ module rv32i_pipe_core #(
                               !mem_store_addr_misaligned &&
                               !mem_store_fault &&
                               !commit_redirect;
-  assign perf_stall_event = load_use_stall || mem_stall || ex_muldiv_stall ||
-                            if_stall || if_discard_q;
-  assign perf_flush_event = ex_redirect && !mem_stall && !commit_redirect;
   assign perf_branch_event = ex_branch_update;
   assign perf_branch_mispredict_event = ex_branch_update &&
                                         ex_prediction_mismatch;
+
+  rv32i_pipe_ctrl u_pipe_ctrl (
+    .commit_redirect  (commit_redirect),
+    .ex_redirect      (ex_redirect),
+    .mem_stall        (mem_stall),
+    .ex_muldiv_stall  (ex_muldiv_stall),
+    .load_use_stall   (load_use_stall),
+    .if_stall         (if_stall),
+    .if_discard       (if_discard_q),
+    .commit_flush     (pipe_commit_flush),
+    .front_advance    (pipe_front_advance),
+    .if_discard_flush (pipe_if_discard_flush),
+    .if_redirect_flush(pipe_if_redirect_flush),
+    .if_normal_load   (pipe_if_normal_load),
+    .id_ex_advance    (pipe_id_ex_advance),
+    .id_ex_bubble     (pipe_id_ex_bubble),
+    .ex_mem_advance   (pipe_ex_mem_advance),
+    .ex_mem_bubble    (pipe_ex_mem_bubble),
+    .perf_stall_event (perf_stall_event),
+    .perf_flush_event (perf_flush_event)
+  );
 
   rv32i_perf_counter u_perf_counter (
     .clk                      (clk),
@@ -622,7 +650,7 @@ module rv32i_pipe_core #(
       mem_wb_store_addr_misaligned_q <= 1'b0;
       mem_wb_store_fault_q   <= 1'b0;
     end else begin
-      if (commit_redirect) begin
+      if (pipe_commit_flush) begin
         pc_q          <= commit_redirect_pc;
         if_discard_q  <= 1'b1;
         if_id_valid_q <= 1'b0;
@@ -632,8 +660,8 @@ module rv32i_pipe_core #(
         if_id_instr_fault_q <= 1'b0;
         if_id_predicted_pc_q <= 32'd0;
         if_id_btb_hit_q <= 1'b0;
-      end else if (!mem_stall && !ex_muldiv_stall) begin
-        if (if_discard_q) begin
+      end else if (pipe_front_advance) begin
+        if (pipe_if_discard_flush) begin
           if (imem_ready) begin
             if_discard_q <= 1'b0;
           end
@@ -644,7 +672,7 @@ module rv32i_pipe_core #(
           if_id_instr_fault_q <= 1'b0;
           if_id_predicted_pc_q <= 32'd0;
           if_id_btb_hit_q <= 1'b0;
-        end else if (ex_redirect) begin
+        end else if (pipe_if_redirect_flush) begin
           pc_q          <= ex_redirect_pc;
           if_discard_q  <= 1'b1;
           if_id_valid_q <= 1'b0;
@@ -654,7 +682,7 @@ module rv32i_pipe_core #(
           if_id_instr_fault_q <= 1'b0;
           if_id_predicted_pc_q <= 32'd0;
           if_id_btb_hit_q <= 1'b0;
-        end else if (!load_use_stall && !if_stall) begin
+        end else if (pipe_if_normal_load) begin
           pc_q          <= if_predicted_pc;
           if_id_valid_q <= 1'b1;
           if_id_pc_q    <= pc_q;
@@ -666,7 +694,7 @@ module rv32i_pipe_core #(
         end
       end
 
-      if (commit_redirect) begin
+      if (pipe_commit_flush) begin
         id_ex_valid_q         <= 1'b0;
         id_ex_pc_q            <= 32'd0;
         id_ex_pc4_q           <= 32'd0;
@@ -701,8 +729,8 @@ module rv32i_pipe_core #(
         id_ex_instr_fault_q   <= 1'b0;
         id_ex_predicted_pc_q   <= 32'd0;
         id_ex_btb_hit_q        <= 1'b0;
-      end else if (!mem_stall && !ex_muldiv_stall) begin
-        if (ex_redirect || load_use_stall || if_stall || if_discard_q) begin
+      end else if (pipe_id_ex_advance) begin
+        if (pipe_id_ex_bubble) begin
           id_ex_valid_q         <= 1'b0;
           id_ex_pc_q            <= 32'd0;
           id_ex_pc4_q           <= 32'd0;
@@ -775,7 +803,7 @@ module rv32i_pipe_core #(
         end
       end
 
-      if (commit_redirect) begin
+      if (pipe_commit_flush) begin
         ex_mem_valid_q         <= 1'b0;
         ex_mem_pc4_q           <= 32'd0;
         ex_mem_rd_addr_q       <= 5'd0;
@@ -824,8 +852,8 @@ module rv32i_pipe_core #(
         mem_wb_load_fault_q    <= 1'b0;
         mem_wb_store_addr_misaligned_q <= 1'b0;
         mem_wb_store_fault_q   <= 1'b0;
-      end else if (!mem_stall) begin
-        if (ex_muldiv_stall) begin
+      end else if (pipe_ex_mem_advance) begin
+        if (pipe_ex_mem_bubble) begin
           ex_mem_valid_q         <= 1'b0;
           ex_mem_pc4_q           <= 32'd0;
           ex_mem_rd_addr_q       <= 5'd0;

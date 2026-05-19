@@ -91,6 +91,25 @@ make sim TB_FILE=./testcases/rv32i_perf_counter_tb.sv TOP_NAME=rv32i_perf_counte
 - `instret/stall/flush/branch/mispredict` event 可同周期独立累加。
 - 异步 reset 清零全部计数器。
 
+## Standalone Pipeline Control Testbench
+
+```text
+sim/testcases/rv32i_pipe_ctrl_tb.sv
+```
+
+运行命令：
+
+```bash
+make sim TB_FILE=./testcases/rv32i_pipe_ctrl_tb.sv TOP_NAME=rv32i_pipe_ctrl_tb
+```
+
+覆盖内容：
+
+- `commit_redirect` 优先级最高。
+- `mem_stall` 保持前端和 EX/MEM、MEM/WB。
+- `ex_muldiv_stall` 保持前端，EX/MEM 插入 bubble，MEM/WB drain。
+- `load_use_stall`、`if_stall`、`if_discard` 和 `ex_redirect` 对 IF/ID、ID/EX 的控制行为。
+
 ## 静态分支预测 Testbench
 
 ```text

@@ -141,6 +141,7 @@ RV32M：
 - `rv32i_pipe_lsu`
 - `rv32i_pipe_csr`
 - `rv32i_muldiv`
+- `rv32i_pipe_ctrl`
 - `rv32i_perf_counter`
 - `rv32i_regfile`
 - `rv32i_decoder`
@@ -221,6 +222,33 @@ M 扩展输出：
 - `flush_cycle_count`
 - `branch_count`
 - `branch_mispredict_count`
+
+### `rv32i_pipe_ctrl`
+
+文件：`rtl/core/rv32i_pipe_ctrl.v`
+
+用途：集中保存当前流水线 stall/flush 优先级判断，`rv32i_pipe_core` 只消费命名后的控制输出。
+
+输入：
+
+- `commit_redirect`
+- `ex_redirect`
+- `mem_stall`
+- `ex_muldiv_stall`
+- `load_use_stall`
+- `if_stall`
+- `if_discard`
+
+主要输出：
+
+- `commit_flush`：commit 阶段 trap/mret/interrupt redirect 优先级最高。
+- `front_advance`：IF/ID 和 ID/EX 前端可推进。
+- `if_discard_flush`：redirect 后丢弃旧取指返回。
+- `if_redirect_flush`：EX 阶段控制流修正前端。
+- `if_normal_load`：正常取指进入 IF/ID。
+- `id_ex_advance` / `id_ex_bubble`：控制 ID/EX 推进或插入 bubble。
+- `ex_mem_advance` / `ex_mem_bubble`：控制 EX/MEM 推进，乘除法等待时 EX/MEM 插入 bubble 且 MEM/WB drain。
+- `perf_stall_event` / `perf_flush_event`：提供给 `rv32i_perf_counter` 的控制事件。
 
 ## CSR / Trap
 

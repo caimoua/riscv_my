@@ -88,6 +88,12 @@ Standalone 性能计数器：
 make sim TB_FILE=./testcases/rv32i_perf_counter_tb.sv TOP_NAME=rv32i_perf_counter_tb
 ```
 
+Standalone 流水线控制：
+
+```bash
+make sim TB_FILE=./testcases/rv32i_pipe_ctrl_tb.sv TOP_NAME=rv32i_pipe_ctrl_tb
+```
+
 静态分支预测：
 ```bash
 make sim TB_FILE=./testcases/rv32i_pipe_branch_predict_tb.sv TOP_NAME=rv32i_pipe_branch_predict_tb

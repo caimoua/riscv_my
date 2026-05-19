@@ -37,6 +37,9 @@ rv32i_cached_ahb_master_top
   - 性能计数器已从 `rv32i_pipe_core` 抽成独立 `rv32i_perf_counter` 模块。
   - `rv32i_perf_counter_tb` 已由用户确认 VCS PASS。
   - 性能计数器抽出后的 `rv32i_pipe_core_tb`、静态/动态/参数化分支预测回归已由用户确认 VCS PASS。
+  - `rv32i_pipe_ctrl` 已新增，用于集中管理当前 stall/flush 优先级。
+  - `rv32i_pipe_ctrl_tb` 已由用户确认 VCS PASS。
+  - pipeline control 抽出后的 core/perf/branch/muldiv 回归已由用户确认 VCS PASS。
 - 第一版静态分支预测：
   - 对齐的 `JAL` 在 IF 阶段预测 taken。
   - 对齐的 backward B-type branch 在 IF 阶段预测 taken。
@@ -139,8 +142,8 @@ rv32i_cached_ahb_master_top
 
 ## 下一步候选
 
-1. 建立统一 pipeline control，继续显式化 stall/flush 优先级。
-2. 增加 pipeline control standalone directed test，并回归 core/branch/perf 相关测试。
+1. 进入 Phase 5：按 stage 拆分 `rv32i_pipe_core` 的流水线寄存器 always 块。
+2. 为 stall/flush/redirect/writeback 增加 SystemVerilog assertion 和组合场景测试。
 3. 增加 AXI-Lite adapter。
 4. 扩展 UART RX/FIFO/interrupt。
 5. 如果项目需要并行 slave 访问，再考虑真正 multi-master AHB matrix。
