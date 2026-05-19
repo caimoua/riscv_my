@@ -46,6 +46,22 @@
 
 ## 回归建议
 
+推荐优先使用自动化回归入口：
+
+```bash
+cd sim
+bash ./regress/run_regression.sh --suite smoke
+bash ./regress/run_regression.sh --suite core --keep-going
+bash ./regress/run_regression.sh --suite cache --keep-going
+bash ./regress/run_regression.sh --suite soc --keep-going
+```
+
+Windows PowerShell：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\sim\regress\run_regression.ps1 -Suite smoke
+```
+
 RTL 接口或 core 控制流改动后，至少运行：
 
 - `rv32i_pipe_core_tb`
@@ -85,6 +101,7 @@ MMIO 改动后，至少运行：
 
 ## 最近人工更新
 
+- 2026-05-19：Stage A1 自动化回归入口第一版已新增，包含 `sim/regress/regression_list.txt`、PowerShell 脚本和 Bash 脚本，支持 `smoke/core/cache/ahb/mmio/soc/full` suite；本地已完成 dry-run 检查，真实 VCS 回归需在仿真环境运行。
 - 2026-05-19：用户确认 Phase 6 第一轮 `rv32i_pipe_core` 仿真期 SystemVerilog assertion 加入后 VCS 回归 PASS；覆盖 commit redirect 优先级、流水线清空、memory stall 后端保持、mul/div stall 前端保持和 EX/MEM bubble、分支预测更新合法性、fault/illegal 写回屏蔽。
 - 2026-05-19：用户确认 Phase 5 第二轮 `rv32i_pipe_core` stage 清零 task 抽取后 VCS 回归 PASS：core/branch/muldiv/trap/cache 关键回归均通过。
 - 2026-05-19：用户确认 Phase 5 第一轮 `rv32i_pipe_core` 时序块拆分后 VCS 回归 PASS：`rv32i_pipe_core_tb`、分支预测、muldiv、trap/cache 关键回归均通过。

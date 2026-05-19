@@ -26,6 +26,36 @@ make verdi
 make clean
 ```
 
+## 自动化回归
+
+Stage A1 的回归入口位于 `sim/regress/`。它读取 `regress/regression_list.txt`，按 suite 展开测试列表，再调用现有 `make sim TB_FILE=... TOP_NAME=...`。
+
+PowerShell：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\regress\run_regression.ps1 -Suite smoke -DryRun
+powershell -NoProfile -ExecutionPolicy Bypass -File .\regress\run_regression.ps1 -Suite smoke
+```
+
+Bash：
+
+```bash
+bash ./regress/run_regression.sh --suite smoke --dry-run
+bash ./regress/run_regression.sh --suite smoke
+```
+
+当前 suite：
+
+```text
+smoke, core, cache, ahb, mmio, soc, full
+```
+
+真实运行的日志会保存到：
+
+```text
+sim/log/regress/<timestamp>-<suite>/
+```
+
 默认 testbench：
 
 ```text

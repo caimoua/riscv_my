@@ -76,6 +76,23 @@ cd sim
 make sim
 ```
 
+自动化回归入口：
+
+```bash
+cd sim
+bash ./regress/run_regression.sh --suite smoke --dry-run
+bash ./regress/run_regression.sh --suite smoke
+```
+
+Windows PowerShell 也可以从仓库根目录运行：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\sim\regress\run_regression.ps1 -Suite smoke -DryRun
+powershell -NoProfile -ExecutionPolicy Bypass -File .\sim\regress\run_regression.ps1 -Suite smoke
+```
+
+当前支持 `smoke/core/cache/ahb/mmio/soc/full` 几个回归集合，日志保存在 `sim/log/regress/`。
+
 流水线 core：
 
 ```bash
