@@ -78,7 +78,7 @@ APB 外设：
 
 文件：`rtl/core/rv32i_pipe_core.v`
 
-用途：五级流水 RV32I core。
+用途：五级流水 RV32IM core。
 
 主要参数：
 
@@ -128,7 +128,8 @@ Debug interface：
 
 RV32M：
 
-- `opcode=0110011` 且 `funct7=0000001` 的 M 扩展指令在 `rv32i_pipe_core` 内部识别。
+- `rv32i_pipe_core` 实例化 `rv32i_decoder #(.ENABLE_M(1))`。
+- `opcode=0110011` 且 `funct7=0000001` 的 M 扩展指令由 decoder 输出 `muldiv_valid/muldiv_op`。
 - `rv32i_muldiv` 位于 EX 阶段。
 - M 指令等待 `rv32i_muldiv.ready`，等待期间 IF 和 ID/EX 保持，EX/MEM 插入 bubble，MEM/WB drain。
 - M 指令结果复用 `RV32I_WB_ALU` writeback/forwarding 路径。
@@ -176,6 +177,26 @@ Debug 输出：
 - B-type branch 优先走 BTB+BHT。
 - BTB miss 的 B-type branch 回退到静态 backward-taken 规则。
 - BHT/BTB 只在 EX 阶段对有效 B-type branch 更新。
+
+### `rv32i_decoder`
+
+文件：`rtl/core/rv32i_decoder.v`
+
+用途：统一生成 RV32I/RV32M 指令控制信号。
+
+主要参数：
+
+- `ENABLE_M`：默认 0。为 0 时 M 扩展编码仍报告 illegal；为 1 时识别 `mul/mulh/mulhsu/mulhu/div/divu/rem/remu`。
+
+M 扩展输出：
+
+- `muldiv_valid`：当前指令为已启用的 RV32M 乘除法指令。
+- `muldiv_op`：直接使用 `funct3` 编码，对应 `RV32I_MULDIV_*`。
+
+当前使用方式：
+
+- 单周期 `rv32i_core` 使用默认 `ENABLE_M=0`，保持 RV32I-only baseline。
+- 流水线 `rv32i_pipe_core` 使用 `ENABLE_M=1`，并把 `muldiv_valid/muldiv_op` 送入 ID/EX。
 
 ## CSR / Trap
 

@@ -1,6 +1,8 @@
 `include "rv32i_defs.vh"
 
-module rv32i_decoder (
+module rv32i_decoder #(
+  parameter ENABLE_M = 0
+) (
   input  wire [31:0] instr,
 
   output wire [4:0]  rs1_addr,
@@ -23,6 +25,8 @@ module rv32i_decoder (
   output reg         system_ecall,
   output reg         system_ebreak,
   output reg         system_mret,
+  output reg         muldiv_valid,
+  output reg  [2:0]  muldiv_op,
   output reg         illegal_instr
 );
 
@@ -52,6 +56,8 @@ module rv32i_decoder (
     system_ecall  = 1'b0;
     system_ebreak = 1'b0;
     system_mret   = 1'b0;
+    muldiv_valid  = 1'b0;
+    muldiv_op     = `RV32I_MULDIV_MUL;
     illegal_instr = 1'b0;
 
     case (opcode)
@@ -151,6 +157,23 @@ module rv32i_decoder (
           {7'b0000000, 3'b111}: begin // and
             reg_we = 1'b1;
             alu_op = `RV32I_ALU_AND;
+          end
+          {7'b0000001, 3'b000}, // mul
+          {7'b0000001, 3'b001}, // mulh
+          {7'b0000001, 3'b010}, // mulhsu
+          {7'b0000001, 3'b011}, // mulhu
+          {7'b0000001, 3'b100}, // div
+          {7'b0000001, 3'b101}, // divu
+          {7'b0000001, 3'b110}, // rem
+          {7'b0000001, 3'b111}: begin // remu
+            if (ENABLE_M) begin
+              reg_we       = 1'b1;
+              wb_sel       = `RV32I_WB_ALU;
+              muldiv_valid = 1'b1;
+              muldiv_op    = funct3;
+            end else begin
+              illegal_instr = 1'b1;
+            end
           end
           default: begin
             illegal_instr = 1'b1;

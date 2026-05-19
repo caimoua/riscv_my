@@ -138,6 +138,24 @@ make sim TB_FILE=./testcases/rv32i_pipe_branch_predict_param_tb.sv TOP_NAME=rv32
 
 ## RV32M 乘除法扩展 Testbench
 
+Decoder 译码边界：
+
+```text
+sim/testcases/rv32i_decoder_muldiv_tb.sv
+```
+
+运行命令：
+```bash
+make sim TB_FILE=./testcases/rv32i_decoder_muldiv_tb.sv TOP_NAME=rv32i_decoder_muldiv_tb
+```
+
+覆盖内容：
+- `ENABLE_M=1` 时识别 8 条 RV32M 乘除法编码。
+- 默认 `ENABLE_M=0` 时同样编码仍报告 illegal。
+- `muldiv_valid/muldiv_op`、`reg_we`、`wb_sel`、访存/跳转控制信号保持一致。
+
+流水线执行路径：
+
 ```text
 sim/testcases/rv32i_pipe_muldiv_tb.sv
 ```

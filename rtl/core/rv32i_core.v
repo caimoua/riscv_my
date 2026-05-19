@@ -59,6 +59,8 @@ module rv32i_core (
   wire        system_ecall;
   wire        system_ebreak;
   wire        system_mret;
+  wire        unused_muldiv_valid;
+  wire [2:0]  unused_muldiv_op;
   wire [31:0] wdata;
   wire [31:0] csr_rdata;
   wire [31:0] mem_addr;
@@ -148,6 +150,8 @@ module rv32i_core (
     .system_ecall (system_ecall),
     .system_ebreak(system_ebreak),
     .system_mret  (system_mret),
+    .muldiv_valid (unused_muldiv_valid),
+    .muldiv_op    (unused_muldiv_op),
     .illegal_instr(illegal_instr)
   );
 

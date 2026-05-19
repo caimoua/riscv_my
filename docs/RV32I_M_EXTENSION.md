@@ -4,7 +4,7 @@
 
 ## 当前状态
 
-已实现，并已在 2026-05-18 由用户确认 VCS PASS：
+乘除法执行路径已实现，并已在 2026-05-18 由用户确认 VCS PASS：
 
 ```bash
 make sim TB_FILE=./testcases/rv32i_pipe_muldiv_tb.sv TOP_NAME=rv32i_pipe_muldiv_tb
@@ -15,6 +15,19 @@ make sim TB_FILE=./testcases/rv32i_pipe_muldiv_tb.sv TOP_NAME=rv32i_pipe_muldiv_
 ```text
 cycle=212 instret=31 stall_cycle=177 flush_cycle=0
 RV32M mul/div/rem operations and dependent forwarding passed
+```
+
+2026-05-19 的工程化重构中，M 扩展识别已从 `rv32i_pipe_core` 顶层并入 `rv32i_decoder`。decoder 单元测试已由用户确认 VCS PASS：
+
+```bash
+make sim TB_FILE=./testcases/rv32i_decoder_muldiv_tb.sv TOP_NAME=rv32i_decoder_muldiv_tb
+```
+
+已确认的 PASS 摘要：
+
+```text
+ENABLE_M decoder accepts all RV32M funct3 values
+default RV32I decoder still reports RV32M encodings illegal
 ```
 
 ## 支持的指令
@@ -51,7 +64,7 @@ rtl/core/rv32i_muldiv.v
 该模块接在 `rv32i_pipe_core` 的 EX 阶段：
 
 ```text
-ID decode M instruction
+rv32i_decoder #(.ENABLE_M(1)) decodes M instruction
   -> ID/EX carries muldiv_valid / muldiv_op
   -> EX starts rv32i_muldiv
   -> pipeline stalls while result is not ready
@@ -59,6 +72,8 @@ ID decode M instruction
 ```
 
 为了保持已有 writeback 和 forwarding 逻辑简单，M 扩展结果复用 `RV32I_WB_ALU` 路径进入 `ex_mem_alu_result_q`。
+
+`rv32i_decoder.ENABLE_M` 默认为 0，因此单周期 `rv32i_core` 仍保持 RV32I-only baseline；流水线 `rv32i_pipe_core` 显式打开 `ENABLE_M=1`。
 
 ## Stall 行为
 
@@ -88,6 +103,13 @@ INT_MIN % -1       -> remainder = 0
 ```
 
 ## Directed Test
+
+`rv32i_decoder_muldiv_tb` 覆盖：
+
+- `ENABLE_M=1` 时 8 条 RV32M R-type 编码全部产生 `muldiv_valid`。
+- `muldiv_op` 与 `funct3`/`RV32I_MULDIV_*` 对齐。
+- decoder 直接给出 `reg_we=1`、`wb_sel=RV32I_WB_ALU`、无访存、无跳转、无 illegal。
+- 默认 `ENABLE_M=0` 时同样的 M 编码仍报告 illegal，保护单周期 RV32I baseline。
 
 `rv32i_pipe_muldiv_tb` 覆盖：
 

@@ -53,9 +53,13 @@ rv32i_cached_ahb_master_top
   - 抽出 `rv32i_branch_predictor` 后的分支预测和 pipeline core 集成回归已由用户确认 VCS PASS。
 - RV32M 乘除法扩展：
   - 支持 `mul/mulh/mulhsu/mulhu/div/divu/rem/remu`。
+  - M 扩展识别已并入 `rv32i_decoder`，由 `ENABLE_M` 参数控制。
+  - `rv32i_pipe_core` 打开 `ENABLE_M` 并只消费 decoder 输出的 `muldiv_valid/muldiv_op`。
+  - 单周期 `rv32i_core` 保持 decoder 默认 `ENABLE_M=0`，仍作为 RV32I-only baseline。
   - 新增 EX 阶段 `rv32i_muldiv` 多周期执行单元。
   - M 指令结果复用 ALU writeback/forwarding 路径。
   - `rv32i_pipe_muldiv_tb` 已由用户确认 VCS PASS。
+  - `rv32i_decoder_muldiv_tb` 已由用户确认 VCS PASS。
 - 最小 machine-mode trap/CSR 路径：
   - `mtvec`, `mepc`, `mcause`
   - `mstatus.MIE/MPIE`, `mie.MTIE`, `mip.MTIP`
@@ -132,11 +136,10 @@ rv32i_cached_ahb_master_top
 
 ## 下一步候选
 
-1. 把 M 扩展识别正式并入 decoder，减少 core 顶层补丁逻辑。
-2. 抽出性能计数器模块，继续减轻 `rv32i_pipe_core` 顶层负担。
-3. 增加 AXI-Lite adapter。
-4. 扩展 UART RX/FIFO/interrupt。
-5. 如果项目需要并行 slave 访问，再考虑真正 multi-master AHB matrix。
+1. 抽出性能计数器模块，继续减轻 `rv32i_pipe_core` 顶层负担。
+2. 增加 AXI-Lite adapter。
+3. 扩展 UART RX/FIFO/interrupt。
+4. 如果项目需要并行 slave 访问，再考虑真正 multi-master AHB matrix。
 
 ## 上下文规则
 

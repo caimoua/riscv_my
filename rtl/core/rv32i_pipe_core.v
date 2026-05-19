@@ -254,7 +254,9 @@ module rv32i_pipe_core #(
     .dbg_bht_update_count (dbg_bht_update_count)
   );
 
-  rv32i_decoder u_decoder (
+  rv32i_decoder #(
+    .ENABLE_M(1)
+  ) u_decoder (
     .instr         (if_id_instr_q),
     .rs1_addr     (id_rs1_addr),
     .rs2_addr     (id_rs2_addr),
@@ -275,6 +277,8 @@ module rv32i_pipe_core #(
     .system_ecall (id_system_ecall),
     .system_ebreak(id_system_ebreak),
     .system_mret  (id_system_mret),
+    .muldiv_valid (id_muldiv_valid),
+    .muldiv_op    (id_muldiv_op),
     .illegal_instr(id_illegal)
   );
 
@@ -286,11 +290,6 @@ module rv32i_pipe_core #(
     .imm_u (id_imm_u),
     .imm_j (id_imm_j)
   );
-
-  assign id_muldiv_valid = if_id_valid_q &&
-                           (if_id_instr_q[6:0] == `RV32I_OPCODE_OP) &&
-                           (if_id_instr_q[31:25] == 7'b0000001);
-  assign id_muldiv_op = if_id_instr_q[14:12];
 
   rv32i_regfile u_regfile (
     .clk       (clk),
@@ -743,14 +742,14 @@ module rv32i_pipe_core #(
           id_ex_imm_b_q         <= id_imm_b;
           id_ex_imm_u_q         <= id_imm_u;
           id_ex_imm_j_q         <= id_imm_j;
-          id_ex_reg_we_q        <= id_reg_we || id_muldiv_valid;
+          id_ex_reg_we_q        <= id_reg_we;
           id_ex_alu_src_imm_q   <= id_alu_src_imm;
           id_ex_alu_op_q        <= id_alu_op;
-          id_ex_wb_sel_q        <= id_muldiv_valid ? `RV32I_WB_ALU : id_wb_sel;
-          id_ex_pc_sel_q        <= id_muldiv_valid ? `RV32I_PC_NEXT : id_pc_sel;
+          id_ex_wb_sel_q        <= id_wb_sel;
+          id_ex_pc_sel_q        <= id_pc_sel;
           id_ex_branch_op_q     <= id_branch_op;
-          id_ex_mem_valid_q     <= id_muldiv_valid ? 1'b0 : id_mem_valid;
-          id_ex_mem_write_q     <= id_muldiv_valid ? 1'b0 : id_mem_write;
+          id_ex_mem_valid_q     <= id_mem_valid;
+          id_ex_mem_write_q     <= id_mem_write;
           id_ex_mem_size_q      <= id_mem_size;
           id_ex_mem_unsigned_q  <= id_mem_unsigned;
           id_ex_csr_addr_q      <= id_csr_addr;
@@ -760,7 +759,7 @@ module rv32i_pipe_core #(
           id_ex_system_mret_q   <= id_system_mret;
           id_ex_muldiv_valid_q  <= id_muldiv_valid;
           id_ex_muldiv_op_q     <= id_muldiv_op;
-          id_ex_illegal_q       <= id_illegal && !id_muldiv_valid;
+          id_ex_illegal_q       <= id_illegal;
           id_ex_instr_fault_q   <= if_id_instr_fault_q;
           id_ex_predicted_pc_q   <= if_id_predicted_pc_q;
           id_ex_btb_hit_q        <= if_id_btb_hit_q;

@@ -52,7 +52,7 @@ performance counter always
 branch predictor update always
 ```
 
-### 3. 分支预测器仍是原型式集成
+### 3. 分支预测器已完成第一步抽离
 
 当前动态预测器思路合理：
 
@@ -63,17 +63,17 @@ branch predictor update always
 - EX 阶段更新
 - `BRANCH_PRED_INDEX_BITS` 可配置
 
-但 BHT/BTB 仍直接写在 `rv32i_pipe_core` 内部，后续替换预测策略会牵动 core 顶层。下一步应先抽成独立 `rv32i_branch_predictor`。
+BHT/BTB 已抽成独立 `rv32i_branch_predictor`。后续如果继续工程化，可以再把 fetch token、预测统计和 pipeline control 边界整理得更薄。
 
-### 4. RV32M 识别绕过 decoder
+### 4. RV32M 识别正在并入 decoder
 
-当前 M 扩展识别由 core 顶层额外判断：
+重构前 M 扩展识别由 core 顶层额外判断：
 
 ```text
 opcode == OP && funct7 == 0000001
 ```
 
-然后在 core 中修正 `reg_we`、`wb_sel`、`illegal`。这对快速扩展很实用，但长期应并入 `rv32i_decoder`，由 decoder 统一输出：
+然后在 core 中修正 `reg_we`、`wb_sel`、`illegal`。Phase 2 已把这部分并入 `rv32i_decoder`，由 decoder 统一输出：
 
 ```text
 id_muldiv_valid
@@ -177,9 +177,18 @@ make sim TB_FILE=./testcases/rv32i_pipe_core_tb.sv TOP_NAME=rv32i_pipe_core_tb
 验证重点：
 
 ```bash
+make sim TB_FILE=./testcases/rv32i_decoder_muldiv_tb.sv TOP_NAME=rv32i_decoder_muldiv_tb
 make sim TB_FILE=./testcases/rv32i_pipe_muldiv_tb.sv TOP_NAME=rv32i_pipe_muldiv_tb
 make sim TB_FILE=./testcases/rv32i_pipe_core_tb.sv TOP_NAME=rv32i_pipe_core_tb
 ```
+
+当前状态：
+
+- `rv32i_decoder` 已新增 `ENABLE_M` 参数和 `muldiv_valid/muldiv_op` 输出。
+- `rv32i_pipe_core` 已打开 `ENABLE_M=1`，并移除 core 顶层对 M 指令的 illegal/reg_we/wb_sel 补丁逻辑。
+- 单周期 `rv32i_core` 使用默认 `ENABLE_M=0`，继续保持 RV32I-only baseline。
+- `rv32i_decoder_muldiv_tb` 已由用户确认 VCS PASS。
+- `rv32i_pipe_muldiv_tb` 和 `rv32i_pipe_core_tb` 已由用户确认 VCS 回归 PASS。
 
 ### Phase 3：抽出性能计数器
 
@@ -267,10 +276,14 @@ front_stall
 
 ## 当前建议
 
-当前正在执行 Phase 1：抽出 `rv32i_branch_predictor.v`。
+Phase 2：RV32M 识别并入 decoder 已完成并通过用户 VCS 回归确认。
 
 原因：
 
-- 当前 BHT/BTB 已完成参数化，边界已经比较清楚。
-- 这是从 `rv32i_pipe_core` 中移出独立功能块的最低风险一步。
-- 新增 standalone test 加上现有三个分支预测 directed tests 能直接验证行为是否保持一致。
+下一步建议进入 Phase 3：抽出性能计数器模块。
+
+原因：
+
+- Phase 1 的 `rv32i_branch_predictor` 已抽出并通过用户 VCS 回归确认。
+- Phase 2 的 M 扩展识别已并入 decoder，`rv32i_pipe_core` 顶层补丁逻辑已减少。
+- 性能计数器独立化风险相对可控，能继续减轻 `rv32i_pipe_core` 顶层负担。
