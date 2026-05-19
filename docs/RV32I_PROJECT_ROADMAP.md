@@ -83,6 +83,7 @@ sim/regress/
 - 已支持 `smoke/core/cache/ahb/mmio/soc/full` suite。
 - 已完成本地 dry-run 检查。
 - `smoke` suite 已由用户在 VCS 环境确认 PASS。
+- `core/cache/soc/full` suite 已由用户在 VCS 环境确认 PASS，Stage A1 收口。
 
 ### A2：汇编/C 测试流
 
@@ -296,8 +297,8 @@ AHB matrix
 
 Stage A 的推荐近期顺序：
 
-1. A1：继续在 VCS 环境确认自动化回归脚本，优先跑 `core/cache/soc/full`。
-2. A2：汇编/C 测试流。
-3. A5：补交付文档。
-4. A3：ISA 基础测试。
-5. A4：lint / 综合 / 时序基础检查。
+1. A2：汇编/C 测试流。
+2. A5：补交付文档。
+3. A3：ISA 基础测试。
+4. A4：lint / 综合 / 时序基础检查。
+5. 根据后续测试增长继续维护自动化回归 suite。

@@ -101,6 +101,7 @@ MMIO 改动后，至少运行：
 
 ## 最近人工更新
 
+- 2026-05-19：用户确认 Stage A1 自动化回归 `core/cache/soc/full` suite 均 VCS PASS，自动化回归入口第一版收口。
 - 2026-05-19：用户确认 Stage A1 自动化回归 `smoke` suite VCS PASS；该 suite 覆盖 `rv32i_core_tb`、`rv32i_pipe_core_tb`、`rv32i_pipe_muldiv_tb` 和 `rv32i_cached_ahb_master_top_tb`，日志目录为 `sim/log/regress/20260519_162217-smoke`。
 - 2026-05-19：Stage A1 自动化回归入口第一版已新增，包含 `sim/regress/regression_list.txt`、PowerShell 脚本和 Bash 脚本，支持 `smoke/core/cache/ahb/mmio/soc/full` suite；本地已完成 dry-run 检查，真实 VCS 回归需在仿真环境运行。
 - 2026-05-19：用户确认 Phase 6 第一轮 `rv32i_pipe_core` 仿真期 SystemVerilog assertion 加入后 VCS 回归 PASS；覆盖 commit redirect 优先级、流水线清空、memory stall 后端保持、mul/div stall 前端保持和 EX/MEM bubble、分支预测更新合法性、fault/illegal 写回屏蔽。

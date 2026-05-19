@@ -148,12 +148,13 @@ Stage C：性能优化型 CPU core
   - 支持 `smoke/core/cache/ahb/mmio/soc/full` suite。
   - 本地已完成 PowerShell dry-run 和 Bash 语法/dry-run 检查。
   - 用户已在 VCS 环境确认 `smoke` suite PASS。
+  - 用户已在 VCS 环境确认 `core/cache/soc/full` suite PASS，Stage A1 收口。
 
 ## 验证状态摘要
 
 详细状态见 `docs/VERIFICATION_MATRIX.md`。
 
-当前 Phase 6 第一轮 `rv32i_pipe_core` 仿真期 assertion 已加入，并由用户确认 VCS 回归 PASS。Stage A1 自动化回归入口第一版已完成 dry-run 检查，`smoke` suite 已由用户确认 VCS PASS；既有 directed tests 的历史 PASS 记录见 `docs/VERIFICATION_MATRIX.md`。
+当前 Phase 6 第一轮 `rv32i_pipe_core` 仿真期 assertion 已加入，并由用户确认 VCS 回归 PASS。Stage A1 自动化回归入口第一版已完成，`smoke/core/cache/soc/full` suite 均已由用户确认 VCS PASS；既有 directed tests 的历史 PASS 记录见 `docs/VERIFICATION_MATRIX.md`。
 
 ## 设计假设
 
@@ -169,11 +170,11 @@ Stage C：性能优化型 CPU core
 
 ## 下一步候选
 
-1. 继续在 VCS 环境确认 Stage A1 自动化回归脚本，优先跑 `core/cache/soc/full`。
-2. Stage A2：把更多 directed test 迁移到汇编/C 软件镜像流，减少手写机器码。
-3. Stage A5：补齐 CPU IP 交付文档，重点写清楚 `rv32i_cached_ahb_master_top` 的接口、假设和限制。
-4. Stage A3：引入 RV32I/RV32M ISA 基础测试子集。
-5. Stage A4：建立 lint / 综合 / 时序基础检查流程。
+1. Stage A2：把更多 directed test 迁移到汇编/C 软件镜像流，减少手写机器码。
+2. Stage A5：补齐 CPU IP 交付文档，重点写清楚 `rv32i_cached_ahb_master_top` 的接口、假设和限制。
+3. Stage A3：引入 RV32I/RV32M ISA 基础测试子集。
+4. Stage A4：建立 lint / 综合 / 时序基础检查流程。
+5. 根据 Stage A2/A5 需要继续扩展自动化回归 suite。
 6. Stage B/C 的 SoC/FPGA demo 和性能优化等 Stage A 收敛后再展开。
 
 ## 上下文规则
