@@ -102,6 +102,23 @@ make sim TB_FILE=./testcases/rv32i_pipe_dynamic_branch_predict_tb.sv TOP_NAME=rv
 - 后续同一条 forward branch 通过 BTB+BHT 预测 taken。
 - 检查 `dbg_btb_hit_count`、`dbg_btb_miss_count` 和 `dbg_bht_update_count`。
 
+## 参数化 BHT/BTB 分支预测 Testbench
+
+```text
+sim/testcases/rv32i_pipe_branch_predict_param_tb.sv
+```
+
+运行命令：
+```bash
+make sim TB_FILE=./testcases/rv32i_pipe_branch_predict_param_tb.sv TOP_NAME=rv32i_pipe_branch_predict_param_tb
+```
+
+覆盖内容：
+- `BRANCH_PRED_INDEX_BITS=2`，即 4 项 BHT/BTB。
+- forward branch 和 backward branch 分布在不同 predictor index。
+- 小表项配置下仍能完成 BTB miss、BHT/BTB 训练、后续 BTB hit。
+- 检查 `branch_count`、`branch_mispredict_count`、`btb_hit/miss` 和 `bht_update`。
+
 ## RV32M 乘除法扩展 Testbench
 
 ```text

@@ -1,7 +1,8 @@
 `include "rv32i_defs.vh"
 
 module rv32i_pipe_core #(
-  parameter [31:0] RESET_PC = 32'h0000_0000
+  parameter [31:0] RESET_PC = 32'h0000_0000,
+  parameter BRANCH_PRED_INDEX_BITS = 6
 ) (
   input  wire        clk,
   input  wire        rst_n,
@@ -39,7 +40,7 @@ module rv32i_pipe_core #(
   output wire        dbg_ebreak
 );
 
-  localparam BP_INDEX_BITS = 6;
+  localparam BP_INDEX_BITS = BRANCH_PRED_INDEX_BITS;
   localparam BP_ENTRIES = (1 << BP_INDEX_BITS);
   localparam BP_TAG_BITS = 32 - BP_INDEX_BITS - 2;
 

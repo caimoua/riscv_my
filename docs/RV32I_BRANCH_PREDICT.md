@@ -17,6 +17,20 @@ make sim TB_FILE=./testcases/rv32i_pipe_core_tb.sv TOP_NAME=rv32i_pipe_core_tb
 make sim TB_FILE=./testcases/rv32i_pipe_dynamic_branch_predict_tb.sv TOP_NAME=rv32i_pipe_dynamic_branch_predict_tb
 ```
 
+BHT/BTB 参数化版本已经在 2026-05-19 由用户确认 VCS PASS：
+
+```bash
+make sim TB_FILE=./testcases/rv32i_pipe_branch_predict_param_tb.sv TOP_NAME=rv32i_pipe_branch_predict_param_tb
+```
+
+已确认的参数化预测 PASS 摘要：
+
+```text
+cycle=36 instret=26 stall_cycle=2 flush_cycle=2
+branch_count=8 branch_mispredict_count=2
+btb_hit=6 btb_miss=2 bht_update=8 branch_pred_index_bits=2
+```
+
 已确认的动态预测 PASS 摘要：
 
 ```text
@@ -29,14 +43,33 @@ btb_hit=6 btb_miss=2 bht_update=8
 
 当前 core 在原来的静态预测基础上增加了一个很小的动态预测器：
 
-- BHT：64 项 direct-mapped 表，每项是 2-bit 饱和计数器。
-- BTB：64 项 direct-mapped 表，记录分支 PC tag 和预测目标 PC。
+- BHT：默认 64 项 direct-mapped 表，每项是 2-bit 饱和计数器。
+- BTB：默认 64 项 direct-mapped 表，记录分支 PC tag 和预测目标 PC。
+- 表项数量由 `BRANCH_PRED_INDEX_BITS` 参数控制，entry 数量为 `2 ** BRANCH_PRED_INDEX_BITS`。
 - `JAL`：仍然在 IF 阶段直接用立即数目标预测 taken，不依赖 BTB。
 - B-type branch：如果 BTB 命中且 BHT 最高位为 1，则使用 BTB 目标预测 taken。
 - B-type branch：如果 BTB 未命中，则保留原来的静态后备规则，backward branch 预测 taken，forward branch 预测 not-taken。
 - `JALR`：目标来自寄存器，仍然在 EX 阶段解析。
 
 这样做的好处是：第一次遇到分支时仍然有简单静态规则可用；当同一条分支反复执行后，BHT/BTB 可以学习 forward taken branch 或循环退出行为。
+
+## 参数化接口
+
+`rv32i_pipe_core` 新增参数：
+
+```verilog
+parameter BRANCH_PRED_INDEX_BITS = 6
+```
+
+默认值 6 对应 64 项 BHT 和 64 项 BTB。当前建议取值不小于 1。这个参数已经从以下 wrapper 透传：
+
+- `rv32i_cached_system_top`
+- `rv32i_cached_system_ahb_top`
+- `rv32i_cached_ahb_master_top`
+- `rv32i_ahb_matrix_soc_top`
+- `rv32i_ahb_matrix_apb_soc_top`
+
+因此后续可以在 core testbench 或 SoC top 中直接调小/调大分支预测表项，用来比较 alias、命中率、flush 数和面积成本。
 
 ## 流水线行为
 
@@ -91,3 +124,10 @@ dbg_bht_update_count         BHT 被训练更新的次数
 - 后续同一条 forward `beq` 通过 BHT+BTB 预测 taken。
 - backward `bne` 使用静态后备开始循环，随后进入 BTB/BHT 路径。
 - 预期 B-type 分支总数为 8，BTB miss 为 2，BTB hit 为 6。
+
+`rv32i_pipe_branch_predict_param_tb` 覆盖参数化小表路径：
+
+- `BRANCH_PRED_INDEX_BITS=2`，即 4 项 BHT/BTB。
+- forward `beq` 和 backward `bne` 被放到不同 predictor index，避免故意 alias。
+- 预期仍然能学习 forward taken branch，并在循环退出时产生一次 mispredict。
+- 该测试已经由用户确认 VCS PASS。

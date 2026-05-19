@@ -1,6 +1,6 @@
 # 接口索引
 
-最后更新：2026-05-18
+最后更新：2026-05-19
 
 本文记录稳定模块边界，后续工作不需要每次重新扫描大量 RTL。
 
@@ -80,6 +80,11 @@ APB 外设：
 
 用途：五级流水 RV32I core。
 
+主要参数：
+
+- `RESET_PC`：复位取指地址。
+- `BRANCH_PRED_INDEX_BITS`：BHT/BTB index 位宽，默认 6，对应 64 项 direct-mapped BHT/BTB。
+
 Instruction-side interface：
 
 - Outputs：`imem_valid`, `imem_addr`
@@ -119,6 +124,7 @@ Debug interface：
 - B-type branch：BTB 未命中时回退到静态规则，backward branch 预测 taken，forward branch 预测 not-taken。
 - `JALR`：仍在 EX 阶段解析。
 - EX 阶段发现预测 PC 与真实下一条 PC 不一致时产生 `ex_redirect` 并 flush 前端。
+- `BRANCH_PRED_INDEX_BITS` 已从 cached/AHB/SoC wrapper 透传，便于在不同集成层级调整 BHT/BTB 表项数量。
 
 RV32M：
 
