@@ -826,4 +826,176 @@ module rv32i_pipe_core #(
     end
   end
 
+`ifndef SYNTHESIS
+`ifndef RV32I_DISABLE_ASSERT
+  // Commit-stage redirect has the highest priority and must suppress younger flow.
+  property p_commit_flush_controls_priority;
+    @(posedge clk) disable iff (!rst_n)
+      pipe_commit_flush |-> (!pipe_front_advance &&
+                             !pipe_ex_mem_advance &&
+                             !perf_flush_event);
+  endproperty
+
+  assert property (p_commit_flush_controls_priority)
+    else $fatal(1, "commit redirect must have priority over front/backend flow");
+
+  // A trap/MRET redirect flushes all in-flight pipeline valid bits on the next edge.
+  property p_commit_flush_clears_pipeline;
+    @(posedge clk) disable iff (!rst_n)
+      pipe_commit_flush |=> (!if_id_valid_q &&
+                             !id_ex_valid_q &&
+                             !ex_mem_valid_q &&
+                             !mem_wb_valid_q);
+  endproperty
+
+  assert property (p_commit_flush_clears_pipeline)
+    else $fatal(1, "commit redirect did not clear pipeline valid bits");
+
+  // A memory wait-state freezes the backend until the LSU transaction completes.
+  property p_mem_stall_holds_backend;
+    @(posedge clk) disable iff (!rst_n)
+      (mem_stall && !pipe_commit_flush) |=>
+        $stable({
+          ex_mem_valid_q,
+          ex_mem_pc4_q,
+          ex_mem_rd_addr_q,
+          ex_mem_alu_result_q,
+          ex_mem_store_data_q,
+          ex_mem_mem_addr_q,
+          ex_mem_imm_u_q,
+          ex_mem_csr_rdata_q,
+          ex_mem_csr_wdata_q,
+          ex_mem_csr_addr_q,
+          ex_mem_csr_op_q,
+          ex_mem_csr_write_q,
+          ex_mem_reg_we_q,
+          ex_mem_wb_sel_q,
+          ex_mem_mem_valid_q,
+          ex_mem_mem_write_q,
+          ex_mem_mem_size_q,
+          ex_mem_mem_unsigned_q,
+          ex_mem_system_ecall_q,
+          ex_mem_system_ebreak_q,
+          ex_mem_system_mret_q,
+          ex_mem_illegal_q,
+          ex_mem_instr_addr_misaligned_q,
+          ex_mem_instr_fault_q,
+          mem_wb_valid_q,
+          mem_wb_pc4_q,
+          mem_wb_rd_addr_q,
+          mem_wb_alu_result_q,
+          mem_wb_load_data_q,
+          mem_wb_imm_u_q,
+          mem_wb_csr_rdata_q,
+          mem_wb_csr_wdata_q,
+          mem_wb_csr_addr_q,
+          mem_wb_csr_op_q,
+          mem_wb_csr_write_q,
+          mem_wb_reg_we_q,
+          mem_wb_wb_sel_q,
+          mem_wb_system_ecall_q,
+          mem_wb_system_ebreak_q,
+          mem_wb_system_mret_q,
+          mem_wb_illegal_q,
+          mem_wb_instr_addr_misaligned_q,
+          mem_wb_instr_fault_q,
+          mem_wb_load_addr_misaligned_q,
+          mem_wb_load_fault_q,
+          mem_wb_store_addr_misaligned_q,
+          mem_wb_store_fault_q
+        });
+  endproperty
+
+  assert property (p_mem_stall_holds_backend)
+    else $fatal(1, "memory stall did not hold EX/MEM and MEM/WB state");
+
+  // A multi-cycle M operation holds fetch/decode and inserts a bubble into EX/MEM.
+  property p_muldiv_stall_holds_frontend;
+    @(posedge clk) disable iff (!rst_n)
+      (ex_muldiv_stall && !mem_stall && !pipe_commit_flush) |=>
+        ($stable({
+           pc_q,
+           if_discard_q,
+           if_id_valid_q,
+           if_id_pc_q,
+           if_id_pc4_q,
+           if_id_instr_q,
+           if_id_instr_fault_q,
+           if_id_predicted_pc_q,
+           if_id_btb_hit_q,
+           id_ex_valid_q,
+           id_ex_pc_q,
+           id_ex_pc4_q,
+           id_ex_rs1_addr_q,
+           id_ex_rs2_addr_q,
+           id_ex_rd_addr_q,
+           id_ex_rs1_data_q,
+           id_ex_rs2_data_q,
+           id_ex_imm_i_q,
+           id_ex_imm_s_q,
+           id_ex_imm_b_q,
+           id_ex_imm_u_q,
+           id_ex_imm_j_q,
+           id_ex_reg_we_q,
+           id_ex_alu_src_imm_q,
+           id_ex_alu_op_q,
+           id_ex_wb_sel_q,
+           id_ex_pc_sel_q,
+           id_ex_branch_op_q,
+           id_ex_mem_valid_q,
+           id_ex_mem_write_q,
+           id_ex_mem_size_q,
+           id_ex_mem_unsigned_q,
+           id_ex_csr_addr_q,
+           id_ex_csr_op_q,
+           id_ex_system_ecall_q,
+           id_ex_system_ebreak_q,
+           id_ex_system_mret_q,
+           id_ex_muldiv_valid_q,
+           id_ex_muldiv_op_q,
+           id_ex_illegal_q,
+           id_ex_instr_fault_q,
+           id_ex_predicted_pc_q,
+           id_ex_btb_hit_q
+         }) &&
+         !ex_mem_valid_q);
+  endproperty
+
+  assert property (p_muldiv_stall_holds_frontend)
+    else $fatal(1, "mul/div stall did not hold frontend or bubble EX/MEM");
+
+  // Predictor training is only legal for a valid, non-faulting B-type branch.
+  property p_branch_update_is_valid_branch;
+    @(posedge clk) disable iff (!rst_n)
+      ex_branch_update |-> (id_ex_valid_q &&
+                            ex_branch_instr &&
+                            !id_ex_illegal_q &&
+                            !id_ex_instr_fault_q &&
+                            !ex_instr_addr_misaligned &&
+                            !mem_stall &&
+                            !pipe_commit_flush);
+  endproperty
+
+  assert property (p_branch_update_is_valid_branch)
+    else $fatal(1, "branch predictor updated from an invalid branch state");
+
+  // Faulting or illegal instructions must never reach the architectural writeback port.
+  property p_wb_reg_we_has_no_fault;
+    @(posedge clk) disable iff (!rst_n)
+      wb_reg_we |-> (mem_wb_valid_q &&
+                     mem_wb_reg_we_q &&
+                     !mem_wb_illegal_q &&
+                     !mem_wb_instr_addr_misaligned_q &&
+                     !mem_wb_instr_fault_q &&
+                     !mem_wb_load_addr_misaligned_q &&
+                     !mem_wb_load_fault_q &&
+                     !mem_wb_store_addr_misaligned_q &&
+                     !mem_wb_store_fault_q);
+  endproperty
+
+  assert property (p_wb_reg_we_has_no_fault)
+    else $fatal(1, "writeback enabled while commit-stage fault is present");
+`endif
+`endif
+
 endmodule

@@ -85,6 +85,7 @@ MMIO 改动后，至少运行：
 
 ## 最近人工更新
 
+- 2026-05-19：用户确认 Phase 6 第一轮 `rv32i_pipe_core` 仿真期 SystemVerilog assertion 加入后 VCS 回归 PASS；覆盖 commit redirect 优先级、流水线清空、memory stall 后端保持、mul/div stall 前端保持和 EX/MEM bubble、分支预测更新合法性、fault/illegal 写回屏蔽。
 - 2026-05-19：用户确认 Phase 5 第二轮 `rv32i_pipe_core` stage 清零 task 抽取后 VCS 回归 PASS：core/branch/muldiv/trap/cache 关键回归均通过。
 - 2026-05-19：用户确认 Phase 5 第一轮 `rv32i_pipe_core` 时序块拆分后 VCS 回归 PASS：`rv32i_pipe_core_tb`、分支预测、muldiv、trap/cache 关键回归均通过。
 - 2026-05-19：用户确认 `rv32i_pipe_ctrl_tb` VCS PASS：pipeline control priority cases passed。

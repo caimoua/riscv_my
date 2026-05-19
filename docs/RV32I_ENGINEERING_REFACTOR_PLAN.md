@@ -297,6 +297,12 @@ perf_flush_event
 - `mret/trap redirect + wrong-path writeback`
 - `muldiv_stall` 后紧跟 forwarding
 
+当前状态：
+
+- 第一轮 assertion 已加入 `rv32i_pipe_core`，并用 `SYNTHESIS` / `RV32I_DISABLE_ASSERT` 宏保护，避免影响综合交付。
+- 已覆盖 commit redirect 优先级、redirect 后流水线 valid 清空、memory stall 后端保持、mul/div stall 前端保持并向 EX/MEM 插入 bubble、分支预测更新合法性、fault/illegal 写回屏蔽。
+- 该轮改动已由用户确认 VCS 回归 PASS。
+
 ## 执行规则
 
 每个 phase 都按同一流程推进：
@@ -311,10 +317,11 @@ perf_flush_event
 
 ## 当前建议
 
-当前 Phase 5 第二轮：抽出重复 stage bubble/flush 清零逻辑已经完成。
+当前 Phase 6 第一轮：`rv32i_pipe_core` 仿真期 assertion 已加入，并由用户确认 VCS 回归 PASS。
 
 原因：
 
 - Phase 1 的 `rv32i_branch_predictor` 已抽出并通过用户 VCS 回归确认。
 - Phase 2 的 M 扩展识别已并入 decoder，`rv32i_pipe_core` 顶层补丁逻辑已减少。
-- Phase 5 第二轮已经把重复清零逻辑集中到本地 task 并完成回归；下一步可以进入 Phase 6 补 assertion。
+- Phase 5 第二轮已经把重复清零逻辑集中到本地 task 并完成回归。
+- Phase 6 第一轮已经补入低侵入的仿真防呆 assertion，不改变综合数据通路；下一步可以补组合场景 directed test，或开始抽薄 IF/fetch token 语义。

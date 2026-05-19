@@ -141,6 +141,12 @@ RV32M：
 - `mem_stall` 时 EX/MEM 和 MEM/WB 保持；`ex_muldiv_stall` 时 EX/MEM 插入 bubble，MEM/WB 从旧 EX/MEM drain。
 - stage bubble/flush 的清零赋值集中在 `clear_if_id`、`clear_id_ex`、`clear_ex_mem`、`clear_mem_wb` 本地 task 中。
 
+仿真断言：
+
+- `rv32i_pipe_core` 末尾包含仿真期 SystemVerilog assertion，默认在非综合仿真中启用。
+- 可通过定义 `SYNTHESIS` 或 `RV32I_DISABLE_ASSERT` 关闭。
+- 当前覆盖 commit redirect 优先级、redirect 后流水线清空、memory stall 后端保持、mul/div stall 前端保持并向 EX/MEM 插入 bubble、分支预测更新合法性、fault/illegal 写回屏蔽。
+
 关键内部模块：
 
 - `rv32i_branch_predictor`

@@ -42,6 +42,7 @@ rv32i_cached_ahb_master_top
   - pipeline control 抽出后的 core/perf/branch/muldiv 回归已由用户确认 VCS PASS。
   - Phase 5 第一轮已完成：`rv32i_pipe_core` 的 PC/IFID、ID/EX、EX/MEM、MEM/WB 时序更新块已拆分，并由用户确认 VCS 回归 PASS。
   - Phase 5 第二轮已完成：重复的 stage bubble/flush 清零逻辑已抽成本地 task，并由用户确认 VCS 回归 PASS。
+  - Phase 6 第一轮已完成：`rv32i_pipe_core` 已加入仿真期 SystemVerilog assertion，覆盖 commit redirect 优先级、流水线清空、memory stall 保持、mul/div stall 前端保持、分支预测更新合法性和 fault/illegal 写回屏蔽，并由用户确认 VCS 回归 PASS。
 - 第一版静态分支预测：
   - 对齐的 `JAL` 在 IF 阶段预测 taken。
   - 对齐的 backward B-type branch 在 IF 阶段预测 taken。
@@ -128,7 +129,7 @@ rv32i_cached_ahb_master_top
 
 详细状态见 `docs/VERIFICATION_MATRIX.md`。
 
-当前 Phase 5 第二轮 `rv32i_pipe_core` stage 清零 task 抽取已由用户确认 VCS 回归 PASS；既有 directed tests 的历史 PASS 记录见 `docs/VERIFICATION_MATRIX.md`。
+当前 Phase 6 第一轮 `rv32i_pipe_core` 仿真期 assertion 已加入，并由用户确认 VCS 回归 PASS；既有 directed tests 的历史 PASS 记录见 `docs/VERIFICATION_MATRIX.md`。
 
 ## 设计假设
 
@@ -144,8 +145,9 @@ rv32i_cached_ahb_master_top
 
 ## 下一步候选
 
-1. 进入 Phase 6，为 stall/flush/redirect/writeback 增加 SystemVerilog assertion 和组合场景测试。
+1. 继续为 `mem_stall + ex_muldiv_stall`、`ex_redirect + commit_redirect` 等组合场景补 directed test。
 2. 继续补充 stage 级注释，尤其是 trap redirect、mul/div stall、memory stall 的优先级。
+3. 抽薄 IF/fetch token 或整理取指返回语义，为后续更真实总线/延迟模型打基础。
 4. 增加 AXI-Lite adapter。
 5. 扩展 UART RX/FIFO/interrupt。
 6. 如果项目需要并行 slave 访问，再考虑真正 multi-master AHB matrix。
