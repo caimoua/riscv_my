@@ -274,7 +274,12 @@ perf_flush_event
 - 每一级只管理自己的 pipeline register。
 - 依赖 Phase 4 的统一控制信号降低改动风险。
 
-这一步风险较高，必须在前面几步验证稳定后进行。
+当前状态：
+
+- PC/IFID、ID/EX、EX/MEM、MEM/WB 已拆成独立时序块。
+- 每个时序块只写自己所属的 pipeline register，避免多 always 驱动同一个寄存器。
+- 行为目标保持不变：commit redirect 清空全线，mem stall 保持 EX/MEM 和 MEM/WB，mul/div stall 让 EX/MEM 插入 bubble 且 MEM/WB drain。
+- 该结构性改动已由用户确认 VCS 回归 PASS。
 
 ### Phase 6：补 assertion 和组合场景测试
 
@@ -305,10 +310,10 @@ perf_flush_event
 
 ## 当前建议
 
-当前 Phase 4：建立统一 pipeline control 已经完成，下一步进入 Phase 5：拆流水线寄存器 always 块。
+当前 Phase 5 第一轮：拆流水线寄存器 always 块已经完成。
 
 原因：
 
 - Phase 1 的 `rv32i_branch_predictor` 已抽出并通过用户 VCS 回归确认。
 - Phase 2 的 M 扩展识别已并入 decoder，`rv32i_pipe_core` 顶层补丁逻辑已减少。
-- Phase 5 应继续保持小步推进，优先拆出 PC/IFID 或性能风险最低的一段，并在每一步后回归 core/branch/muldiv/trap 相关测试。
+- Phase 5 第一轮已经拆成 stage 级时序块并完成回归；下一步可以继续抽出重复 bubble/flush 清零逻辑，或者进入 Phase 6 补 assertion。

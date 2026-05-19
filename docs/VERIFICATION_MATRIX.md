@@ -85,6 +85,7 @@ MMIO 改动后，至少运行：
 
 ## 最近人工更新
 
+- 2026-05-19：用户确认 Phase 5 第一轮 `rv32i_pipe_core` 时序块拆分后 VCS 回归 PASS：`rv32i_pipe_core_tb`、分支预测、muldiv、trap/cache 关键回归均通过。
 - 2026-05-19：用户确认 `rv32i_pipe_ctrl_tb` VCS PASS：pipeline control priority cases passed。
 - 2026-05-19：用户确认 pipeline control 抽出后的 `rv32i_pipe_core_tb`、`rv32i_perf_counter_tb`、`rv32i_pipe_branch_predict_tb`、`rv32i_pipe_dynamic_branch_predict_tb`、`rv32i_pipe_branch_predict_param_tb`、`rv32i_pipe_muldiv_tb` 回归 VCS PASS。
 - 2026-05-19：用户确认 `rv32i_perf_counter_tb` VCS PASS：standalone performance counter events and reset passed。

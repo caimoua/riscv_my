@@ -134,6 +134,12 @@ RV32M：
 - M 指令等待 `rv32i_muldiv.ready`，等待期间 IF 和 ID/EX 保持，EX/MEM 插入 bubble，MEM/WB drain。
 - M 指令结果复用 `RV32I_WB_ALU` writeback/forwarding 路径。
 
+流水线寄存器组织：
+
+- PC/IFID、ID/EX、EX/MEM、MEM/WB 的时序更新已经拆成独立 `always @(posedge clk or negedge rst_n)` 块。
+- `rv32i_pipe_ctrl` 统一产生 advance/bubble/flush 控制，stage 寄存器块只根据这些命名控制信号更新。
+- `mem_stall` 时 EX/MEM 和 MEM/WB 保持；`ex_muldiv_stall` 时 EX/MEM 插入 bubble，MEM/WB 从旧 EX/MEM drain。
+
 关键内部模块：
 
 - `rv32i_branch_predictor`

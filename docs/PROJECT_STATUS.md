@@ -40,6 +40,7 @@ rv32i_cached_ahb_master_top
   - `rv32i_pipe_ctrl` 已新增，用于集中管理当前 stall/flush 优先级。
   - `rv32i_pipe_ctrl_tb` 已由用户确认 VCS PASS。
   - pipeline control 抽出后的 core/perf/branch/muldiv 回归已由用户确认 VCS PASS。
+  - Phase 5 第一轮已完成：`rv32i_pipe_core` 的 PC/IFID、ID/EX、EX/MEM、MEM/WB 时序更新块已拆分，并由用户确认 VCS 回归 PASS。
 - 第一版静态分支预测：
   - 对齐的 `JAL` 在 IF 阶段预测 taken。
   - 对齐的 backward B-type branch 在 IF 阶段预测 taken。
@@ -126,7 +127,7 @@ rv32i_cached_ahb_master_top
 
 详细状态见 `docs/VERIFICATION_MATRIX.md`。
 
-当前 directed tests 均已有用户报告的 VCS PASS；新增测试后仍按 `PENDING` 到用户确认 PASS 的流程推进。
+当前 Phase 5 第一轮 `rv32i_pipe_core` 时序块拆分已由用户确认 VCS 回归 PASS；既有 directed tests 的历史 PASS 记录见 `docs/VERIFICATION_MATRIX.md`。
 
 ## 设计假设
 
@@ -142,11 +143,12 @@ rv32i_cached_ahb_master_top
 
 ## 下一步候选
 
-1. 进入 Phase 5：按 stage 拆分 `rv32i_pipe_core` 的流水线寄存器 always 块。
-2. 为 stall/flush/redirect/writeback 增加 SystemVerilog assertion 和组合场景测试。
-3. 增加 AXI-Lite adapter。
-4. 扩展 UART RX/FIFO/interrupt。
-5. 如果项目需要并行 slave 访问，再考虑真正 multi-master AHB matrix。
+1. 继续拆分或抽出重复 bubble/flush 清零逻辑，进一步降低 `rv32i_pipe_core` 文件长度。
+2. 继续补充 stage 级注释，尤其是 trap redirect、mul/div stall、memory stall 的优先级。
+3. 为 stall/flush/redirect/writeback 增加 SystemVerilog assertion 和组合场景测试。
+4. 增加 AXI-Lite adapter。
+5. 扩展 UART RX/FIFO/interrupt。
+6. 如果项目需要并行 slave 访问，再考虑真正 multi-master AHB matrix。
 
 ## 上下文规则
 
