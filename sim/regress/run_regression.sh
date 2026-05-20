@@ -4,6 +4,7 @@ set -u
 suite="smoke"
 dry_run=0
 keep_going=0
+build_software=0
 make_cmd="make"
 list_path=""
 
@@ -15,6 +16,7 @@ Options:
   --suite <name>   smoke, core, cache, ahb, mmio, soc, or full. Default: smoke
   --dry-run        Print selected make commands without running VCS
   --keep-going     Continue after a failed test
+  --build-software Run make -C software before launching simulations
   --make <cmd>     Make command to use. Default: make
   --list <path>    Regression list path. Default: regress/regression_list.txt
   -h, --help       Show this help
@@ -33,6 +35,10 @@ while [ "$#" -gt 0 ]; do
       ;;
     --keep-going)
       keep_going=1
+      shift
+      ;;
+    --build-software)
+      build_software=1
       shift
       ;;
     --make)
@@ -57,6 +63,7 @@ done
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 sim_dir="$(cd "$script_dir/.." && pwd)"
+repo_dir="$(cd "$sim_dir/.." && pwd)"
 if [ -z "$list_path" ]; then
   list_path="$script_dir/regression_list.txt"
 fi
@@ -104,6 +111,38 @@ echo
 
 if [ "$dry_run" -eq 0 ]; then
   mkdir -p "$run_dir"
+fi
+
+required_images=(
+  "software/bin/ahb_matrix_soc.memh"
+  "software/bin/ahb_matrix_apb_soc.memh"
+  "software/bin/cached_system_smoke.memh"
+  "software/bin/cached_ahb_master.memh"
+  "software/bin/cached_uart.memh"
+  "software/bin/cached_timer.memh"
+)
+
+if [ "$build_software" -eq 1 ]; then
+  echo "Software build   : $make_cmd -C software"
+  if [ "$dry_run" -eq 0 ]; then
+    (cd "$repo_dir" && "$make_cmd" -C software) 2>&1 | tee "$run_dir/software_build.log"
+    build_exit="${PIPESTATUS[0]}"
+    if [ "$build_exit" -ne 0 ]; then
+      echo "ERROR: software image build failed with exit code $build_exit" >&2
+      exit "$build_exit"
+    fi
+  fi
+  echo
+fi
+
+if [ "$dry_run" -eq 0 ]; then
+  for image in "${required_images[@]}"; do
+    if [ ! -f "$repo_dir/$image" ]; then
+      echo "ERROR: missing software image: $image" >&2
+      echo "Run with --build-software or run 'make -C software'." >&2
+      exit 2
+    fi
+  done
 fi
 
 failures=()

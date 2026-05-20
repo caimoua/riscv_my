@@ -79,7 +79,16 @@ cd sim
 make sim TB_FILE=./testcases/rv32i_cached_uart_tb.sv TOP_NAME=rv32i_cached_uart_tb
 ```
 
-`rv32i_cached_uart_tb` 中 ROM 程序会：
+`rv32i_cached_uart_tb` 中 ROM 程序位于：
+
+```text
+software/asm/cached_uart.S
+software/bin/cached_uart.memh
+```
+
+testbench 默认从 `../software/bin/cached_uart.memh` 加载，也可以通过 `+ROM_MEMH=<path>` 覆盖。
+
+程序会：
 
 1. 用 `lui x1, 0x40001` 设置 UART base。
 2. 读取 `STATUS`，检查 `tx_ready=1`。

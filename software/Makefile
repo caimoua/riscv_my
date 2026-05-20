@@ -11,7 +11,7 @@ BUILD_DIR        ?= build
 BIN_DIR          ?= bin
 
 FLASH_PROGRAMS   := ahb_matrix_soc ahb_matrix_apb_soc
-ROM0_PROGRAMS    := cached_system_smoke cached_ahb_master
+ROM0_PROGRAMS    := cached_system_smoke cached_ahb_master cached_uart cached_timer
 PROGRAMS         := $(FLASH_PROGRAMS) $(ROM0_PROGRAMS)
 
 COMMON_FLAGS     := -march=$(ARCH) -mabi=$(ABI) -nostdlib -nostartfiles -ffreestanding

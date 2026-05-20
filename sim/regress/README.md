@@ -30,6 +30,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\sim\regress\run_regression
 -Suite cache
 -Suite soc
 -Suite full
+-BuildSoftware
 -KeepGoing
 -DryRun
 ```
@@ -41,6 +42,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\sim\regress\run_regression
 ```bash
 bash ./regress/run_regression.sh --suite smoke --dry-run
 bash ./regress/run_regression.sh --suite smoke
+bash ./regress/run_regression.sh --suite mmio --build-software
 ```
 
 也可以从仓库根目录运行：
@@ -62,6 +64,25 @@ sim/log/regress/<timestamp>-<suite>/
 - `<test>.run.log`：脚本捕获的完整 stdout/stderr。
 - `<test>.compile.log`：该 test 的 VCS compile log。
 - `<test>.sim.log`：该 test 的 VCS simulation log。
+- `software_build.log`：使用 `-BuildSoftware` 或 `--build-software` 时保存软件镜像构建日志。
+
+## 软件镜像
+
+回归脚本默认使用仓库中已提交的 `software/bin/*.memh`。如果需要在回归前重新从 `software/asm/*.S` 生成镜像：
+
+PowerShell：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\sim\regress\run_regression.ps1 -Suite mmio -BuildSoftware
+```
+
+Bash：
+
+```bash
+bash sim/regress/run_regression.sh --suite mmio --build-software
+```
+
+真实运行时脚本会检查关键 `.memh` 是否存在；缺失时会提示先使用软件构建入口或手动运行 `make -C software`。
 
 ## 清单格式
 

@@ -30,6 +30,8 @@ make sim TB_FILE=./testcases/rv32i_cached_ahb_master_top_tb.sv TOP_NAME=rv32i_ca
 rv32i_cached_system_top_tb      -> ../software/bin/cached_system_smoke.memh
 rv32i_cached_system_ahb_top_tb  -> ../software/bin/cached_system_smoke.memh
 rv32i_cached_ahb_master_top_tb  -> ../software/bin/cached_ahb_master.memh
+rv32i_cached_timer_tb           -> ../software/bin/cached_timer.memh
+rv32i_cached_uart_tb            -> ../software/bin/cached_uart.memh
 ```
 
 如需覆盖默认镜像，可以传：

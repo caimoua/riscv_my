@@ -25,6 +25,8 @@ ahb_matrix_soc
 ahb_matrix_apb_soc
 cached_system_smoke
 cached_ahb_master
+cached_timer
+cached_uart
 ```
 
 `ahb_matrix_*` 程序使用 `linker/rv32i_flash.ld`，从 `0x0800_0000` flash slot 启动。`cached_*` 程序使用 `linker/rv32i_rom0.ld`，从 `0x0000_0000` ROM slot 启动，供 cached system wrapper 类 testbench 加载。

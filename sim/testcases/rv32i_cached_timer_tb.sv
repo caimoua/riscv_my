@@ -59,7 +59,9 @@ module rv32i_cached_timer_tb;
 
   logic [31:0] rom [0:255];
   logic [31:0] sram [0:255];
+  string rom_memh;
   integer i;
+  integer memh_fd;
   integer timeout;
 
   initial begin
@@ -104,24 +106,16 @@ module rv32i_cached_timer_tb;
       sram[i] = 32'h3000_0000 + i;
     end
 
-    rom[0]  = 32'h4000_00b7; // lui  x1, 0x40000      (x1=0x40000000)
-    rom[1]  = 32'h00a0_0113; // addi x2, x0, 10       (mtimecmp_lo=10)
-    rom[2]  = 32'h0020_a423; // sw   x2, 8(x1)
-    rom[3]  = 32'h0000_a623; // sw   x0, 12(x1)
-    rom[4]  = 32'h0030_0193; // addi x3, x0, 3        (enable | irq_enable)
-    rom[5]  = 32'h0030_a823; // sw   x3, 16(x1)
-    rom[6]  = 32'h0080_a303; // lw   x6, 8(x1)        (x6=10)
-    rom[7]  = 32'h0000_0013; // nop
-    rom[8]  = 32'h0000_0013; // nop
-    rom[9]  = 32'h0000_0013; // nop
-    rom[10] = 32'h0000_0013; // nop
-    rom[11] = 32'h0000_0013; // nop
-    rom[12] = 32'h0000_0013; // nop
-    rom[13] = 32'h0000_0013; // nop
-    rom[14] = 32'h0000_0013; // nop
-    rom[15] = 32'h0000_a203; // lw   x4, 0(x1)        (mtime_lo)
-    rom[16] = 32'h0100_a283; // lw   x5, 16(x1)       (ctrl/status)
-    rom[17] = 32'h0010_0073; // ebreak
+    if (!$value$plusargs("ROM_MEMH=%s", rom_memh)) begin
+      rom_memh = "../software/bin/cached_timer.memh";
+    end
+
+    memh_fd = $fopen(rom_memh, "r");
+    if (memh_fd == 0) begin
+      $fatal(1, "failed to open ROM_MEMH='%s'", rom_memh);
+    end
+    $fclose(memh_fd);
+    $readmemh(rom_memh, rom);
   end
 
   assign rom_ready = rom_valid;

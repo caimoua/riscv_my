@@ -5,6 +5,7 @@ param(
 
   [switch]$DryRun,
   [switch]$KeepGoing,
+  [switch]$BuildSoftware,
 
   [string]$List = "",
   [string]$Make = "make"
@@ -14,6 +15,7 @@ $ErrorActionPreference = "Stop"
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $SimDir = Resolve-Path (Join-Path $ScriptDir "..")
+$RepoDir = Resolve-Path (Join-Path $SimDir "..")
 if ([string]::IsNullOrWhiteSpace($List)) {
   $List = Join-Path $ScriptDir "regression_list.txt"
 }
@@ -51,6 +53,26 @@ function Read-RegressionList {
   return $items
 }
 
+function Test-SoftwareImages {
+  param([string]$Root)
+
+  $requiredImages = @(
+    "software/bin/ahb_matrix_soc.memh",
+    "software/bin/ahb_matrix_apb_soc.memh",
+    "software/bin/cached_system_smoke.memh",
+    "software/bin/cached_ahb_master.memh",
+    "software/bin/cached_uart.memh",
+    "software/bin/cached_timer.memh"
+  )
+
+  foreach ($image in $requiredImages) {
+    $path = Join-Path $Root $image
+    if (!(Test-Path $path)) {
+      throw "Missing software image: $image. Run with -BuildSoftware or run 'make -C software'."
+    }
+  }
+}
+
 $allTests = Read-RegressionList -Path $List
 $selected = @($allTests | Where-Object { $_.Suites -contains $Suite })
 
@@ -69,12 +91,35 @@ Write-Host ""
 
 $failures = @()
 
+if (!$DryRun) {
+  New-Item -ItemType Directory -Force -Path $runDir | Out-Null
+}
+
+if ($BuildSoftware) {
+  $softwareCmdText = "$Make -C software"
+  Write-Host "Software build   : $softwareCmdText"
+  if (!$DryRun) {
+    Push-Location $RepoDir
+    try {
+      $softwareLog = Join-Path $runDir "software_build.log"
+      & $Make "-C" "software" 2>&1 | Tee-Object -FilePath $softwareLog
+      if ($LASTEXITCODE -ne 0) {
+        throw "Software image build failed with exit code $LASTEXITCODE"
+      }
+    }
+    finally {
+      Pop-Location
+    }
+  }
+  Write-Host ""
+}
+
+if (!$DryRun) {
+  Test-SoftwareImages -Root $RepoDir
+}
+
 Push-Location $SimDir
 try {
-  if (!$DryRun) {
-    New-Item -ItemType Directory -Force -Path $runDir | Out-Null
-  }
-
   for ($idx = 0; $idx -lt $selected.Count; $idx++) {
     $test = $selected[$idx]
     $ordinal = $idx + 1

@@ -84,9 +84,11 @@ module rv32i_cached_uart_tb;
   logic [31:0] rom [0:255];
   logic [31:0] sram [0:255];
   logic [7:0]  uart_capture [0:15];
+  string rom_memh;
   integer rom_i;
   integer capture_i;
   integer check_i;
+  integer memh_fd;
   integer timeout;
   integer uart_capture_count;
 
@@ -129,20 +131,16 @@ module rv32i_cached_uart_tb;
       sram[rom_i] = 32'd0;
     end
 
-    rom[0]  = 32'h4000_10b7; // lui  x1, 0x40001      (UART base)
-    rom[1]  = 32'h0040_a183; // lw   x3, 4(x1)        (UART status)
-    rom[2]  = 32'h0550_0113; // addi x2, x0, 'U'
-    rom[3]  = 32'h0020_8023; // sb   x2, 0(x1)
-    rom[4]  = 32'h0410_0113; // addi x2, x0, 'A'
-    rom[5]  = 32'h0020_8023; // sb   x2, 0(x1)
-    rom[6]  = 32'h0520_0113; // addi x2, x0, 'R'
-    rom[7]  = 32'h0020_8023; // sb   x2, 0(x1)
-    rom[8]  = 32'h0540_0113; // addi x2, x0, 'T'
-    rom[9]  = 32'h0020_8023; // sb   x2, 0(x1)
-    rom[10] = 32'h00a0_0113; // addi x2, x0, '\n'
-    rom[11] = 32'h0020_8023; // sb   x2, 0(x1)
-    rom[12] = 32'h0000_a203; // lw   x4, 0(x1)        (last TX readback)
-    rom[13] = 32'h0010_0073; // ebreak
+    if (!$value$plusargs("ROM_MEMH=%s", rom_memh)) begin
+      rom_memh = "../software/bin/cached_uart.memh";
+    end
+
+    memh_fd = $fopen(rom_memh, "r");
+    if (memh_fd == 0) begin
+      $fatal(1, "failed to open ROM_MEMH='%s'", rom_memh);
+    end
+    $fclose(memh_fd);
+    $readmemh(rom_memh, rom);
   end
 
   assign rom_ready = rom_valid;

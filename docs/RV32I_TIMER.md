@@ -160,7 +160,16 @@ cd /home2/kairos18/workspace/cpu_prj/sim
 make sim TB_FILE=./testcases/rv32i_cached_timer_tb.sv TOP_NAME=rv32i_cached_timer_tb
 ```
 
-这个 testbench 的程序从 ROM 取指，通过 `0x4000_0000` 访问 timer：
+这个 testbench 的程序从 ROM 取指，通过 `0x4000_0000` 访问 timer。Stage A2 后，程序位于：
+
+```text
+software/asm/cached_timer.S
+software/bin/cached_timer.memh
+```
+
+testbench 默认从 `../software/bin/cached_timer.memh` 加载，也可以通过 `+ROM_MEMH=<path>` 覆盖。
+
+程序行为：
 
 ```asm
 lui  x1, 0x40000
