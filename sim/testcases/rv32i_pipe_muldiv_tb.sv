@@ -37,7 +37,9 @@ module rv32i_pipe_muldiv_tb;
   wire        dbg_ebreak;
 
   logic [31:0] imem [0:255];
+  string       imem_memh;
   integer i;
+  integer memh_fd;
   integer timeout;
 
   initial begin
@@ -65,38 +67,16 @@ module rv32i_pipe_muldiv_tb;
       imem[i] = 32'h0000_0013; // addi x0, x0, 0
     end
 
-    // RV32M directed program.
-    imem[0]  = 32'h0060_0093; // 0x00: addi  x1,  x0, 6
-    imem[1]  = 32'h0070_0113; // 0x04: addi  x2,  x0, 7
-    imem[2]  = 32'h0220_81b3; // 0x08: mul   x3,  x1,  x2
-    imem[3]  = 32'hffd0_0213; // 0x0c: addi  x4,  x0, -3
-    imem[4]  = 32'h0050_0293; // 0x10: addi  x5,  x0, 5
-    imem[5]  = 32'h0252_0333; // 0x14: mul   x6,  x4,  x5
-    imem[6]  = 32'h0252_13b3; // 0x18: mulh  x7,  x4,  x5
-    imem[7]  = 32'h0252_2433; // 0x1c: mulhsu x8, x4,  x5
-    imem[8]  = 32'hfff0_0513; // 0x20: addi  x10, x0, -1
-    imem[9]  = 32'h0020_0593; // 0x24: addi  x11, x0, 2
-    imem[10] = 32'h02b5_34b3; // 0x28: mulhu x9,  x10, x11
-    imem[11] = 32'hfeb0_0613; // 0x2c: addi  x12, x0, -21
-    imem[12] = 32'h0150_0693; // 0x30: addi  x13, x0, 21
-    imem[13] = 32'h0000_0713; // 0x34: addi  x14, x0, 0
-    imem[14] = 32'h0256_47b3; // 0x38: div   x15, x12, x5
-    imem[15] = 32'h0256_6833; // 0x3c: rem   x16, x12, x5
-    imem[16] = 32'h0256_d8b3; // 0x40: divu  x17, x13, x5
-    imem[17] = 32'h0256_fc33; // 0x44: remu  x24, x13, x5
-    imem[18] = 32'h02e6_ccb3; // 0x48: div   x25, x13, x14
-    imem[19] = 32'h02e6_ed33; // 0x4c: rem   x26, x13, x14
-    imem[20] = 32'h02e6_ddb3; // 0x50: divu  x27, x13, x14
-    imem[21] = 32'h02e6_fe33; // 0x54: remu  x28, x13, x14
-    imem[22] = 32'h8000_0937; // 0x58: lui   x18, 0x80000
-    imem[23] = 32'hfff0_0993; // 0x5c: addi  x19, x0, -1
-    imem[24] = 32'h0339_4eb3; // 0x60: div   x29, x18, x19
-    imem[25] = 32'h0339_6f33; // 0x64: rem   x30, x18, x19
-    imem[26] = 32'h0220_8a33; // 0x68: mul   x20, x1,  x2
-    imem[27] = 32'h001a_0a93; // 0x6c: addi  x21, x20, 1
-    imem[28] = 32'h0256_4b33; // 0x70: div   x22, x12, x5
-    imem[29] = 32'h002b_0b93; // 0x74: addi  x23, x22, 2
-    imem[30] = 32'h0010_0073; // 0x78: ebreak
+    if (!$value$plusargs("IMEM_MEMH=%s", imem_memh)) begin
+      imem_memh = "../software/bin/pipe_muldiv.memh";
+    end
+
+    memh_fd = $fopen(imem_memh, "r");
+    if (memh_fd == 0) begin
+      $fatal(1, "failed to open IMEM_MEMH='%s'", imem_memh);
+    end
+    $fclose(memh_fd);
+    $readmemh(imem_memh, imem);
   end
 
   assign imem_ready = imem_valid;

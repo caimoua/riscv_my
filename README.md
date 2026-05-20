@@ -37,6 +37,14 @@ software/asm/cached_instr_access_fault.S
   -> software/bin/cached_instr_access_fault.memh
 software/asm/cached_misaligned_trap.S
   -> software/bin/cached_misaligned_trap.memh
+software/asm/pipe_branch_predict.S
+  -> software/bin/pipe_branch_predict.memh
+software/asm/pipe_dynamic_branch_predict.S
+  -> software/bin/pipe_dynamic_branch_predict.memh
+software/asm/pipe_branch_predict_param.S
+  -> software/bin/pipe_branch_predict_param.memh
+software/asm/pipe_muldiv.S
+  -> software/bin/pipe_muldiv.memh
 ```
 
 对应 testbench 默认使用 `+ROM_MEMH` 可覆盖的 ROM image，不再在 SystemVerilog 里直接手写程序机器码。

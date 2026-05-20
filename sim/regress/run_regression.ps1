@@ -66,7 +66,11 @@ function Test-SoftwareImages {
     "software/bin/cached_timer_irq.memh",
     "software/bin/cached_access_fault.memh",
     "software/bin/cached_instr_access_fault.memh",
-    "software/bin/cached_misaligned_trap.memh"
+    "software/bin/cached_misaligned_trap.memh",
+    "software/bin/pipe_branch_predict.memh",
+    "software/bin/pipe_dynamic_branch_predict.memh",
+    "software/bin/pipe_branch_predict_param.memh",
+    "software/bin/pipe_muldiv.memh"
   )
 
   foreach ($image in $requiredImages) {
@@ -105,6 +109,12 @@ if ($BuildSoftware) {
   if (!$DryRun) {
     Push-Location $RepoDir
     try {
+      $softwareCheckLog = Join-Path $runDir "software_check_tools.log"
+      & $Make "-C" "software" "check-tools" 2>&1 | Tee-Object -FilePath $softwareCheckLog
+      if ($LASTEXITCODE -ne 0) {
+        throw "Software toolchain check failed with exit code $LASTEXITCODE. Add riscv-none-elf tools to PATH, set TOOLCHAIN_PREFIX/RISCV_CC/RISCV_OBJCOPY, or rerun without -BuildSoftware if MEMH files already exist."
+      }
+
       $softwareLog = Join-Path $runDir "software_build.log"
       & $Make "-C" "software" 2>&1 | Tee-Object -FilePath $softwareLog
       if ($LASTEXITCODE -ne 0) {

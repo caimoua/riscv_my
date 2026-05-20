@@ -52,6 +52,19 @@ make sim TB_FILE=./testcases/rv32i_pipe_branch_predict_param_tb.sv TOP_NAME=rv32
 make sim TB_FILE=./testcases/rv32i_pipe_core_tb.sv TOP_NAME=rv32i_pipe_core_tb
 ```
 
+2026-05-20，三个 pipeline 分支预测 directed test 的程序已迁移到软件镜像流：
+
+```text
+software/asm/pipe_branch_predict.S
+software/bin/pipe_branch_predict.memh
+software/asm/pipe_dynamic_branch_predict.S
+software/bin/pipe_dynamic_branch_predict.memh
+software/asm/pipe_branch_predict_param.S
+software/bin/pipe_branch_predict_param.memh
+```
+
+对应 testbench 默认从这些 `*.memh` 加载指令，也可以通过 `+IMEM_MEMH=<path>` 覆盖；迁移后的 VCS 状态见 `docs/VERIFICATION_MATRIX.md`。
+
 已确认的动态预测 PASS 摘要：
 
 ```text

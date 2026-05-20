@@ -124,11 +124,22 @@ required_images=(
   "software/bin/cached_access_fault.memh"
   "software/bin/cached_instr_access_fault.memh"
   "software/bin/cached_misaligned_trap.memh"
+  "software/bin/pipe_branch_predict.memh"
+  "software/bin/pipe_dynamic_branch_predict.memh"
+  "software/bin/pipe_branch_predict_param.memh"
+  "software/bin/pipe_muldiv.memh"
 )
 
 if [ "$build_software" -eq 1 ]; then
   echo "Software build   : $make_cmd -C software"
   if [ "$dry_run" -eq 0 ]; then
+    (cd "$repo_dir" && "$make_cmd" -C software check-tools) 2>&1 | tee "$run_dir/software_check_tools.log"
+    check_exit="${PIPESTATUS[0]}"
+    if [ "$check_exit" -ne 0 ]; then
+      echo "ERROR: software toolchain check failed with exit code $check_exit" >&2
+      echo "Hint: export PATH to riscv-none-elf-gcc, set TOOLCHAIN_PREFIX/RISCV_CC/RISCV_OBJCOPY, or rerun without --build-software if MEMH files already exist." >&2
+      exit "$check_exit"
+    fi
     (cd "$repo_dir" && "$make_cmd" -C software) 2>&1 | tee "$run_dir/software_build.log"
     build_exit="${PIPESTATUS[0]}"
     if [ "$build_exit" -ne 0 ]; then

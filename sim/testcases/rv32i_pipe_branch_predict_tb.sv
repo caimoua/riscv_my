@@ -34,7 +34,9 @@ module rv32i_pipe_branch_predict_tb;
   wire        dbg_ebreak;
 
   logic [31:0] imem [0:255];
+  string       imem_memh;
   integer i;
+  integer memh_fd;
   integer timeout;
 
   initial begin
@@ -62,25 +64,16 @@ module rv32i_pipe_branch_predict_tb;
       imem[i] = 32'h0000_0013; // addi x0, x0, 0
     end
 
-    // Static branch-predictor program.
-    // Backward BNEs are predicted taken, forward branches are predicted not taken,
-    // JAL is predicted taken, and JALR is resolved in EX.
-    imem[0]  = 32'h0000_0093; // 0x00: addi x1, x0, 0
-    imem[1]  = 32'h0040_0113; // 0x04: addi x2, x0, 4
-    imem[2]  = 32'h0010_8093; // 0x08: addi x1, x1, 1
-    imem[3]  = 32'hfe20_9ee3; // 0x0c: bne  x1, x2, -4
-    imem[4]  = 32'h0330_0193; // 0x10: addi x3, x0, 0x33
-    imem[5]  = 32'h0000_0463; // 0x14: beq  x0, x0, +8
-    imem[6]  = 32'h0440_0213; // 0x18: addi x4, x0, 0x44 (wrong path)
-    imem[7]  = 32'h0080_02ef; // 0x1c: jal  x5, +8
-    imem[8]  = 32'h0550_0213; // 0x20: addi x4, x0, 0x55 (wrong path)
-    imem[9]  = 32'h0660_0313; // 0x24: addi x6, x0, 0x66
-    imem[10] = 32'h0380_0393; // 0x28: addi x7, x0, 0x38
-    imem[11] = 32'h0003_8467; // 0x2c: jalr x8, x7, 0
-    imem[12] = 32'h07a0_0513; // 0x30: addi x10, x0, 0x7a (wrong path)
-    imem[13] = 32'h07b0_0513; // 0x34: addi x10, x0, 0x7b (wrong path)
-    imem[14] = 32'h0770_0493; // 0x38: addi x9, x0, 0x77
-    imem[15] = 32'h0010_0073; // 0x3c: ebreak
+    if (!$value$plusargs("IMEM_MEMH=%s", imem_memh)) begin
+      imem_memh = "../software/bin/pipe_branch_predict.memh";
+    end
+
+    memh_fd = $fopen(imem_memh, "r");
+    if (memh_fd == 0) begin
+      $fatal(1, "failed to open IMEM_MEMH='%s'", imem_memh);
+    end
+    $fclose(memh_fd);
+    $readmemh(imem_memh, imem);
   end
 
   assign imem_ready = imem_valid;

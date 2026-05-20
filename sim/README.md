@@ -38,6 +38,14 @@ rv32i_cached_instr_access_fault_tb
   -> ../software/bin/cached_instr_access_fault.memh
 rv32i_cached_misaligned_trap_tb
   -> ../software/bin/cached_misaligned_trap.memh
+rv32i_pipe_branch_predict_tb
+  -> ../software/bin/pipe_branch_predict.memh
+rv32i_pipe_dynamic_branch_predict_tb
+  -> ../software/bin/pipe_dynamic_branch_predict.memh
+rv32i_pipe_branch_predict_param_tb
+  -> ../software/bin/pipe_branch_predict_param.memh
+rv32i_pipe_muldiv_tb
+  -> ../software/bin/pipe_muldiv.memh
 ```
 
 如需覆盖默认镜像，可以传：
@@ -45,6 +53,8 @@ rv32i_cached_misaligned_trap_tb
 ```bash
 make sim TB_FILE=./testcases/rv32i_cached_ahb_master_top_tb.sv TOP_NAME=rv32i_cached_ahb_master_top_tb SIM_PLUSARGS="+ROM_MEMH=../software/bin/cached_ahb_master.memh"
 ```
+
+pipeline core 类 testbench 使用 `+IMEM_MEMH=<path>` 覆盖默认指令镜像。
 
 这个目录是 VCS/Verdi 仿真的统一入口。
 

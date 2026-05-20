@@ -37,7 +37,9 @@ module rv32i_pipe_branch_predict_param_tb;
   wire        dbg_ebreak;
 
   logic [31:0] imem [0:255];
+  string       imem_memh;
   integer i;
+  integer memh_fd;
   integer timeout;
 
   initial begin
@@ -65,23 +67,16 @@ module rv32i_pipe_branch_predict_param_tb;
       imem[i] = 32'h0000_0013; // addi x0, x0, 0
     end
 
-    // Same dynamic-learning shape as rv32i_pipe_dynamic_branch_predict_tb,
-    // but the core is built with only 4 predictor entries.
-    // The forward BEQ at 0x10 maps to index 0 and the backward BNE at 0x24
-    // maps to index 1, so this verifies the parameterized small-table path
-    // without intentional aliasing.
-    imem[0]  = 32'h0000_0093; // 0x00: addi x1, x0, 0
-    imem[1]  = 32'h0040_0113; // 0x04: addi x2, x0, 4
-    imem[2]  = 32'h0000_0193; // 0x08: addi x3, x0, 0
-    imem[3]  = 32'h0000_0213; // 0x0c: addi x4, x0, 0
-    imem[4]  = 32'h0000_0463; // 0x10: beq  x0, x0, +8
-    imem[5]  = 32'h0012_0213; // 0x14: addi x4, x4, 1 (wrong path)
-    imem[6]  = 32'h0011_8193; // 0x18: addi x3, x3, 1
-    imem[7]  = 32'h0010_8093; // 0x1c: addi x1, x1, 1
-    imem[8]  = 32'h0000_0013; // 0x20: nop, shifts BNE to predictor index 1
-    imem[9]  = 32'hfe20_96e3; // 0x24: bne  x1, x2, -20
-    imem[10] = 32'h0550_0293; // 0x28: addi x5, x0, 0x55
-    imem[11] = 32'h0010_0073; // 0x2c: ebreak
+    if (!$value$plusargs("IMEM_MEMH=%s", imem_memh)) begin
+      imem_memh = "../software/bin/pipe_branch_predict_param.memh";
+    end
+
+    memh_fd = $fopen(imem_memh, "r");
+    if (memh_fd == 0) begin
+      $fatal(1, "failed to open IMEM_MEMH='%s'", imem_memh);
+    end
+    $fclose(memh_fd);
+    $readmemh(imem_memh, imem);
   end
 
   assign imem_ready = imem_valid;

@@ -17,6 +17,15 @@ cycle=212 instret=31 stall_cycle=177 flush_cycle=0
 RV32M mul/div/rem operations and dependent forwarding passed
 ```
 
+2026-05-20，`rv32i_pipe_muldiv_tb` 的程序已迁移到软件镜像流：
+
+```text
+software/asm/pipe_muldiv.S
+software/bin/pipe_muldiv.memh
+```
+
+testbench 默认从 `../software/bin/pipe_muldiv.memh` 加载，也可以通过 `+IMEM_MEMH=<path>` 覆盖；迁移后的 VCS 状态见 `docs/VERIFICATION_MATRIX.md`。
+
 2026-05-19 的工程化重构中，M 扩展识别已从 `rv32i_pipe_core` 顶层并入 `rv32i_decoder`。decoder 单元测试已由用户确认 VCS PASS：
 
 ```bash
