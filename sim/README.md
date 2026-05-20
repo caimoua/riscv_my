@@ -32,6 +32,12 @@ rv32i_cached_system_ahb_top_tb  -> ../software/bin/cached_system_smoke.memh
 rv32i_cached_ahb_master_top_tb  -> ../software/bin/cached_ahb_master.memh
 rv32i_cached_timer_tb           -> ../software/bin/cached_timer.memh
 rv32i_cached_uart_tb            -> ../software/bin/cached_uart.memh
+rv32i_cached_timer_irq_tb       -> ../software/bin/cached_timer_irq.memh
+rv32i_cached_access_fault_tb    -> ../software/bin/cached_access_fault.memh
+rv32i_cached_instr_access_fault_tb
+  -> ../software/bin/cached_instr_access_fault.memh
+rv32i_cached_misaligned_trap_tb
+  -> ../software/bin/cached_misaligned_trap.memh
 ```
 
 如需覆盖默认镜像，可以传：
@@ -507,6 +513,8 @@ make sim TB_FILE=./testcases/rv32i_cached_access_fault_tb.sv TOP_NAME=rv32i_cach
 
 这个 testbench 验证 D 侧 unmapped 地址访问会由 bus 返回 `d_error`，经过 D-cache/LSU 形成 precise load/store access fault。handler 读取 `mcause/mepc` 写入 SRAM，修改 `mepc += 4` 后通过 `mret` 跳过 faulting 指令并返回主程序。
 
+默认 ROM image 来自 `../software/bin/cached_access_fault.memh`，源码位于 `software/asm/cached_access_fault.S`。
+
 Instruction access fault：
 ```text
 sim/testcases/rv32i_cached_instr_access_fault_tb.sv
@@ -518,6 +526,8 @@ make sim TB_FILE=./testcases/rv32i_cached_instr_access_fault_tb.sv TOP_NAME=rv32
 ```
 
 这个 testbench 验证 I 侧 unmapped 取指会由 bus 返回 `i_error`，经过 I-cache/core fetch fault 标记形成 precise instruction access fault。handler 读取 `mcause/mepc` 写入 SRAM，修改 `mepc` 到安全返回地址后通过 `mret` 返回主程序。
+
+默认 ROM image 来自 `../software/bin/cached_instr_access_fault.memh`，源码位于 `software/asm/cached_instr_access_fault.S`。
 
 ## 注意事项
 

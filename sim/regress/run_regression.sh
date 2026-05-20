@@ -120,6 +120,10 @@ required_images=(
   "software/bin/cached_ahb_master.memh"
   "software/bin/cached_uart.memh"
   "software/bin/cached_timer.memh"
+  "software/bin/cached_timer_irq.memh"
+  "software/bin/cached_access_fault.memh"
+  "software/bin/cached_instr_access_fault.memh"
+  "software/bin/cached_misaligned_trap.memh"
 )
 
 if [ "$build_software" -eq 1 ]; then

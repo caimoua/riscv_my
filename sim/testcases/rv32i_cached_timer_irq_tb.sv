@@ -61,7 +61,9 @@ module rv32i_cached_timer_irq_tb;
   logic [31:0] sram [0:255];
   logic        handler_done;
   logic        main_done;
+  string       rom_memh;
   integer i;
+  integer memh_fd;
   integer timeout;
 
   initial begin
@@ -90,38 +92,16 @@ module rv32i_cached_timer_irq_tb;
       sram[i] = 32'd0;
     end
 
-    // Main program.
-    rom[0]  = 32'h1400_0293; // addi  x5, x0, 0x140
-    rom[1]  = 32'h3052_9073; // csrrw x0, mtvec, x5
-    rom[2]  = 32'h0080_0313; // addi  x6, x0, 8        (mstatus.MIE)
-    rom[3]  = 32'h3003_1073; // csrrw x0, mstatus, x6
-    rom[4]  = 32'h0800_0393; // addi  x7, x0, 128      (mie.MTIE)
-    rom[5]  = 32'h3043_9073; // csrrw x0, mie, x7
-    rom[6]  = 32'h4000_00b7; // lui   x1, 0x40000      (timer base)
-    rom[7]  = 32'h00a0_0113; // addi  x2, x0, 10       (mtimecmp_lo)
-    rom[8]  = 32'h0020_a423; // sw    x2, 8(x1)
-    rom[9]  = 32'h0000_a623; // sw    x0, 12(x1)
-    rom[10] = 32'h0030_0193; // addi  x3, x0, 3        (enable | irq_enable)
-    rom[11] = 32'h0030_a823; // sw    x3, 16(x1)
-    rom[12] = 32'h0110_0813; // addi  x16, x0, 0x11
-    rom[62] = 32'h0550_0a93; // addi  x21, x0, 0x55    (main reaches final path)
-    rom[63] = 32'h0000_0013; // nop
+    if (!$value$plusargs("ROM_MEMH=%s", rom_memh)) begin
+      rom_memh = "../software/bin/cached_timer_irq.memh";
+    end
 
-    // Machine timer interrupt handler at 0x140.
-    rom[80] = 32'h3420_2573; // csrrs x10, mcause, x0
-    rom[81] = 32'h3410_25f3; // csrrs x11, mepc, x0
-    rom[82] = 32'h3000_2673; // csrrs x12, mstatus, x0
-    rom[83] = 32'h3040_26f3; // csrrs x13, mie, x0
-    rom[84] = 32'h3440_2773; // csrrs x14, mip, x0
-    rom[85] = 32'h2000_0a37; // lui   x20, 0x20000     (SRAM base)
-    rom[86] = 32'h00aa_2023; // sw    x10, 0(x20)
-    rom[87] = 32'h00ba_2223; // sw    x11, 4(x20)
-    rom[88] = 32'h00ca_2423; // sw    x12, 8(x20)
-    rom[89] = 32'h00da_2623; // sw    x13, 12(x20)
-    rom[90] = 32'h00ea_2823; // sw    x14, 16(x20)
-    rom[91] = 32'h3040_1073; // csrrw x0, mie, x0      (disable MTIE)
-    rom[92] = 32'h0010_0f93; // addi  x31, x0, 1       (handler ran)
-    rom[93] = 32'h3020_0073; // mret
+    memh_fd = $fopen(rom_memh, "r");
+    if (memh_fd == 0) begin
+      $fatal(1, "failed to open ROM_MEMH='%s'", rom_memh);
+    end
+    $fclose(memh_fd);
+    $readmemh(rom_memh, rom);
   end
 
   assign rom_ready = rom_valid;

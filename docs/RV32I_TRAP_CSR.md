@@ -48,7 +48,7 @@ handler 处理完后通过 mret 返回
 - 非对齐 load/store 异常。
 - page fault、access fault。
 
-也就是说，这一阶段仍然只有一个简化的 machine mode。trap 只是一个明确的控制流机制和 CSR 状态保存机制。后续 `timer_irq` 接入和最小 `mstatus/mie/mip` 已记录在 `docs/RV32I_TIMER.md`。I/D 侧 access fault 也已接入同一套 commit trap 框架：instruction access fault 的验证入口是 `sim/testcases/rv32i_cached_instr_access_fault_tb.sv`，load/store access fault 的验证入口是 `sim/testcases/rv32i_cached_access_fault_tb.sv`。
+也就是说，这一阶段仍然只有一个简化的 machine mode。trap 只是一个明确的控制流机制和 CSR 状态保存机制。后续 `timer_irq` 接入和最小 `mstatus/mie/mip` 已记录在 `docs/RV32I_TIMER.md`。I/D 侧 access fault 也已接入同一套 commit trap 框架：instruction access fault 的验证入口是 `sim/testcases/rv32i_cached_instr_access_fault_tb.sv`，load/store access fault 的验证入口是 `sim/testcases/rv32i_cached_access_fault_tb.sv`。这两个 cached fault test 当前默认分别加载 `software/bin/cached_instr_access_fault.memh` 和 `software/bin/cached_access_fault.memh`。
 
 ## 3. precise exception 是什么
 

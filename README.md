@@ -31,6 +31,12 @@ software/asm/cached_system_smoke.S  -> software/bin/cached_system_smoke.memh
 software/asm/cached_ahb_master.S    -> software/bin/cached_ahb_master.memh
 software/asm/cached_timer.S         -> software/bin/cached_timer.memh
 software/asm/cached_uart.S          -> software/bin/cached_uart.memh
+software/asm/cached_timer_irq.S     -> software/bin/cached_timer_irq.memh
+software/asm/cached_access_fault.S  -> software/bin/cached_access_fault.memh
+software/asm/cached_instr_access_fault.S
+  -> software/bin/cached_instr_access_fault.memh
+software/asm/cached_misaligned_trap.S
+  -> software/bin/cached_misaligned_trap.memh
 ```
 
 对应 testbench 默认使用 `+ROM_MEMH` 可覆盖的 ROM image，不再在 SystemVerilog 里直接手写程序机器码。

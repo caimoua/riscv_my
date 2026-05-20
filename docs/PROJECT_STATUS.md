@@ -137,6 +137,10 @@ Stage C：性能优化型 CPU core
   - `software/asm/cached_ahb_master.S`
   - `software/asm/cached_timer.S`
   - `software/asm/cached_uart.S`
+  - `software/asm/cached_timer_irq.S`
+  - `software/asm/cached_access_fault.S`
+  - `software/asm/cached_instr_access_fault.S`
+  - `software/asm/cached_misaligned_trap.S`
   - `software/linker/rv32i_flash.ld`
   - `software/linker/rv32i_rom0.ld`
   - `software/scripts/bin_to_memh.py`
@@ -146,9 +150,14 @@ Stage C：性能优化型 CPU core
   - `software/bin/cached_ahb_master.memh`
   - `software/bin/cached_timer.memh`
   - `software/bin/cached_uart.memh`
+  - `software/bin/cached_timer_irq.memh`
+  - `software/bin/cached_access_fault.memh`
+  - `software/bin/cached_instr_access_fault.memh`
+  - `software/bin/cached_misaligned_trap.memh`
   - `rv32i_ahb_matrix_soc_top_tb` 通过 `$readmemh` 加载 flash 内容。
   - `rv32i_cached_system_top_tb`、`rv32i_cached_system_ahb_top_tb` 和 `rv32i_cached_ahb_master_top_tb` 已改为通过 `$readmemh` 加载 ROM 内容，并已由用户确认 VCS PASS。
   - `rv32i_cached_timer_tb` 和 `rv32i_cached_uart_tb` 已改为通过 `$readmemh` 加载 ROM 内容，并已由用户确认 `mmio` suite VCS PASS。
+  - `rv32i_cached_timer_irq_tb`、`rv32i_cached_access_fault_tb`、`rv32i_cached_instr_access_fault_tb` 和 `rv32i_cached_misaligned_trap_tb` 已改为通过 `$readmemh` 加载 ROM 内容，并已由用户确认 VCS PASS。
 - 本地 Windows RISC-V GNU 工具链流程已经记录并验证：
   - `riscv-none-elf-gcc`
   - `riscv-none-elf-objcopy`
@@ -168,7 +177,7 @@ Stage C：性能优化型 CPU core
 
 详细状态见 `docs/VERIFICATION_MATRIX.md`。
 
-当前 Phase 6 第一轮 `rv32i_pipe_core` 仿真期 assertion 已加入，并由用户确认 VCS 回归 PASS。Stage A1 自动化回归入口第一版已完成，`smoke/core/cache/soc/full` suite 均已由用户确认 VCS PASS。Stage A2 第一轮已把 cached system / AHB master 相关 directed tests 从手写机器码迁移到软件镜像流，相关 testbench 已由用户确认 VCS PASS。Stage A2 第二轮已迁移 cached timer / UART，并给回归脚本加入软件镜像构建和缺失检查；用户已确认 `mmio` suite VCS PASS。
+当前 Phase 6 第一轮 `rv32i_pipe_core` 仿真期 assertion 已加入，并由用户确认 VCS 回归 PASS。Stage A1 自动化回归入口第一版已完成，`smoke/core/cache/soc/full` suite 均已由用户确认 VCS PASS。Stage A2 第一轮已把 cached system / AHB master 相关 directed tests 从手写机器码迁移到软件镜像流，相关 testbench 已由用户确认 VCS PASS。Stage A2 第二轮已迁移 cached timer / UART，并给回归脚本加入软件镜像构建和缺失检查；用户已确认 `mmio` suite VCS PASS。Stage A2 第三轮已迁移 timer IRQ、access fault、instruction access fault 和 misaligned trap 相关 cached directed tests，并已由用户确认 VCS PASS。
 
 ## 设计假设
 
@@ -184,7 +193,7 @@ Stage C：性能优化型 CPU core
 
 ## 下一步候选
 
-1. Stage A2：继续把 trap、MMIO、branch/muldiv 等 directed test 迁移到汇编/C 软件镜像流，减少手写机器码。
+1. Stage A2：继续把 branch/muldiv 等 directed test 迁移到汇编/C 软件镜像流，减少手写机器码。
 2. Stage A5：补齐 CPU IP 交付文档，重点写清楚 `rv32i_cached_ahb_master_top` 的接口、假设和限制。
 3. Stage A3：引入 RV32I/RV32M ISA 基础测试子集。
 4. Stage A4：建立 lint / 综合 / 时序基础检查流程。

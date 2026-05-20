@@ -217,6 +217,15 @@ cd /home2/kairos18/workspace/cpu_prj/sim
 make sim TB_FILE=./testcases/rv32i_cached_timer_irq_tb.sv TOP_NAME=rv32i_cached_timer_irq_tb
 ```
 
+ROM 程序已经迁移到软件镜像流：
+
+```text
+software/asm/cached_timer_irq.S
+software/bin/cached_timer_irq.memh
+```
+
+testbench 默认从 `../software/bin/cached_timer_irq.memh` 加载，也可以通过 `+ROM_MEMH=<path>` 覆盖。
+
 这个 testbench 在 cached system top 外接 `rv32i_timer`，然后让 CPU：
 
 1. 设置 `mtvec=0x140`。

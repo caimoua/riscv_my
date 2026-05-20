@@ -52,8 +52,10 @@ module rv32i_cached_instr_access_fault_tb;
 
   logic [31:0] rom [0:255];
   logic [31:0] sram [0:255];
+  string       rom_memh;
   logic        bus_decode_error_seen;
   integer i;
+  integer memh_fd;
   integer timeout;
 
   initial begin
@@ -82,25 +84,16 @@ module rv32i_cached_instr_access_fault_tb;
       sram[i] = 32'd0;
     end
 
-    // Main program.
-    rom[0] = 32'h1400_0293; // addi  x5, x0, 0x140
-    rom[1] = 32'h3052_9073; // csrrw x0, mtvec, x5
-    rom[2] = 32'h8000_00b7; // lui   x1, 0x80000
-    rom[3] = 32'h0000_8067; // jalr  x0, x1, 0        (unmapped fetch)
-    rom[4] = 32'h0550_0a93; // addi  x21, x0, 0x55    (resume target)
+    if (!$value$plusargs("ROM_MEMH=%s", rom_memh)) begin
+      rom_memh = "../software/bin/cached_instr_access_fault.memh";
+    end
 
-    // Instruction access fault handler at 0x140.
-    rom[80] = 32'h3420_2573; // csrrs x10, mcause, x0
-    rom[81] = 32'h3410_25f3; // csrrs x11, mepc, x0
-    rom[82] = 32'h3000_2673; // csrrs x12, mstatus, x0
-    rom[83] = 32'h2000_0a37; // lui   x20, 0x20000    (SRAM base)
-    rom[84] = 32'h00aa_2023; // sw    x10, 0(x20)
-    rom[85] = 32'h00ba_2223; // sw    x11, 4(x20)
-    rom[86] = 32'h00ca_2423; // sw    x12, 8(x20)
-    rom[87] = 32'h0100_0593; // addi  x11, x0, 0x10   (resume at rom[4])
-    rom[88] = 32'h3415_9073; // csrrw x0, mepc, x11
-    rom[89] = 32'h0010_0f93; // addi  x31, x0, 1      (handler ran)
-    rom[90] = 32'h3020_0073; // mret
+    memh_fd = $fopen(rom_memh, "r");
+    if (memh_fd == 0) begin
+      $fatal(1, "failed to open ROM_MEMH='%s'", rom_memh);
+    end
+    $fclose(memh_fd);
+    $readmemh(rom_memh, rom);
   end
 
   assign rom_ready = rom_valid;

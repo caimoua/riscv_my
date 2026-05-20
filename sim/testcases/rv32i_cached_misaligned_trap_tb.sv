@@ -53,6 +53,7 @@ module rv32i_cached_misaligned_trap_tb;
 
   logic [31:0] rom [0:255];
   logic [31:0] sram [0:255];
+  string       rom_memh;
   logic        bus_decode_error_seen;
   logic        load_handler_done;
   logic        store_handler_done;
@@ -61,6 +62,7 @@ module rv32i_cached_misaligned_trap_tb;
   logic        store_resume_done;
   logic        instr_resume_done;
   integer i;
+  integer memh_fd;
   integer timeout;
 
   initial begin
@@ -89,54 +91,16 @@ module rv32i_cached_misaligned_trap_tb;
       sram[i] = 32'd0;
     end
 
-    // Main program.
-    rom[0]  = 32'h1400_0293; // addi  x5, x0, 0x140
-    rom[1]  = 32'h3052_9073; // csrrw x0, mtvec, x5
-    rom[2]  = 32'h2000_00b7; // lui   x1, 0x20000      (SRAM base)
-    rom[3]  = 32'h0020_a103; // lw    x2, 2(x1)        (load address misaligned)
-    rom[4]  = 32'h0550_0a93; // addi  x21, x0, 0x55    (after load handler)
-    rom[5]  = 32'h1800_0293; // addi  x5, x0, 0x180
-    rom[6]  = 32'h3052_9073; // csrrw x0, mtvec, x5
-    rom[7]  = 32'h0150_ad23; // sw    x21, 26(x1)      (store address misaligned)
-    rom[8]  = 32'h0660_0b13; // addi  x22, x0, 0x66    (after store handler)
-    rom[9]  = 32'h1c00_0293; // addi  x5, x0, 0x1c0
-    rom[10] = 32'h3052_9073; // csrrw x0, mtvec, x5
-    rom[11] = 32'h0320_0313; // addi  x6, x0, 0x32
-    rom[12] = 32'h0003_0067; // jalr  x0, x6, 0        (instruction address misaligned)
-    rom[13] = 32'h0770_0b93; // addi  x23, x0, 0x77    (after instruction handler)
+    if (!$value$plusargs("ROM_MEMH=%s", rom_memh)) begin
+      rom_memh = "../software/bin/cached_misaligned_trap.memh";
+    end
 
-    // Load address misaligned handler at 0x140.
-    rom[80] = 32'h3420_2573; // csrrs x10, mcause, x0
-    rom[81] = 32'h3410_25f3; // csrrs x11, mepc, x0
-    rom[82] = 32'h2000_0a37; // lui   x20, 0x20000     (SRAM base)
-    rom[83] = 32'h00aa_2023; // sw    x10, 0(x20)
-    rom[84] = 32'h00ba_2223; // sw    x11, 4(x20)
-    rom[85] = 32'h0045_8593; // addi  x11, x11, 4      (skip faulting lw)
-    rom[86] = 32'h3415_9073; // csrrw x0, mepc, x11
-    rom[87] = 32'h0010_0f93; // addi  x31, x0, 1
-    rom[88] = 32'h3020_0073; // mret
-
-    // Store address misaligned handler at 0x180.
-    rom[96]  = 32'h3420_2573; // csrrs x10, mcause, x0
-    rom[97]  = 32'h3410_25f3; // csrrs x11, mepc, x0
-    rom[98]  = 32'h2000_0a37; // lui   x20, 0x20000     (SRAM base)
-    rom[99]  = 32'h00aa_2423; // sw    x10, 8(x20)
-    rom[100] = 32'h00ba_2623; // sw    x11, 12(x20)
-    rom[101] = 32'h0045_8593; // addi  x11, x11, 4      (skip faulting sw)
-    rom[102] = 32'h3415_9073; // csrrw x0, mepc, x11
-    rom[103] = 32'h0010_0f13; // addi  x30, x0, 1
-    rom[104] = 32'h3020_0073; // mret
-
-    // Instruction address misaligned handler at 0x1c0.
-    rom[112] = 32'h3420_2573; // csrrs x10, mcause, x0
-    rom[113] = 32'h3410_25f3; // csrrs x11, mepc, x0
-    rom[114] = 32'h2000_0a37; // lui   x20, 0x20000     (SRAM base)
-    rom[115] = 32'h00aa_2823; // sw    x10, 16(x20)
-    rom[116] = 32'h00ba_2a23; // sw    x11, 20(x20)
-    rom[117] = 32'h0045_8593; // addi  x11, x11, 4      (skip faulting jalr)
-    rom[118] = 32'h3415_9073; // csrrw x0, mepc, x11
-    rom[119] = 32'h0010_0e93; // addi  x29, x0, 1
-    rom[120] = 32'h3020_0073; // mret
+    memh_fd = $fopen(rom_memh, "r");
+    if (memh_fd == 0) begin
+      $fatal(1, "failed to open ROM_MEMH='%s'", rom_memh);
+    end
+    $fclose(memh_fd);
+    $readmemh(rom_memh, rom);
   end
 
   assign rom_ready = rom_valid;

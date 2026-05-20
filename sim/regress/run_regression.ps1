@@ -62,7 +62,11 @@ function Test-SoftwareImages {
     "software/bin/cached_system_smoke.memh",
     "software/bin/cached_ahb_master.memh",
     "software/bin/cached_uart.memh",
-    "software/bin/cached_timer.memh"
+    "software/bin/cached_timer.memh",
+    "software/bin/cached_timer_irq.memh",
+    "software/bin/cached_access_fault.memh",
+    "software/bin/cached_instr_access_fault.memh",
+    "software/bin/cached_misaligned_trap.memh"
   )
 
   foreach ($image in $requiredImages) {

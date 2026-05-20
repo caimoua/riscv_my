@@ -101,6 +101,7 @@ MMIO 改动后，至少运行：
 
 ## 最近人工更新
 
+- 2026-05-20：用户确认 Stage A2 第三轮软件镜像迁移后的 `rv32i_cached_timer_irq_tb`、`rv32i_cached_access_fault_tb`、`rv32i_cached_instr_access_fault_tb` 和 `rv32i_cached_misaligned_trap_tb` 均 VCS PASS。
 - 2026-05-20：用户确认 Stage A2 第一轮软件镜像迁移后的 `rv32i_cached_system_top_tb`、`rv32i_cached_system_ahb_top_tb` 和 `rv32i_cached_ahb_master_top_tb` 均 VCS PASS。
 - 2026-05-20：用户确认 Stage A2 第二轮软件镜像迁移后的 `mmio` suite VCS PASS，日志目录为 `sim/log/regress/20260520_104357-mmio`；该轮新增回归脚本软件镜像构建/检查入口，并迁移 `rv32i_cached_timer_tb` 和 `rv32i_cached_uart_tb`。
 - 2026-05-19：用户确认 Stage A1 自动化回归 `core/cache/soc/full` suite 均 VCS PASS，自动化回归入口第一版收口。

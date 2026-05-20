@@ -12,6 +12,8 @@ BIN_DIR          ?= bin
 
 FLASH_PROGRAMS   := ahb_matrix_soc ahb_matrix_apb_soc
 ROM0_PROGRAMS    := cached_system_smoke cached_ahb_master cached_uart cached_timer
+ROM0_PROGRAMS    += cached_timer_irq cached_access_fault cached_instr_access_fault
+ROM0_PROGRAMS    += cached_misaligned_trap
 PROGRAMS         := $(FLASH_PROGRAMS) $(ROM0_PROGRAMS)
 
 COMMON_FLAGS     := -march=$(ARCH) -mabi=$(ABI) -nostdlib -nostartfiles -ffreestanding
@@ -23,12 +25,13 @@ LDFLAGS          = -Wl,-T,$(LINKER_SCRIPT) -Wl,--build-id=none
 all: $(PROGRAMS:%=$(BIN_DIR)/%.memh)
 
 $(BUILD_DIR) $(BIN_DIR):
-	mkdir $@
+	mkdir -p $@
 
 $(FLASH_PROGRAMS:%=$(BUILD_DIR)/%.elf): LINKER_SCRIPT = $(LINKER_FLASH)
 $(ROM0_PROGRAMS:%=$(BUILD_DIR)/%.elf): LINKER_SCRIPT = $(LINKER_ROM0)
 $(FLASH_PROGRAMS:%=$(BUILD_DIR)/%.elf): $(LINKER_FLASH)
 $(ROM0_PROGRAMS:%=$(BUILD_DIR)/%.elf): $(LINKER_ROM0)
+$(BUILD_DIR)/cached_timer_irq.elf: COMMON_FLAGS = -march=rv32i_zicsr -mabi=$(ABI) -nostdlib -nostartfiles -ffreestanding
 
 $(BUILD_DIR)/%.elf: asm/%.S | $(BUILD_DIR) $(BIN_DIR)
 	$(RISCV_CC) $(COMMON_FLAGS) $(LDFLAGS) -Wl,-Map,$(BIN_DIR)/$*.map -o $@ $<
