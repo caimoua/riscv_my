@@ -1,5 +1,20 @@
 # CPU_PRJ
 
+## 推荐 CPU IP 交付边界
+
+后续如果把这个项目当作 CPU IP 集成到外部 SoC，优先使用：
+
+```text
+rv32i_cached_ahb_master_top
+  rv32i_pipe_core
+  rv32i_icache
+  rv32i_dcache
+  rv32i_ahb_master_bus
+  external AHB-Lite master interface
+```
+
+它对外只暴露一个 AHB-Lite master port，外部 SoC 负责 boot ROM/flash、SRAM、MMIO 外设和 default error slave。交付说明见 `docs/RV32I_CPU_IP_DELIVERY.md`。
+
 ## 当前 AHB Matrix SoC 工作
 
 当前 SoC 集成采用项目内自研的 AHB-Lite matrix wrapper，没有把第三方 AE350/Andes/ARM IP 直接拷进仓库：
@@ -85,7 +100,7 @@ RISC-V GNU 工具链安装说明见 `docs/RISCV_TOOLCHAIN.md`。
 - 已完成内部 memory bus，支持 I-cache/D-cache 两个 master 到 ROM/SRAM/MMIO 三类 slave 的 blocking 访问、D 优先仲裁和地址 decode。说明见 `docs/RV32I_MEM_BUS.md`。
 - 已新增 `rv32i_cached_system_top`，把 pipeline core、I-cache、D-cache 和 memory bus 固化成一个可复用系统顶层。说明见 `docs/RV32I_CACHED_SYSTEM_TOP.md`。
 - 已新增 AHB-Lite 总线路径和 `rv32i_cached_system_ahb_top`，directed tests 已通过 VCS。说明见 `docs/RV32I_AHB.md`。
-- 已新增 `rv32i_cached_ahb_master_top`，作为更标准的 CPU subsystem 边界，对外只暴露 AHB-Lite master 接口；directed test 已通过 VCS。
+- 已新增 `rv32i_cached_ahb_master_top`，作为更标准的 CPU subsystem 边界，对外只暴露 AHB-Lite master 接口；directed test 已通过 VCS。交付说明见 `docs/RV32I_CPU_IP_DELIVERY.md`。
 - 已新增最小 MMIO timer 外设，并给 D-cache 增加默认 MMIO uncached bypass。说明见 `docs/RV32I_TIMER.md`。
 - 已把 `timer_irq` 接入 pipeline trap/CSR 框架，新增最小 `mstatus/mie/mip`，支持 machine timer interrupt 和 `mret` 返回。
 - 已把 I/D 侧 bus decode error 接入 pipeline trap/CSR，支持 instruction/load/store access fault，并新增 `rv32i_cached_access_fault_tb` 和 `rv32i_cached_instr_access_fault_tb`。
@@ -226,4 +241,4 @@ make sim TB_FILE=./testcases/rv32i_cached_uart_tb.sv TOP_NAME=rv32i_cached_uart_
 
 ## 后续方向
 
-后续适合继续做 AXI-lite adapter，或者补 UART RX/FIFO/interrupt；如果需要更接近 SoC 总线，也可以继续扩展真正的多 master AHB matrix。
+后续优先进入 Stage A3/A4：引入 RV32I/RV32M ISA 基础测试子集，并建立 lint / 综合 / 时序基础检查流程。等 CPU IP 交付质量更稳后，再继续做 Stage B 的 SoC/FPGA demo 或 Stage C 的性能优化。

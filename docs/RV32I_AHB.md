@@ -97,9 +97,15 @@ make sim TB_FILE=./testcases/rv32i_cached_system_ahb_top_tb.sv TOP_NAME=rv32i_ca
 
 ## 6. CPU subsystem AHB master top
 
-`rv32i_cached_ahb_master_top` is the cleaner CPU-IP style boundary added after the first internal AHB-Lite path.
+`rv32i_cached_ahb_master_top` 是当前更推荐的 CPU IP 交付边界。它把 core、I-cache、D-cache 和 AHB master bus 放在 CPU 子系统内部，对外只暴露一个 AHB-Lite master port。
 
-It keeps the CPU-side structure:
+交付级接口、参数、限制和集成检查清单见：
+
+```text
+docs/RV32I_CPU_IP_DELIVERY.md
+```
+
+内部结构：
 
 ```text
 rv32i_pipe_core
@@ -107,7 +113,7 @@ rv32i_pipe_core
   -> rv32i_ahb_master_bus
 ```
 
-But its external memory interface is only one AHB-Lite master port:
+外部 memory interface 是一个 AHB-Lite master port：
 
 ```text
 ahb_haddr
@@ -122,16 +128,16 @@ ahb_hready
 ahb_hresp
 ```
 
-ROM, SRAM, timer, UART, GPIO, and other peripherals should be connected outside this top through an external AHB decoder or bus matrix.
+ROM、SRAM、timer、UART、GPIO 和其他外设都应该在这个 top 外部通过 AHB decoder 或 bus matrix 连接。
 
-Verification entry:
+验证入口：
 
 ```bash
 cd sim
 make sim TB_FILE=./testcases/rv32i_cached_ahb_master_top_tb.sv TOP_NAME=rv32i_cached_ahb_master_top_tb
 ```
 
-This testbench places the AHB decoder and ROM/SRAM/MMIO slave bridges outside the CPU subsystem, proving that the CPU can be integrated as an AHB-Lite master IP.
+这个 testbench 把 AHB decoder 和 ROM/SRAM/MMIO slave bridge 放在 CPU 子系统外部，用来证明 CPU 可以作为 AHB-Lite master IP 被外部 SoC 集成。
 
 Stage A2 开始，这个 testbench 的 ROM 程序也改为从软件镜像加载。默认镜像为：
 
@@ -149,9 +155,9 @@ make sim TB_FILE=./testcases/rv32i_cached_ahb_master_top_tb.sv TOP_NAME=rv32i_ca
 
 ## 7. Clean-room AHB-Lite Matrix SoC Top
 
-The next SoC integration step adds a local clean-room matrix instead of copying proprietary AE350/Andes/ARM source files into this repo.
+下一步 SoC 集成使用项目内 clean-room AHB-Lite matrix，而不是把第三方 AE350/Andes/ARM 源码直接拷进仓库。
 
-New RTL:
+新增 RTL：
 
 ```text
 rtl/bus/rv32i_ahb_lite_matrix_1m4s.v
@@ -169,7 +175,7 @@ rv32i_cached_ahb_master_top
       -> APB peripheral slot
 ```
 
-Default map:
+默认地址映射：
 
 ```text
 0x0800_0000 - 0x0FFF_FFFF  flash
@@ -187,4 +193,4 @@ cd sim
 make sim TB_FILE=./testcases/rv32i_ahb_matrix_soc_top_tb.sv TOP_NAME=rv32i_ahb_matrix_soc_top_tb
 ```
 
-The test now loads its flash program from `software/bin/ahb_matrix_soc.memh`, generated from `software/asm/ahb_matrix_soc.S`. User-confirmed VCS PASS for this MEMH-loader flow was reported on 2026-05-15.
+该测试从 `software/bin/ahb_matrix_soc.memh` 加载 flash 程序，该镜像由 `software/asm/ahb_matrix_soc.S` 生成。用户已在 2026-05-15 确认该 MEMH-loader 流程 VCS PASS。

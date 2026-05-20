@@ -1,6 +1,6 @@
 # RV32I 项目路线图
 
-最后更新：2026-05-19
+最后更新：2026-05-20
 
 本文记录项目后续的大方向。当前策略是先把已有 CPU 做成可交付 IP，再把它放进可运行 SoC/FPGA demo，最后再进入性能优化。
 
@@ -115,6 +115,12 @@ software/bin/
 - 至少一个 core/cache/SoC testbench 从 `.memh` 加载程序。
 - README 写清楚工具链路径和构建命令。
 
+当前状态：
+
+- `software/asm/`、`software/linker/`、`software/scripts/` 和 `software/bin/` 已建立。
+- CPU 程序型 directed tests 已迁移到 `$readmemh` 软件镜像流。
+- 用户已确认 Stage A2 第六轮 full regression PASS，日志目录为 `sim/log/regress/20260520_173852-full`。
+
 ### A3：RISC-V ISA 基础测试
 
 目标：
@@ -165,7 +171,7 @@ software/bin/
 - `docs/PROJECT_STATUS.md`
 - `docs/INTERFACE_INDEX.md`
 - `docs/VERIFICATION_MATRIX.md`
-- `docs/RV32I_CACHED_AHB_MASTER_TOP.md`
+- `docs/RV32I_CPU_IP_DELIVERY.md`
 - `docs/RV32I_PIPE_CORE.md`
 - `docs/RV32I_LIMITATIONS.md`
 
@@ -174,6 +180,11 @@ software/bin/
 - 写清楚支持的 ISA、异常、中断、cache、bus、memory map 假设。
 - 写清楚不支持 compressed、privilege mode、MMU、outstanding transaction、burst。
 - 写清楚推荐 top 和不推荐直接作为交付边界的 legacy top。
+
+当前状态：
+
+- `docs/RV32I_CPU_IP_DELIVERY.md` 已新增，第一版聚焦 `rv32i_cached_ahb_master_top` 的参数、AHB-Lite master 端口、外部 SoC 职责、debug/perf 端口、支持能力和限制。
+- `docs/INTERFACE_INDEX.md`、`docs/RV32I_AHB.md`、`README.md` 和 `docs/PROJECT_STATUS.md` 已指向该交付边界。
 
 ## Stage B：可运行 SoC / FPGA demo
 
@@ -287,18 +298,14 @@ AHB matrix
 
 ## 当前执行建议
 
-当前立即进入 Stage A。
+当前仍处于 Stage A。
 
-第一步建议做 A1：自动化回归。原因：
-
-- 项目已有很多 directed tests，但目前主要靠手动逐个运行。
-- 后续任何重构、软件测试流、SoC demo、性能优化都依赖稳定回归。
-- 自动化回归可以显著降低每轮 Codex 上下文和人工操作成本。
+A1 自动化回归、A2 汇编软件镜像流和 A5 CPU IP 交付文档第一版已经收口。下一步建议把重点转向更系统的验证和交付质量。
 
 Stage A 的推荐近期顺序：
 
-1. A2：汇编/C 测试流。
-2. A5：补交付文档。
-3. A3：ISA 基础测试。
-4. A4：lint / 综合 / 时序基础检查。
-5. 根据后续测试增长继续维护自动化回归 suite。
+1. A3：引入 RV32I/RV32M ISA 基础测试子集。
+2. A4：建立 lint / 综合 / 时序基础检查流程。
+3. 继续补 `docs/RV32I_PIPE_CORE.md` 和 `docs/RV32I_LIMITATIONS.md`。
+4. 根据后续测试增长继续维护自动化回归 suite。
+5. Stage B/C 的 SoC/FPGA demo 和性能优化等 Stage A 更稳后再展开。

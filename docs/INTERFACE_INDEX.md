@@ -1,6 +1,6 @@
 # 接口索引
 
-最后更新：2026-05-19
+最后更新：2026-05-20
 
 本文记录稳定模块边界，后续工作不需要每次重新扫描大量 RTL。
 
@@ -43,10 +43,41 @@ MMIO external port -> optional timer/UART peripheral mux
 
 用途：推荐的 CPU 子系统边界。内部包含 core、I-cache、D-cache 和 simple-to-AHB master bus，对外只暴露一个 AHB-Lite master interface。
 
+交付说明：详见 `docs/RV32I_CPU_IP_DELIVERY.md`。
+
+主要参数：
+
+- `ICACHE_INDEX_BITS`：I-cache index 位宽，默认 2。
+- `DCACHE_INDEX_BITS`：D-cache index 位宽，默认 2。
+- `RESET_PC`：复位取指地址，默认 `32'h0000_0000`。
+- `BRANCH_PRED_INDEX_BITS`：BHT/BTB index 位宽，默认 6。
+
+时钟、复位和中断：
+
+- `clk`
+- `rst_n`：低有效异步复位。
+- `timer_irq`：machine timer interrupt 输入。当前假设与 `clk` 同步。
+
 外部 AHB-Lite master port：
 
 - Outputs：`ahb_haddr`, `ahb_hburst`, `ahb_hprot`, `ahb_hsize`, `ahb_htrans`, `ahb_hwdata`, `ahb_hwrite`
 - Inputs：`ahb_hrdata`, `ahb_hready`, `ahb_hresp`
+
+AHB 行为：
+
+- blocking、single outstanding。
+- I-cache / D-cache 请求在 `rv32i_ahb_master_bus` 内仲裁，D 侧优先。
+- `HBURST=SINGLE`，`HTRANS=NONSEQ/IDLE`。
+- subword store 会按 byte 拆分为多个 AHB byte write。
+- 外部 bus fabric 负责 ROM/SRAM/MMIO decode 和 default error response。
+
+Debug 输出：
+
+- core 性能计数器：`dbg_pc`, `dbg_cycle`, `dbg_instret`, `dbg_stall_cycle`, `dbg_flush_cycle`
+- 分支预测计数器：`dbg_branch_count`, `dbg_branch_mispredict_count`, `dbg_btb_hit_count`, `dbg_btb_miss_count`, `dbg_bht_update_count`
+- cache hit/miss 计数器。
+- bus grant/error 计数器。
+- debug regfile read port 和 system instruction event。
 
 ### `rv32i_ahb_matrix_soc_top`
 
