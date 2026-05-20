@@ -130,6 +130,10 @@ required_images=(
   "software/bin/pipe_muldiv.memh"
   "software/bin/pipe_core.memh"
   "software/bin/trap_csr.memh"
+  "software/bin/core_smoke.memh"
+  "software/bin/pipe_icache.memh"
+  "software/bin/pipe_dcache.memh"
+  "software/bin/pipe_cached_bus.memh"
 )
 
 if [ "$build_software" -eq 1 ]; then

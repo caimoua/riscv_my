@@ -90,7 +90,9 @@ module rv32i_pipe_cached_bus_tb;
 
   logic [31:0] rom [0:255];
   logic [31:0] sram [0:255];
+  string       rom_memh;
   integer i;
+  integer memh_fd;
   integer timeout;
 
   initial begin
@@ -121,14 +123,16 @@ module rv32i_pipe_cached_bus_tb;
 
     sram[1] = 32'd7;
 
-    rom[0] = 32'h2000_00b7; // lui  x1, 0x20000      (x1=0x20000000)
-    rom[1] = 32'h0040_a103; // lw   x2, 4(x1)        (x2=7)
-    rom[2] = 32'h0021_01b3; // add  x3, x2, x2       (x3=14)
-    rom[3] = 32'h0aa0_0213; // addi x4, x0, 0xAA     (x4=170)
-    rom[4] = 32'h0040_a423; // sw   x4, 8(x1)        (sram[2]=170)
-    rom[5] = 32'h0080_a283; // lw   x5, 8(x1)        (x5=170)
-    rom[6] = 32'h0051_8333; // add  x6, x3, x5       (x6=184)
-    rom[7] = 32'h0010_0073; // ebreak
+    if (!$value$plusargs("ROM_MEMH=%s", rom_memh)) begin
+      rom_memh = "../software/bin/pipe_cached_bus.memh";
+    end
+
+    memh_fd = $fopen(rom_memh, "r");
+    if (memh_fd == 0) begin
+      $fatal(1, "failed to open ROM_MEMH='%s'", rom_memh);
+    end
+    $fclose(memh_fd);
+    $readmemh(rom_memh, rom);
   end
 
   assign rom_ready = rom_valid;

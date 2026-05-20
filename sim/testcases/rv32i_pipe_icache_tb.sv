@@ -44,7 +44,9 @@ module rv32i_pipe_icache_tb;
   wire [31:0] ic_dbg_miss_count;
 
   logic [31:0] imem [0:255];
+  string       imem_memh;
   integer i;
+  integer memh_fd;
   integer timeout;
 
   initial begin
@@ -72,11 +74,16 @@ module rv32i_pipe_icache_tb;
       imem[i] = 32'h0000_0013; // addi x0, x0, 0
     end
 
-    imem[0] = 32'h0050_0093; // addi x1, x0, 5
-    imem[1] = 32'h0070_0113; // addi x2, x0, 7
-    imem[2] = 32'h0020_81b3; // add  x3, x1, x2
-    imem[3] = 32'h0021_8233; // add  x4, x3, x2
-    imem[4] = 32'h0010_0073; // ebreak
+    if (!$value$plusargs("IMEM_MEMH=%s", imem_memh)) begin
+      imem_memh = "../software/bin/pipe_icache.memh";
+    end
+
+    memh_fd = $fopen(imem_memh, "r");
+    if (memh_fd == 0) begin
+      $fatal(1, "failed to open IMEM_MEMH='%s'", imem_memh);
+    end
+    $fclose(memh_fd);
+    $readmemh(imem_memh, imem);
   end
 
   assign ic_mem_ready = ic_mem_valid;

@@ -49,7 +49,9 @@ module rv32i_pipe_dcache_tb;
   logic [31:0] imem [0:255];
   logic [31:0] dmem [0:255];
   logic [1:0]  mem_wait_q;
+  string       imem_memh;
   integer i;
+  integer memh_fd;
   integer timeout;
 
   initial begin
@@ -80,17 +82,16 @@ module rv32i_pipe_dcache_tb;
 
     dmem[1] = 32'd7;
 
-    imem[0]  = 32'h0040_0093; // addi x1, x0, 4
-    imem[1]  = 32'h0000_a103; // lw   x2, 0(x1)      (load miss, x2=7)
-    imem[2]  = 32'h0021_01b3; // add  x3, x2, x2     (x3=14)
-    imem[3]  = 32'h0aa0_0213; // addi x4, x0, 0xAA
-    imem[4]  = 32'h0040_a223; // sw   x4, 4(x1)      (store hit to addr 8)
-    imem[5]  = 32'h0040_a283; // lw   x5, 4(x1)      (load hit, x5=0xAA)
-    imem[6]  = 32'h0022_8333; // add  x6, x5, x2     (x6=0xB1)
-    imem[7]  = 32'h0800_0393; // addi x7, x0, 0x80
-    imem[8]  = 32'h0043_a023; // sw   x4, 0(x7)      (store miss no-allocate)
-    imem[9]  = 32'h0003_a403; // lw   x8, 0(x7)      (load miss after store)
-    imem[10] = 32'h0010_0073; // ebreak
+    if (!$value$plusargs("IMEM_MEMH=%s", imem_memh)) begin
+      imem_memh = "../software/bin/pipe_dcache.memh";
+    end
+
+    memh_fd = $fopen(imem_memh, "r");
+    if (memh_fd == 0) begin
+      $fatal(1, "failed to open IMEM_MEMH='%s'", imem_memh);
+    end
+    $fclose(memh_fd);
+    $readmemh(imem_memh, imem);
   end
 
   assign imem_ready = 1'b1;

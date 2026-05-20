@@ -50,6 +50,14 @@ rv32i_pipe_core_tb
   -> ../software/bin/pipe_core.memh
 rv32i_trap_csr_tb
   -> ../software/bin/trap_csr.memh
+rv32i_core_tb
+  -> ../software/bin/core_smoke.memh
+rv32i_pipe_icache_tb
+  -> ../software/bin/pipe_icache.memh
+rv32i_pipe_dcache_tb
+  -> ../software/bin/pipe_dcache.memh
+rv32i_pipe_cached_bus_tb
+  -> ../software/bin/pipe_cached_bus.memh
 ```
 
 如需覆盖默认镜像，可以传：

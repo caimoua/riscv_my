@@ -49,6 +49,14 @@ software/asm/pipe_core.S
   -> software/bin/pipe_core.memh
 software/asm/trap_csr.S
   -> software/bin/trap_csr.memh
+software/asm/core_smoke.S
+  -> software/bin/core_smoke.memh
+software/asm/pipe_icache.S
+  -> software/bin/pipe_icache.memh
+software/asm/pipe_dcache.S
+  -> software/bin/pipe_dcache.memh
+software/asm/pipe_cached_bus.S
+  -> software/bin/pipe_cached_bus.memh
 ```
 
 对应 testbench 默认使用 `+ROM_MEMH` 或 `+IMEM_MEMH` 可覆盖的软件镜像，不再在 SystemVerilog 里直接手写程序机器码。

@@ -101,6 +101,7 @@ MMIO 改动后，至少运行：
 
 ## 最近人工更新
 
+- 2026-05-20：用户确认 Stage A2 第六轮 full regression PASS，日志目录为 `sim/log/regress/20260520_173852-full`；本轮将剩余 CPU 程序型 directed tests 一次性迁移到软件镜像流：`rv32i_core_tb`、`rv32i_pipe_icache_tb`、`rv32i_pipe_dcache_tb` 和 `rv32i_pipe_cached_bus_tb`。
 - 2026-05-20：用户确认 Stage A2 第五轮软件镜像迁移后的 `rv32i_pipe_core_tb` 和 `rv32i_trap_csr_tb` 均 VCS PASS；这两个测试默认加载 `software/bin/pipe_core.memh` 与 `software/bin/trap_csr.memh`。
 - 2026-05-20：用户确认 Stage A2 第四轮软件镜像迁移后的 `rv32i_pipe_branch_predict_tb`、`rv32i_pipe_dynamic_branch_predict_tb`、`rv32i_pipe_branch_predict_param_tb` 和 `rv32i_pipe_muldiv_tb` 均 VCS PASS。Linux 回归机暂未配置 `riscv-none-elf-gcc`，因此 `--build-software` 入口会在工具链预检查处停止；不带该选项使用已生成的 MEMH 镜像运行正常。
 - 2026-05-20：用户确认 Stage A2 第三轮软件镜像迁移后的 `rv32i_cached_timer_irq_tb`、`rv32i_cached_access_fault_tb`、`rv32i_cached_instr_access_fault_tb` 和 `rv32i_cached_misaligned_trap_tb` 均 VCS PASS。

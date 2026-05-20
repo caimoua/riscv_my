@@ -42,7 +42,9 @@ module rv32i_core_tb;
   logic [31:0] ecall_pc;
   logic [31:0] ebreak_pc;
   logic [31:0] csr_cycle_value;
+  string       imem_memh;
   integer i;
+  integer memh_fd;
 
   initial begin
     clk = 1'b0;
@@ -70,102 +72,16 @@ module rv32i_core_tb;
       dmem[i] = 32'd0;
     end
 
-    //  --- original tests ---
-    imem[0] = 32'h0050_0093;   //  addi x1, x0, 5
-    imem[1] = 32'h0070_0113;   //  addi x2, x0, 7
-    imem[2] = 32'h0020_81b3;   //  add  x3, x1, x2
-    imem[3] = 32'h4011_8233;   //  sub  x4, x3, x1
+    if (!$value$plusargs("IMEM_MEMH=%s", imem_memh)) begin
+      imem_memh = "../software/bin/core_smoke.memh";
+    end
 
-    //  --- setup: x5 = -8  for signed/unsigned tests ---
-    imem[4] = 32'hff80_0293;   //  addi x5, x0, -8
-
-    //  --- I-type arithmetic ---
-    imem[5] = 32'h0002_a313;   //  slti  x6, x5, 0      (x6=1)
-    imem[6] = 32'h0002_b393;   //  sltiu x7, x5, 0      (x7=0)
-    imem[7] = 32'h0040_f413;   //  andi  x8, x1, 4      (x8=4)
-    imem[8] = 32'h0080_e493;   //  ori   x9, x1, 8      (x9=13)
-    imem[9] = 32'h0070_c513;   //  xori  x10, x1, 7     (x10=2)
-    imem[10]= 32'h0021_1593;   //  slli  x11, x2, 2     (x11=28)
-    imem[11]= 32'h0011_5613;   //  srli  x12, x2, 1     (x12=3)
-    imem[12]= 32'h4022_d693;   //  srai  x13, x5, 2     (x13=-2)
-
-    //  --- R-type arithmetic ---
-    imem[13]= 32'h0020_9733;   //  sll   x14, x1, x2    (x14=640)
-    imem[14]= 32'h0012_a7b3;   //  slt   x15, x5, x1    (x15=1)
-    imem[15]= 32'h0012_b833;   //  sltu  x16, x5, x1    (x16=0)
-    imem[16]= 32'h0020_c8b3;   //  xor   x17, x1, x2    (x17=2)
-    imem[17]= 32'h0012_d933;   //  srl   x18, x5, x1    (x18=0x07FFFFFF)
-    imem[18]= 32'h4012_d9b3;   //  sra   x19, x5, x1    (x19=-1)
-    imem[19]= 32'h0020_ea33;   //  or    x20, x1, x2    (x20=7)
-    imem[20]= 32'h0020_fab3;   //  and   x21, x1, x2    (x21=5)
-
-    //  --- U-type ---
-    imem[21]= 32'h1234_5b37;   //  lui   x22, 0x12345  (x22=0x12345000)
-    imem[22]= 32'h1000_0b97;   //  auipc x23, 0x10000  (x23=0x10000058)
-
-    //  --- JAL / JALR ---
-    imem[23]= 32'h0080_0c6f;   //  jal  x24, 8          (skip imem[24])
-    imem[24]= 32'h0010_0c93;   //  addi x25, x0, 1      (should be skipped)
-    imem[25]= 32'h0de0_0c93;   //  addi x25, x0, 0xDE   (landing, x25=0xDE)
-    imem[26]= 32'h0800_0d13;   //  addi x26, x0, 0x80   (target addr: 0x80)
-    imem[27]= 32'h000d_0de7;   //  jalr x27, x26, 0     (jump to 0x80)
-    imem[28]= 32'h0010_0e13;   //  addi x28, x0, 1      (should be skipped)
-    imem[29]= 32'h0000_0013;   //  nop
-    imem[30]= 32'h0000_0013;   //  nop
-    imem[31]= 32'h0000_0013;   //  nop
-    imem[32]= 32'h0ff0_0e13;   //  addi x28, x0, 0xFF   (landing, x28=0xFF)
-
-    //  --- B-type branch ---
-    //  x24 is reused as a branch score after its JAL return value is sampled.
-    imem[33]= 32'h0000_0c13;   //  addi x24, x0, 0
-    imem[34]= 32'h0010_8663;   //  beq  x1, x1, +12      (taken)
-    imem[35]= 32'h400c_0c13;   //  addi x24, x24, 1024   (fail path)
-    imem[36]= 32'h0080_006f;   //  jal  x0, +8           (skip pass path)
-    imem[37]= 32'h001c_0c13;   //  addi x24, x24, 1      (pass path)
-    imem[38]= 32'h0020_9663;   //  bne  x1, x2, +12      (taken)
-    imem[39]= 32'h400c_0c13;   //  addi x24, x24, 1024   (fail path)
-    imem[40]= 32'h0080_006f;   //  jal  x0, +8           (skip pass path)
-    imem[41]= 32'h002c_0c13;   //  addi x24, x24, 2      (pass path)
-    imem[42]= 32'h0012_c663;   //  blt  x5, x1, +12      (taken, signed)
-    imem[43]= 32'h400c_0c13;   //  addi x24, x24, 1024   (fail path)
-    imem[44]= 32'h0080_006f;   //  jal  x0, +8           (skip pass path)
-    imem[45]= 32'h004c_0c13;   //  addi x24, x24, 4      (pass path)
-    imem[46]= 32'h0050_d663;   //  bge  x1, x5, +12      (taken, signed)
-    imem[47]= 32'h400c_0c13;   //  addi x24, x24, 1024   (fail path)
-    imem[48]= 32'h0080_006f;   //  jal  x0, +8           (skip pass path)
-    imem[49]= 32'h008c_0c13;   //  addi x24, x24, 8      (pass path)
-    imem[50]= 32'h0050_e663;   //  bltu x1, x5, +12      (taken, unsigned)
-    imem[51]= 32'h400c_0c13;   //  addi x24, x24, 1024   (fail path)
-    imem[52]= 32'h0080_006f;   //  jal  x0, +8           (skip pass path)
-    imem[53]= 32'h010c_0c13;   //  addi x24, x24, 16     (pass path)
-    imem[54]= 32'h0050_f663;   //  bgeu x1, x5, +12      (not taken, unsigned)
-    imem[55]= 32'h020c_0c13;   //  addi x24, x24, 32     (pass fall-through)
-    imem[56]= 32'h0080_006f;   //  jal  x0, +8           (skip fail path)
-    imem[57]= 32'h400c_0c13;   //  addi x24, x24, 1024   (fail target)
-
-    //  --- Load / store ---
-    //  x24 now becomes the memory test value/result.
-    imem[58]= 32'h1234_5c37;   //  lui  x24, 0x12345      (x24=0x12345000)
-    imem[59]= 32'h678c_0c13;   //  addi x24, x24, 0x678  (x24=0x12345678)
-    imem[60]= 32'h0180_2223;   //  sw   x24, 4(x0)       (dmem[1]=0x12345678)
-    imem[61]= 32'h0000_0c13;   //  addi x24, x0, 0       (clear x24)
-    imem[62]= 32'h0040_2c03;   //  lw   x24, 4(x0)       (x24=0x12345678)
-
-    //  --- Byte / halfword load-store ---
-    imem[63]= 32'hfff0_0e93;   //  addi x29, x0, -1      (x29=0xFFFFFFFF)
-    imem[64]= 32'h01d0_0423;   //  sb   x29, 8(x0)       (dmem[2][7:0]=0xFF)
-    imem[65]= 32'h01d0_05a3;   //  sb   x29, 11(x0)      (dmem[2][31:24]=0xFF)
-    imem[66]= 32'h0080_0f03;   //  lb   x30, 8(x0)       (x30=0xFFFFFFFF)
-    imem[67]= 32'h00b0_4f83;   //  lbu  x31, 11(x0)      (x31=0x000000FF)
-    imem[68]= 32'h01d0_1723;   //  sh   x29, 14(x0)      (dmem[3][31:16]=0xFFFF)
-    imem[69]= 32'h00e0_1e83;   //  lh   x29, 14(x0)      (x29=0xFFFFFFFF)
-    imem[70]= 32'h00e0_5c03;   //  lhu  x24, 14(x0)      (x24=0x0000FFFF)
-
-    //  --- Minimal SYSTEM / CSR ---
-    imem[71]= 32'h0190_2823;   //  sw    x25, 16(x0)     (save JAL landing result before CSR reuses x25)
-    imem[72]= 32'hc000_2cf3;   //  csrrs x25, cycle, x0  (x25=cycle CSR)
-    imem[73]= 32'h0000_0073;   //  ecall                 (debug event only)
-    imem[74]= 32'h0010_0073;   //  ebreak                (debug event only)
+    memh_fd = $fopen(imem_memh, "r");
+    if (memh_fd == 0) begin
+      $fatal(1, "failed to open IMEM_MEMH='%s'", imem_memh);
+    end
+    $fclose(memh_fd);
+    $readmemh(imem_memh, imem);
   end
 
   assign imem_rdata = imem[imem_addr[9:2]];
