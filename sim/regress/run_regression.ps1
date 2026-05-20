@@ -70,7 +70,9 @@ function Test-SoftwareImages {
     "software/bin/pipe_branch_predict.memh",
     "software/bin/pipe_dynamic_branch_predict.memh",
     "software/bin/pipe_branch_predict_param.memh",
-    "software/bin/pipe_muldiv.memh"
+    "software/bin/pipe_muldiv.memh",
+    "software/bin/pipe_core.memh",
+    "software/bin/trap_csr.memh"
   )
 
   foreach ($image in $requiredImages) {

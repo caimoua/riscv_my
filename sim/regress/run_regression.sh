@@ -128,6 +128,8 @@ required_images=(
   "software/bin/pipe_dynamic_branch_predict.memh"
   "software/bin/pipe_branch_predict_param.memh"
   "software/bin/pipe_muldiv.memh"
+  "software/bin/pipe_core.memh"
+  "software/bin/trap_csr.memh"
 )
 
 if [ "$build_software" -eq 1 ]; then

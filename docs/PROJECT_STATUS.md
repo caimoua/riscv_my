@@ -145,6 +145,8 @@ Stage C：性能优化型 CPU core
   - `software/asm/pipe_dynamic_branch_predict.S`
   - `software/asm/pipe_branch_predict_param.S`
   - `software/asm/pipe_muldiv.S`
+  - `software/asm/pipe_core.S`
+  - `software/asm/trap_csr.S`
   - `software/linker/rv32i_flash.ld`
   - `software/linker/rv32i_rom0.ld`
   - `software/scripts/bin_to_memh.py`
@@ -162,11 +164,14 @@ Stage C：性能优化型 CPU core
   - `software/bin/pipe_dynamic_branch_predict.memh`
   - `software/bin/pipe_branch_predict_param.memh`
   - `software/bin/pipe_muldiv.memh`
+  - `software/bin/pipe_core.memh`
+  - `software/bin/trap_csr.memh`
   - `rv32i_ahb_matrix_soc_top_tb` 通过 `$readmemh` 加载 flash 内容。
   - `rv32i_cached_system_top_tb`、`rv32i_cached_system_ahb_top_tb` 和 `rv32i_cached_ahb_master_top_tb` 已改为通过 `$readmemh` 加载 ROM 内容，并已由用户确认 VCS PASS。
   - `rv32i_cached_timer_tb` 和 `rv32i_cached_uart_tb` 已改为通过 `$readmemh` 加载 ROM 内容，并已由用户确认 `mmio` suite VCS PASS。
   - `rv32i_cached_timer_irq_tb`、`rv32i_cached_access_fault_tb`、`rv32i_cached_instr_access_fault_tb` 和 `rv32i_cached_misaligned_trap_tb` 已改为通过 `$readmemh` 加载 ROM 内容，并已由用户确认 VCS PASS。
   - `rv32i_pipe_branch_predict_tb`、`rv32i_pipe_dynamic_branch_predict_tb`、`rv32i_pipe_branch_predict_param_tb` 和 `rv32i_pipe_muldiv_tb` 已改为通过 `$readmemh` 加载指令内容，并已由用户确认 VCS PASS。
+  - `rv32i_pipe_core_tb` 和 `rv32i_trap_csr_tb` 已改为通过 `$readmemh` 加载指令内容，并已由用户确认 VCS PASS。
 - 本地 Windows RISC-V GNU 工具链流程已经记录并验证：
   - `riscv-none-elf-gcc`
   - `riscv-none-elf-objcopy`
@@ -186,7 +191,7 @@ Stage C：性能优化型 CPU core
 
 详细状态见 `docs/VERIFICATION_MATRIX.md`。
 
-当前 Phase 6 第一轮 `rv32i_pipe_core` 仿真期 assertion 已加入，并由用户确认 VCS 回归 PASS。Stage A1 自动化回归入口第一版已完成，`smoke/core/cache/soc/full` suite 均已由用户确认 VCS PASS。Stage A2 第一轮已把 cached system / AHB master 相关 directed tests 从手写机器码迁移到软件镜像流，相关 testbench 已由用户确认 VCS PASS。Stage A2 第二轮已迁移 cached timer / UART，并给回归脚本加入软件镜像构建和缺失检查；用户已确认 `mmio` suite VCS PASS。Stage A2 第三轮已迁移 timer IRQ、access fault、instruction access fault 和 misaligned trap 相关 cached directed tests，并已由用户确认 VCS PASS。Stage A2 第四轮已迁移 branch predict 和 RV32M pipeline directed tests，并已由用户确认 VCS PASS。Linux 回归机暂未配置 `riscv-none-elf-gcc`，因此 `--build-software` 会停在工具链预检查；使用已生成 MEMH 的普通 `make sim` 路径已确认通过。
+当前 Phase 6 第一轮 `rv32i_pipe_core` 仿真期 assertion 已加入，并由用户确认 VCS 回归 PASS。Stage A1 自动化回归入口第一版已完成，`smoke/core/cache/soc/full` suite 均已由用户确认 VCS PASS。Stage A2 第一轮已把 cached system / AHB master 相关 directed tests 从手写机器码迁移到软件镜像流，相关 testbench 已由用户确认 VCS PASS。Stage A2 第二轮已迁移 cached timer / UART，并给回归脚本加入软件镜像构建和缺失检查；用户已确认 `mmio` suite VCS PASS。Stage A2 第三轮已迁移 timer IRQ、access fault、instruction access fault 和 misaligned trap 相关 cached directed tests，并已由用户确认 VCS PASS。Stage A2 第四轮已迁移 branch predict 和 RV32M pipeline directed tests，并已由用户确认 VCS PASS。Stage A2 第五轮已迁移 `rv32i_pipe_core_tb` 和 `rv32i_trap_csr_tb` 到软件镜像流，并已由用户确认 VCS PASS。Linux 回归机暂未配置 `riscv-none-elf-gcc`，因此 `--build-software` 会停在工具链预检查；使用已生成 MEMH 的普通 `make sim` 路径已确认通过。
 
 ## 设计假设
 

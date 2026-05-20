@@ -16,6 +16,7 @@ ROM0_PROGRAMS    += cached_timer_irq cached_access_fault cached_instr_access_fau
 ROM0_PROGRAMS    += cached_misaligned_trap
 ROM0_PROGRAMS    += pipe_branch_predict pipe_dynamic_branch_predict
 ROM0_PROGRAMS    += pipe_branch_predict_param pipe_muldiv
+ROM0_PROGRAMS    += pipe_core trap_csr
 PROGRAMS         := $(FLASH_PROGRAMS) $(ROM0_PROGRAMS)
 
 COMMON_FLAGS     := -march=$(ARCH) -mabi=$(ABI) -nostdlib -nostartfiles -ffreestanding

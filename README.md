@@ -24,7 +24,7 @@ cd software
 make
 ```
 
-Stage A2 开始，部分 cached wrapper directed test 也改为加载软件镜像：
+Stage A2 开始，部分 directed test 也改为加载软件镜像：
 
 ```text
 software/asm/cached_system_smoke.S  -> software/bin/cached_system_smoke.memh
@@ -45,9 +45,13 @@ software/asm/pipe_branch_predict_param.S
   -> software/bin/pipe_branch_predict_param.memh
 software/asm/pipe_muldiv.S
   -> software/bin/pipe_muldiv.memh
+software/asm/pipe_core.S
+  -> software/bin/pipe_core.memh
+software/asm/trap_csr.S
+  -> software/bin/trap_csr.memh
 ```
 
-对应 testbench 默认使用 `+ROM_MEMH` 可覆盖的 ROM image，不再在 SystemVerilog 里直接手写程序机器码。
+对应 testbench 默认使用 `+ROM_MEMH` 或 `+IMEM_MEMH` 可覆盖的软件镜像，不再在 SystemVerilog 里直接手写程序机器码。
 
 RISC-V GNU 工具链安装说明见 `docs/RISCV_TOOLCHAIN.md`。
 

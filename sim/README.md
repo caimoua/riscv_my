@@ -24,7 +24,7 @@ make sim TB_FILE=./testcases/rv32i_cached_system_ahb_top_tb.sv TOP_NAME=rv32i_ca
 make sim TB_FILE=./testcases/rv32i_cached_ahb_master_top_tb.sv TOP_NAME=rv32i_cached_ahb_master_top_tb
 ```
 
-默认 ROM image：
+默认软件镜像：
 
 ```text
 rv32i_cached_system_top_tb      -> ../software/bin/cached_system_smoke.memh
@@ -46,6 +46,10 @@ rv32i_pipe_branch_predict_param_tb
   -> ../software/bin/pipe_branch_predict_param.memh
 rv32i_pipe_muldiv_tb
   -> ../software/bin/pipe_muldiv.memh
+rv32i_pipe_core_tb
+  -> ../software/bin/pipe_core.memh
+rv32i_trap_csr_tb
+  -> ../software/bin/trap_csr.memh
 ```
 
 如需覆盖默认镜像，可以传：

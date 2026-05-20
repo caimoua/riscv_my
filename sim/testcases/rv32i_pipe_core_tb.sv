@@ -38,7 +38,9 @@ module rv32i_pipe_core_tb;
   logic        imem_wait_88_done;
   logic        dmem_ready_q;
   logic        illegal_seen;
+  string       imem_memh;
   integer i;
+  integer memh_fd;
   integer timeout;
   wire         imem_wait_req;
 
@@ -68,47 +70,16 @@ module rv32i_pipe_core_tb;
       dmem[i] = 32'd0;
     end
 
-    // Forwarding and load-use program.
-    imem[0]  = 32'h0050_0093;  // addi  x1, x0, 5
-    imem[1]  = 32'h0070_0113;  // addi  x2, x0, 7
-    imem[2]  = 32'h0020_81b3;  // add   x3, x1, x2    (x1 from MEM/WB, x2 from EX/MEM)
-    imem[3]  = 32'h4011_8233;  // sub   x4, x3, x1    (x3 from EX/MEM)
-    imem[4]  = 32'h0032_02b3;  // add   x5, x4, x3    (x4 from EX/MEM, x3 from MEM/WB)
-    imem[5]  = 32'h00f2_c313;  // xori  x6, x5, 15    (x6=28)
-    imem[6]  = 32'h0053_63b3;  // or    x7, x6, x5    (x7=31)
-    imem[7]  = 32'h0063_f433;  // and   x8, x7, x6    (x8=28)
-    imem[8]  = 32'h0080_2023;  // sw    x8, 0(x0)     (store data forwarded)
-    imem[9]  = 32'h0010_0493;  // addi  x9, x0, 1
-    imem[10] = 32'h0024_8493;  // addi  x9, x9, 2     (x9=3)
-    imem[11] = 32'h0004_8533;  // add   x10, x9, x0   (latest x9 from EX/MEM)
-    imem[12] = 32'h1234_55b7;  // lui   x11, 0x12345
-    imem[13] = 32'h0000_1617;  // auipc x12, 0x1      (pc=0x34, x12=0x1034)
+    if (!$value$plusargs("IMEM_MEMH=%s", imem_memh)) begin
+      imem_memh = "../software/bin/pipe_core.memh";
+    end
 
-    // Direct load-use hazards: each consumer immediately follows a load.
-    imem[14] = 32'h0000_2683;  // lw    x13, 0(x0)     (x13=dmem[0]=28)
-    imem[15] = 32'h0026_8733;  // add   x14, x13, x2   (load-use on rs1, x14=35)
-    imem[16] = 32'h0000_2783;  // lw    x15, 0(x0)     (x15=dmem[0]=28)
-    imem[17] = 32'h00f1_0833;  // add   x16, x2, x15   (load-use on rs2, x16=35)
-    imem[18] = 32'h0000_2883;  // lw    x17, 0(x0)     (x17=dmem[0]=28)
-    imem[19] = 32'h0110_2223;  // sw    x17, 4(x0)     (load-use store data, dmem[1]=28)
-    imem[20] = 32'h0000_2903;  // lw    x18, 0(x0)     (x18=dmem[0]=28)
-    imem[21] = 32'h0029_2023;  // sw    x2, 0(x18)     (load-use store addr, dmem[7]=7)
-
-    // Control hazards: taken branch, JAL and JALR must flush wrong-path instructions.
-    imem[22] = 32'h0000_0993;  // addi  x19, x0, 0
-    imem[23] = 32'h0020_8463;  // beq   x1, x2, +8     (not taken)
-    imem[24] = 32'h0019_8993;  // addi  x19, x19, 1    (not-taken pass)
-    imem[25] = 32'h0020_9463;  // bne   x1, x2, +8     (taken)
-    imem[26] = 32'h4009_8993;  // addi  x19, x19, 1024 (wrong path)
-    imem[27] = 32'h0029_8993;  // addi  x19, x19, 2    (branch target)
-    imem[28] = 32'h0080_0a6f;  // jal   x20, +8        (skip wrong path)
-    imem[29] = 32'h4009_8993;  // addi  x19, x19, 1024 (wrong path)
-    imem[30] = 32'h0049_8993;  // addi  x19, x19, 4    (JAL target)
-    imem[31] = 32'h0880_0a93;  // addi  x21, x0, 0x88  (JALR target address)
-    imem[32] = 32'h000a_8b67;  // jalr  x22, x21, 0    (jump to 0x88)
-    imem[33] = 32'h4009_8993;  // addi  x19, x19, 1024 (wrong path)
-    imem[34] = 32'h0089_8993;  // addi  x19, x19, 8    (JALR target)
-    imem[35] = 32'h0010_0073;  // ebreak               (end marker)
+    memh_fd = $fopen(imem_memh, "r");
+    if (memh_fd == 0) begin
+      $fatal(1, "failed to open IMEM_MEMH='%s'", imem_memh);
+    end
+    $fclose(memh_fd);
+    $readmemh(imem_memh, imem);
   end
 
   assign imem_wait_req = imem_valid &&

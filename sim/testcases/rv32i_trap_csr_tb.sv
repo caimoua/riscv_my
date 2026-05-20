@@ -35,7 +35,9 @@ module rv32i_trap_csr_tb;
   logic [31:0] dmem [0:255];
   logic        illegal_seen;
   logic        ecall_seen;
+  string       imem_memh;
   integer i;
+  integer memh_fd;
   integer timeout;
 
   initial begin
@@ -64,29 +66,16 @@ module rv32i_trap_csr_tb;
       dmem[i] = 32'd0;
     end
 
-    // Main program.
-    imem[0] = 32'h0630_0093;  // addi  x1, x0, 99
-    imem[1] = 32'h1400_0293;  // addi  x5, x0, 0x140
-    imem[2] = 32'h3052_9073;  // csrrw x0, mtvec, x5
-    imem[3] = 32'h0000_0073;  // ecall
-    imem[4] = 32'h0010_2a23;  // sw    x1, 20(x0)
-    imem[5] = 32'h0010_0513;  // addi  x10, x0, 1
-    imem[6] = 32'h0000_0000;  // illegal instruction
-    imem[7] = 32'h0010_0593;  // addi  x11, x0, 1
-    imem[8] = 32'h0010_0073;  // ebreak
+    if (!$value$plusargs("IMEM_MEMH=%s", imem_memh)) begin
+      imem_memh = "../software/bin/trap_csr.memh";
+    end
 
-    // Trap handler at 0x140. This differs from the reset mtvec value 0x100,
-    // so the test proves that csrrw really updates mtvec before ECALL.
-    imem[80] = 32'h3420_2373; // csrrs x6, mcause, x0
-    imem[81] = 32'h3410_23f3; // csrrs x7, mepc, x0
-    imem[82] = 32'h0023_1413; // slli  x8, x6, 2
-    imem[83] = 32'h0140_2483; // lw    x9, 20(x0)
-    imem[84] = 32'h0264_2423; // sw    x6, 40(x8)
-    imem[85] = 32'h0474_2823; // sw    x7, 80(x8)
-    imem[86] = 32'h0694_2c23; // sw    x9, 120(x8)
-    imem[87] = 32'h0043_8393; // addi  x7, x7, 4
-    imem[88] = 32'h3413_9073; // csrrw x0, mepc, x7
-    imem[89] = 32'h3020_0073; // mret
+    memh_fd = $fopen(imem_memh, "r");
+    if (memh_fd == 0) begin
+      $fatal(1, "failed to open IMEM_MEMH='%s'", imem_memh);
+    end
+    $fclose(memh_fd);
+    $readmemh(imem_memh, imem);
   end
 
   assign imem_ready = 1'b1;
