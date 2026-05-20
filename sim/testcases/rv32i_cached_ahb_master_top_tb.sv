@@ -103,7 +103,9 @@ module rv32i_cached_ahb_master_top_tb;
   logic [31:0] sram [0:255];
   logic [31:0] mmio_reg;
   wire         ahb_decode_error;
+  string rom_memh;
   integer i;
+  integer memh_fd;
   integer timeout;
 
   initial begin
@@ -135,17 +137,16 @@ module rv32i_cached_ahb_master_top_tb;
     sram[1]  = 32'd7;
     mmio_reg = 32'd0;
 
-    rom[0]  = 32'h2000_00b7; // lui  x1, 0x20000
-    rom[1]  = 32'h0040_a103; // lw   x2, 4(x1)
-    rom[2]  = 32'h0051_0193; // addi x3, x2, 5
-    rom[3]  = 32'h0030_a423; // sw   x3, 8(x1)
-    rom[4]  = 32'h0080_a203; // lw   x4, 8(x1)
-    rom[5]  = 32'h4000_0537; // lui  x10, 0x40000
-    rom[6]  = 32'h05a0_0593; // addi x11, x0, 0x5a
-    rom[7]  = 32'h00b5_2023; // sw   x11, 0(x10)
-    rom[8]  = 32'h0005_2603; // lw   x12, 0(x10)
-    rom[9]  = 32'h00c2_06b3; // add  x13, x4, x12
-    rom[10] = 32'h0010_0073; // ebreak
+    if (!$value$plusargs("ROM_MEMH=%s", rom_memh)) begin
+      rom_memh = "../software/bin/cached_ahb_master.memh";
+    end
+
+    memh_fd = $fopen(rom_memh, "r");
+    if (memh_fd == 0) begin
+      $fatal(1, "failed to open ROM_MEMH='%s'", rom_memh);
+    end
+    $fclose(memh_fd);
+    $readmemh(rom_memh, rom);
   end
 
   assign rom_ready = rom_valid;

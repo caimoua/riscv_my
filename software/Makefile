@@ -5,14 +5,17 @@ PYTHON           ?= python
 
 ARCH             ?= rv32i
 ABI              ?= ilp32
-LINKER           ?= linker/rv32i_flash.ld
+LINKER_FLASH     ?= linker/rv32i_flash.ld
+LINKER_ROM0      ?= linker/rv32i_rom0.ld
 BUILD_DIR        ?= build
 BIN_DIR          ?= bin
 
-PROGRAMS         := ahb_matrix_soc ahb_matrix_apb_soc
+FLASH_PROGRAMS   := ahb_matrix_soc ahb_matrix_apb_soc
+ROM0_PROGRAMS    := cached_system_smoke cached_ahb_master
+PROGRAMS         := $(FLASH_PROGRAMS) $(ROM0_PROGRAMS)
 
 COMMON_FLAGS     := -march=$(ARCH) -mabi=$(ABI) -nostdlib -nostartfiles -ffreestanding
-LDFLAGS          := -Wl,-T,$(LINKER) -Wl,--build-id=none
+LDFLAGS          = -Wl,-T,$(LINKER_SCRIPT) -Wl,--build-id=none
 
 .PHONY: all clean
 .SECONDARY: $(PROGRAMS:%=$(BUILD_DIR)/%.elf) $(PROGRAMS:%=$(BIN_DIR)/%.bin)
@@ -22,7 +25,12 @@ all: $(PROGRAMS:%=$(BIN_DIR)/%.memh)
 $(BUILD_DIR) $(BIN_DIR):
 	mkdir $@
 
-$(BUILD_DIR)/%.elf: asm/%.S $(LINKER) | $(BUILD_DIR) $(BIN_DIR)
+$(FLASH_PROGRAMS:%=$(BUILD_DIR)/%.elf): LINKER_SCRIPT = $(LINKER_FLASH)
+$(ROM0_PROGRAMS:%=$(BUILD_DIR)/%.elf): LINKER_SCRIPT = $(LINKER_ROM0)
+$(FLASH_PROGRAMS:%=$(BUILD_DIR)/%.elf): $(LINKER_FLASH)
+$(ROM0_PROGRAMS:%=$(BUILD_DIR)/%.elf): $(LINKER_ROM0)
+
+$(BUILD_DIR)/%.elf: asm/%.S | $(BUILD_DIR) $(BIN_DIR)
 	$(RISCV_CC) $(COMMON_FLAGS) $(LDFLAGS) -Wl,-Map,$(BIN_DIR)/$*.map -o $@ $<
 
 $(BIN_DIR)/%.bin: $(BUILD_DIR)/%.elf | $(BIN_DIR)

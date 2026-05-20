@@ -133,6 +133,20 @@ make sim TB_FILE=./testcases/rv32i_cached_ahb_master_top_tb.sv TOP_NAME=rv32i_ca
 
 This testbench places the AHB decoder and ROM/SRAM/MMIO slave bridges outside the CPU subsystem, proving that the CPU can be integrated as an AHB-Lite master IP.
 
+Stage A2 开始，这个 testbench 的 ROM 程序也改为从软件镜像加载。默认镜像为：
+
+```text
+software/bin/cached_ahb_master.memh
+```
+
+如果需要替换程序，可以在仿真时传入：
+
+```bash
+make sim TB_FILE=./testcases/rv32i_cached_ahb_master_top_tb.sv TOP_NAME=rv32i_cached_ahb_master_top_tb SIM_PLUSARGS="+ROM_MEMH=../software/bin/cached_ahb_master.memh"
+```
+
+该迁移后的版本已在 2026-05-20 由用户确认 VCS PASS。
+
 ## 7. Clean-room AHB-Lite Matrix SoC Top
 
 The next SoC integration step adds a local clean-room matrix instead of copying proprietary AE350/Andes/ARM source files into this repo.

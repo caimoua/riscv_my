@@ -24,6 +24,15 @@ cd software
 make
 ```
 
+Stage A2 开始，部分 cached wrapper directed test 也改为加载软件镜像：
+
+```text
+software/asm/cached_system_smoke.S  -> software/bin/cached_system_smoke.memh
+software/asm/cached_ahb_master.S    -> software/bin/cached_ahb_master.memh
+```
+
+对应 testbench 默认使用 `+ROM_MEMH` 可覆盖的 ROM image，不再在 SystemVerilog 里直接手写程序机器码。
+
 RISC-V GNU 工具链安装说明见 `docs/RISCV_TOOLCHAIN.md`。
 
 这是一个面向学习和面试准备的 RISC-V CPU 项目，目标是系统性练习 CPU 微架构、简单 SoC 集成和验证流程。

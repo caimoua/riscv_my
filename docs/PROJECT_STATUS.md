@@ -1,6 +1,6 @@
 # 项目状态
 
-最后更新：2026-05-19
+最后更新：2026-05-20
 
 这是后续 Codex 会话的第一入口。继续工作前先读这个文件，再按需读取 `docs/INTERFACE_INDEX.md` 和 `docs/VERIFICATION_MATRIX.md`，避免每次重新扫描大量 RTL。
 
@@ -132,10 +132,18 @@ Stage C：性能优化型 CPU core
 - 论文/PPT 可用的系统结构 SVG：`docs/figures/rv32i_cached_system_architecture.svg`。
 - 软件镜像构建流：
   - `software/asm/ahb_matrix_soc.S`
+  - `software/asm/ahb_matrix_apb_soc.S`
+  - `software/asm/cached_system_smoke.S`
+  - `software/asm/cached_ahb_master.S`
   - `software/linker/rv32i_flash.ld`
+  - `software/linker/rv32i_rom0.ld`
   - `software/scripts/bin_to_memh.py`
   - `software/bin/ahb_matrix_soc.memh`
+  - `software/bin/ahb_matrix_apb_soc.memh`
+  - `software/bin/cached_system_smoke.memh`
+  - `software/bin/cached_ahb_master.memh`
   - `rv32i_ahb_matrix_soc_top_tb` 通过 `$readmemh` 加载 flash 内容。
+  - `rv32i_cached_system_top_tb`、`rv32i_cached_system_ahb_top_tb` 和 `rv32i_cached_ahb_master_top_tb` 已改为通过 `$readmemh` 加载 ROM 内容，并已由用户确认 VCS PASS。
 - 本地 Windows RISC-V GNU 工具链流程已经记录并验证：
   - `riscv-none-elf-gcc`
   - `riscv-none-elf-objcopy`
@@ -154,7 +162,7 @@ Stage C：性能优化型 CPU core
 
 详细状态见 `docs/VERIFICATION_MATRIX.md`。
 
-当前 Phase 6 第一轮 `rv32i_pipe_core` 仿真期 assertion 已加入，并由用户确认 VCS 回归 PASS。Stage A1 自动化回归入口第一版已完成，`smoke/core/cache/soc/full` suite 均已由用户确认 VCS PASS；既有 directed tests 的历史 PASS 记录见 `docs/VERIFICATION_MATRIX.md`。
+当前 Phase 6 第一轮 `rv32i_pipe_core` 仿真期 assertion 已加入，并由用户确认 VCS 回归 PASS。Stage A1 自动化回归入口第一版已完成，`smoke/core/cache/soc/full` suite 均已由用户确认 VCS PASS。Stage A2 第一轮已把 cached system / AHB master 相关 directed tests 从手写机器码迁移到软件镜像流，相关 testbench 已由用户确认 VCS PASS。
 
 ## 设计假设
 
@@ -170,7 +178,7 @@ Stage C：性能优化型 CPU core
 
 ## 下一步候选
 
-1. Stage A2：把更多 directed test 迁移到汇编/C 软件镜像流，减少手写机器码。
+1. Stage A2：继续把 trap、MMIO、branch/muldiv 等 directed test 迁移到汇编/C 软件镜像流，减少手写机器码。
 2. Stage A5：补齐 CPU IP 交付文档，重点写清楚 `rv32i_cached_ahb_master_top` 的接口、假设和限制。
 3. Stage A3：引入 RV32I/RV32M ISA 基础测试子集。
 4. Stage A4：建立 lint / 综合 / 时序基础检查流程。

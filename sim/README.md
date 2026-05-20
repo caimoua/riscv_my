@@ -14,6 +14,30 @@ make sim TB_FILE=./testcases/rv32i_ahb_matrix_soc_top_tb.sv TOP_NAME=rv32i_ahb_m
 make sim TB_FILE=./testcases/rv32i_ahb_matrix_soc_top_tb.sv TOP_NAME=rv32i_ahb_matrix_soc_top_tb SIM_PLUSARGS="+FLASH_MEMH=../software/bin/ahb_matrix_soc.memh"
 ```
 
+## 软件镜像加载的 Wrapper Test
+
+Stage A2 开始，更多 directed test 不再直接在 SystemVerilog 里手写机器码，而是从 `software/bin/*.memh` 加载。
+
+```bash
+make sim TB_FILE=./testcases/rv32i_cached_system_top_tb.sv TOP_NAME=rv32i_cached_system_top_tb
+make sim TB_FILE=./testcases/rv32i_cached_system_ahb_top_tb.sv TOP_NAME=rv32i_cached_system_ahb_top_tb
+make sim TB_FILE=./testcases/rv32i_cached_ahb_master_top_tb.sv TOP_NAME=rv32i_cached_ahb_master_top_tb
+```
+
+默认 ROM image：
+
+```text
+rv32i_cached_system_top_tb      -> ../software/bin/cached_system_smoke.memh
+rv32i_cached_system_ahb_top_tb  -> ../software/bin/cached_system_smoke.memh
+rv32i_cached_ahb_master_top_tb  -> ../software/bin/cached_ahb_master.memh
+```
+
+如需覆盖默认镜像，可以传：
+
+```bash
+make sim TB_FILE=./testcases/rv32i_cached_ahb_master_top_tb.sv TOP_NAME=rv32i_cached_ahb_master_top_tb SIM_PLUSARGS="+ROM_MEMH=../software/bin/cached_ahb_master.memh"
+```
+
 这个目录是 VCS/Verdi 仿真的统一入口。
 
 ## 常用命令

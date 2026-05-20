@@ -18,13 +18,24 @@ asm/ahb_matrix_soc.S
   -> bin/ahb_matrix_soc.memh
 ```
 
+当前默认构建的 directed software image 包括：
+
+```text
+ahb_matrix_soc
+ahb_matrix_apb_soc
+cached_system_smoke
+cached_ahb_master
+```
+
+`ahb_matrix_*` 程序使用 `linker/rv32i_flash.ld`，从 `0x0800_0000` flash slot 启动。`cached_*` 程序使用 `linker/rv32i_rom0.ld`，从 `0x0000_0000` ROM slot 启动，供 cached system wrapper 类 testbench 加载。
+
 默认工具链前缀是 `riscv-none-elf`，对应 xPack RISC-V embedded GCC。可以按本机安装情况覆盖：
 
 ```bash
 make TOOLCHAIN_PREFIX=riscv64-unknown-elf
 ```
 
-`bin/*.memh` 可以提交，用来保证仿真环境没有本地 RISC-V 工具链时仍能跑现有 test。`bin/*.elf`、`bin/*.bin` 和 map 文件不提交。
+`bin/*.memh` 可以提交，用来保证仿真环境没有本地 RISC-V 工具链时仍能跑现有 test。`build/`、`bin/*.elf`、`bin/*.bin` 和 map 文件不提交。
 
 更多安装说明见 `docs/RISCV_TOOLCHAIN.md`。
 
