@@ -1,6 +1,6 @@
 # 项目状态
 
-最后更新：2026-05-20
+最后更新：2026-05-21
 
 这是后续 Codex 会话的第一入口。继续工作前先读这个文件，再按需读取 `docs/INTERFACE_INDEX.md` 和 `docs/VERIFICATION_MATRIX.md`，避免每次重新扫描大量 RTL。
 
@@ -45,7 +45,7 @@ Stage C：性能优化型 CPU core
   最后基于可测量 workload 做分支、取指、cache、总线和 CPI 优化。
 ```
 
-当前仍处于 Stage A。A1 自动化回归、A2 汇编/软件镜像测试流和 A5 CPU IP 交付文档第一版已经收口。近期优先级转为：ISA 基础测试、lint/综合基础检查，以及继续补齐更细的 core/限制说明文档。
+当前仍处于 Stage A。A1 自动化回归、A2 汇编/软件镜像测试流、A3 第一版 ISA 基础测试子集和 A5 CPU IP 交付文档第一版已经收口。近期优先级转为：建立 lint/综合基础检查，以及继续补齐更细的 core/限制说明文档。
 
 ## 已完成
 
@@ -86,6 +86,12 @@ Stage C：性能优化型 CPU core
   - M 指令结果复用 ALU writeback/forwarding 路径。
   - `rv32i_pipe_muldiv_tb` 已由用户确认 VCS PASS。
   - `rv32i_decoder_muldiv_tb` 已由用户确认 VCS PASS。
+- Stage A3 第一版项目内 ISA 基础测试子集：
+  - `software/asm/isa_basic.S`
+  - `software/bin/isa_basic.memh`
+  - `sim/testcases/rv32i_pipe_isa_basic_tb.sv`
+  - 覆盖 RV32I arithmetic/branch/jump/load-store 和 RV32M mul/div/rem 基础行为。
+  - 已接入 `isa/core/full` 回归 suite，并由用户确认 VCS PASS。
 - 最小 machine-mode trap/CSR 路径：
   - `mtvec`, `mepc`, `mcause`
   - `mstatus.MIE/MPIE`, `mie.MTIE`, `mip.MTIP`
@@ -152,6 +158,7 @@ Stage C：性能优化型 CPU core
   - `software/asm/pipe_icache.S`
   - `software/asm/pipe_dcache.S`
   - `software/asm/pipe_cached_bus.S`
+  - `software/asm/isa_basic.S`
   - `software/linker/rv32i_flash.ld`
   - `software/linker/rv32i_rom0.ld`
   - `software/scripts/bin_to_memh.py`
@@ -175,6 +182,7 @@ Stage C：性能优化型 CPU core
   - `software/bin/pipe_icache.memh`
   - `software/bin/pipe_dcache.memh`
   - `software/bin/pipe_cached_bus.memh`
+  - `software/bin/isa_basic.memh`
   - `rv32i_ahb_matrix_soc_top_tb` 通过 `$readmemh` 加载 flash 内容。
   - `rv32i_cached_system_top_tb`、`rv32i_cached_system_ahb_top_tb` 和 `rv32i_cached_ahb_master_top_tb` 已改为通过 `$readmemh` 加载 ROM 内容，并已由用户确认 VCS PASS。
   - `rv32i_cached_timer_tb` 和 `rv32i_cached_uart_tb` 已改为通过 `$readmemh` 加载 ROM 内容，并已由用户确认 `mmio` suite VCS PASS。
@@ -201,7 +209,7 @@ Stage C：性能优化型 CPU core
 
 详细状态见 `docs/VERIFICATION_MATRIX.md`。
 
-当前 Phase 6 第一轮 `rv32i_pipe_core` 仿真期 assertion 已加入，并由用户确认 VCS 回归 PASS。Stage A1 自动化回归入口第一版已完成，`smoke/core/cache/soc/full` suite 均已由用户确认 VCS PASS。Stage A2 第一轮已把 cached system / AHB master 相关 directed tests 从手写机器码迁移到软件镜像流，相关 testbench 已由用户确认 VCS PASS。Stage A2 第二轮已迁移 cached timer / UART，并给回归脚本加入软件镜像构建和缺失检查；用户已确认 `mmio` suite VCS PASS。Stage A2 第三轮已迁移 timer IRQ、access fault、instruction access fault 和 misaligned trap 相关 cached directed tests，并已由用户确认 VCS PASS。Stage A2 第四轮已迁移 branch predict 和 RV32M pipeline directed tests，并已由用户确认 VCS PASS。Stage A2 第五轮已迁移 `rv32i_pipe_core_tb` 和 `rv32i_trap_csr_tb` 到软件镜像流，并已由用户确认 VCS PASS。Stage A2 第六轮已把剩余 CPU 程序型 directed tests 一次性迁移到软件镜像流，并已由用户确认 full regression PASS，日志目录为 `sim/log/regress/20260520_173852-full`。Stage A5 CPU IP 交付文档第一版已补齐，新增 `docs/RV32I_CPU_IP_DELIVERY.md` 并把 README、接口索引和 AHB 文档入口统一到 `rv32i_cached_ahb_master_top`。Linux 回归机暂未配置 `riscv-none-elf-gcc`，因此 `--build-software` 会停在工具链预检查；使用已生成 MEMH 的普通 `make sim` 路径已确认通过。
+当前 Phase 6 第一轮 `rv32i_pipe_core` 仿真期 assertion 已加入，并由用户确认 VCS 回归 PASS。Stage A1 自动化回归入口第一版已完成，`smoke/core/cache/soc/full` suite 均已由用户确认 VCS PASS。Stage A2 第一轮已把 cached system / AHB master 相关 directed tests 从手写机器码迁移到软件镜像流，相关 testbench 已由用户确认 VCS PASS。Stage A2 第二轮已迁移 cached timer / UART，并给回归脚本加入软件镜像构建和缺失检查；用户已确认 `mmio` suite VCS PASS。Stage A2 第三轮已迁移 timer IRQ、access fault、instruction access fault 和 misaligned trap 相关 cached directed tests，并已由用户确认 VCS PASS。Stage A2 第四轮已迁移 branch predict 和 RV32M pipeline directed tests，并已由用户确认 VCS PASS。Stage A2 第五轮已迁移 `rv32i_pipe_core_tb` 和 `rv32i_trap_csr_tb` 到软件镜像流，并已由用户确认 VCS PASS。Stage A2 第六轮已把剩余 CPU 程序型 directed tests 一次性迁移到软件镜像流，并已由用户确认 full regression PASS，日志目录为 `sim/log/regress/20260520_173852-full`。Stage A3 第一版项目内 ISA 基础测试子集已新增并接入 `isa/core/full` suite，用户已确认 `rv32i_pipe_isa_basic_tb` VCS PASS：`cycle=476`、`instret=184`、`stall_cycle=190`、`flush_cycle=49`、`branch_count=48`、`branch_mispredict_count=48`。Stage A5 CPU IP 交付文档第一版已补齐，新增 `docs/RV32I_CPU_IP_DELIVERY.md` 并把 README、接口索引和 AHB 文档入口统一到 `rv32i_cached_ahb_master_top`。Linux 回归机暂未配置 `riscv-none-elf-gcc`，因此 `--build-software` 会停在工具链预检查；使用已生成 MEMH 的普通 `make sim` 路径已确认通过。
 
 ## 设计假设
 
@@ -217,11 +225,10 @@ Stage C：性能优化型 CPU core
 
 ## 下一步候选
 
-1. Stage A3：引入 RV32I/RV32M ISA 基础测试子集。
-2. Stage A4：建立 lint / 综合 / 时序基础检查流程。
-3. 继续补 `docs/RV32I_PIPE_CORE.md` 和 `docs/RV32I_LIMITATIONS.md`，让交付文档更完整。
-4. 根据后续测试增长继续维护自动化回归 suite。
-5. Stage B/C 的 SoC/FPGA demo 和性能优化等 Stage A 更稳后再展开。
+1. Stage A4：建立 lint / 综合 / 时序基础检查流程。
+2. 继续补 `docs/RV32I_PIPE_CORE.md` 和 `docs/RV32I_LIMITATIONS.md`，让交付文档更完整。
+3. 根据后续测试增长继续维护自动化回归 suite。
+4. Stage B/C 的 SoC/FPGA demo 和性能优化等 Stage A 更稳后再展开。
 
 ## 上下文规则
 

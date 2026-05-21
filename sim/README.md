@@ -58,6 +58,8 @@ rv32i_pipe_dcache_tb
   -> ../software/bin/pipe_dcache.memh
 rv32i_pipe_cached_bus_tb
   -> ../software/bin/pipe_cached_bus.memh
+rv32i_pipe_isa_basic_tb
+  -> ../software/bin/isa_basic.memh
 ```
 
 如需覆盖默认镜像，可以传：
@@ -101,7 +103,20 @@ bash ./regress/run_regression.sh --suite smoke
 当前 suite：
 
 ```text
-smoke, core, cache, ahb, mmio, soc, full
+smoke, core, cache, ahb, mmio, soc, isa, full
+```
+
+ISA 基础子集：
+
+```bash
+bash ./regress/run_regression.sh --suite isa --dry-run
+bash ./regress/run_regression.sh --suite isa
+```
+
+单独运行：
+
+```bash
+make sim TB_FILE=./testcases/rv32i_pipe_isa_basic_tb.sv TOP_NAME=rv32i_pipe_isa_basic_tb
 ```
 
 真实运行的日志会保存到：

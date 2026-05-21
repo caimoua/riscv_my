@@ -1,6 +1,6 @@
 # RV32I 项目路线图
 
-最后更新：2026-05-20
+最后更新：2026-05-21
 
 本文记录项目后续的大方向。当前策略是先把已有 CPU 做成可交付 IP，再把它放进可运行 SoC/FPGA demo，最后再进入性能优化。
 
@@ -140,6 +140,13 @@ software/bin/
 
 - 可以把 ISA test 编译成当前 memory map 可加载的镜像。
 - 至少形成一组稳定 smoke ISA regression。
+
+当前状态：
+
+- 已新增 `software/asm/isa_basic.S` 和 `software/bin/isa_basic.memh`。
+- 已新增 `sim/testcases/rv32i_pipe_isa_basic_tb.sv`。
+- 已新增 `isa` regression suite，并把该测试接入 `isa/core/full`。
+- 用户已在 VCS 环境确认 `rv32i_pipe_isa_basic_tb` PASS。
 
 ### A4：lint / 综合 / 时序基础检查
 
@@ -300,12 +307,11 @@ AHB matrix
 
 当前仍处于 Stage A。
 
-A1 自动化回归、A2 汇编软件镜像流和 A5 CPU IP 交付文档第一版已经收口。下一步建议把重点转向更系统的验证和交付质量。
+A1 自动化回归、A2 汇编软件镜像流、A3 第一版项目内 ISA 基础测试子集和 A5 CPU IP 交付文档第一版已经收口。下一步建议把重点转向更系统的验证和交付质量。
 
 Stage A 的推荐近期顺序：
 
-1. A3：引入 RV32I/RV32M ISA 基础测试子集。
-2. A4：建立 lint / 综合 / 时序基础检查流程。
-3. 继续补 `docs/RV32I_PIPE_CORE.md` 和 `docs/RV32I_LIMITATIONS.md`。
-4. 根据后续测试增长继续维护自动化回归 suite。
-5. Stage B/C 的 SoC/FPGA demo 和性能优化等 Stage A 更稳后再展开。
+1. A4：建立 lint / 综合 / 时序基础检查流程。
+2. 继续补 `docs/RV32I_PIPE_CORE.md` 和 `docs/RV32I_LIMITATIONS.md`。
+3. 根据后续测试增长继续维护自动化回归 suite。
+4. Stage B/C 的 SoC/FPGA demo 和性能优化等 Stage A 更稳后再展开。

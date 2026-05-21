@@ -72,6 +72,8 @@ software/asm/pipe_dcache.S
   -> software/bin/pipe_dcache.memh
 software/asm/pipe_cached_bus.S
   -> software/bin/pipe_cached_bus.memh
+software/asm/isa_basic.S
+  -> software/bin/isa_basic.memh
 ```
 
 对应 testbench 默认使用 `+ROM_MEMH` 或 `+IMEM_MEMH` 可覆盖的软件镜像，不再在 SystemVerilog 里直接手写程序机器码。
@@ -101,6 +103,7 @@ RISC-V GNU 工具链安装说明见 `docs/RISCV_TOOLCHAIN.md`。
 - 已新增 `rv32i_cached_system_top`，把 pipeline core、I-cache、D-cache 和 memory bus 固化成一个可复用系统顶层。说明见 `docs/RV32I_CACHED_SYSTEM_TOP.md`。
 - 已新增 AHB-Lite 总线路径和 `rv32i_cached_system_ahb_top`，directed tests 已通过 VCS。说明见 `docs/RV32I_AHB.md`。
 - 已新增 `rv32i_cached_ahb_master_top`，作为更标准的 CPU subsystem 边界，对外只暴露 AHB-Lite master 接口；directed test 已通过 VCS。交付说明见 `docs/RV32I_CPU_IP_DELIVERY.md`。
+- 已新增 Stage A3 第一版 RV32I/RV32M ISA 基础测试子集，说明见 `docs/RV32I_ISA_TESTS.md`；已通过 VCS。
 - 已新增最小 MMIO timer 外设，并给 D-cache 增加默认 MMIO uncached bypass。说明见 `docs/RV32I_TIMER.md`。
 - 已把 `timer_irq` 接入 pipeline trap/CSR 框架，新增最小 `mstatus/mie/mip`，支持 machine timer interrupt 和 `mret` 返回。
 - 已把 I/D 侧 bus decode error 接入 pipeline trap/CSR，支持 instruction/load/store access fault，并新增 `rv32i_cached_access_fault_tb` 和 `rv32i_cached_instr_access_fault_tb`。
@@ -143,7 +146,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\sim\regress\run_regression
 powershell -NoProfile -ExecutionPolicy Bypass -File .\sim\regress\run_regression.ps1 -Suite smoke
 ```
 
-当前支持 `smoke/core/cache/ahb/mmio/soc/full` 几个回归集合，日志保存在 `sim/log/regress/`。
+当前支持 `smoke/core/cache/ahb/mmio/soc/isa/full` 几个回归集合，日志保存在 `sim/log/regress/`。
 
 流水线 core：
 
@@ -187,6 +190,11 @@ RV32M 乘除法扩展：
 ```bash
 make sim TB_FILE=./testcases/rv32i_decoder_muldiv_tb.sv TOP_NAME=rv32i_decoder_muldiv_tb
 make sim TB_FILE=./testcases/rv32i_pipe_muldiv_tb.sv TOP_NAME=rv32i_pipe_muldiv_tb
+```
+
+RV32I/RV32M ISA 基础子集：
+```bash
+make sim TB_FILE=./testcases/rv32i_pipe_isa_basic_tb.sv TOP_NAME=rv32i_pipe_isa_basic_tb
 ```
 
 trap/CSR：
@@ -241,4 +249,4 @@ make sim TB_FILE=./testcases/rv32i_cached_uart_tb.sv TOP_NAME=rv32i_cached_uart_
 
 ## 后续方向
 
-后续优先进入 Stage A3/A4：引入 RV32I/RV32M ISA 基础测试子集，并建立 lint / 综合 / 时序基础检查流程。等 CPU IP 交付质量更稳后，再继续做 Stage B 的 SoC/FPGA demo 或 Stage C 的性能优化。
+后续正式进入 Stage A4：建立 lint / 综合 / 时序基础检查流程。等 CPU IP 交付质量更稳后，再继续做 Stage B 的 SoC/FPGA demo 或 Stage C 的性能优化。

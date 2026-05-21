@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-  [ValidateSet("smoke", "core", "cache", "ahb", "mmio", "soc", "full")]
+  [ValidateSet("smoke", "core", "cache", "ahb", "mmio", "soc", "isa", "full")]
   [string]$Suite = "smoke",
 
   [switch]$DryRun,
@@ -71,6 +71,7 @@ function Test-SoftwareImages {
     "software/bin/pipe_dynamic_branch_predict.memh",
     "software/bin/pipe_branch_predict_param.memh",
     "software/bin/pipe_muldiv.memh",
+    "software/bin/isa_basic.memh",
     "software/bin/pipe_core.memh",
     "software/bin/trap_csr.memh",
     "software/bin/core_smoke.memh",
