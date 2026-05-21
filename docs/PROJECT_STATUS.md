@@ -45,7 +45,7 @@ Stage C：性能优化型 CPU core
   最后基于可测量 workload 做分支、取指、cache、总线和 CPI 优化。
 ```
 
-当前仍处于 Stage A。A1 自动化回归、A2 汇编/软件镜像测试流、A3 第一版 ISA 基础测试子集、A4 第一版质量检查入口和 A5 CPU IP 交付文档第一版已经收口。近期优先级转为：固定 lint/综合 warning baseline，以及继续补齐更细的 core/限制说明文档。
+当前仍处于 Stage A。A1 自动化回归、A2 汇编/软件镜像测试流、A3 第一版 ISA 基础测试子集、A4 第一版质量检查入口和 A5 CPU IP 交付文档第一版已经收口。中长期方向已调整为面向本地 AI agent 调度与轻量推理的 RISC-V Agent Core，路线分析见 `docs/RV32I_XUANTIE_AGENT_ROADMAP.md`。近期优先级转为：建立 agent workload baseline、固定 lint/综合 warning baseline，以及继续补齐更细的 core/限制说明文档。
 
 ## 已完成
 
@@ -98,6 +98,9 @@ Stage C：性能优化型 CPU core
   - `project/constraints/rv32i_cached_ahb_master_top.sdc`
   - `docs/RV32I_QUALITY_CHECKS.md`
   - 支持 filelist/SDC 基础检查，并可选接入 Verilator lint、Yosys synthesis/check 和 OpenSTA timing。
+- 玄铁式 Agent Core 路线分析：
+  - `docs/RV32I_XUANTIE_AGENT_ROADMAP.md`
+  - 将后续方向从泛化 CPU/SoC demo 收敛为面向 agent runtime 的调度、控制流、内存访问和轻量 AI 加速。
 - 最小 machine-mode trap/CSR 路径：
   - `mtvec`, `mepc`, `mcause`
   - `mstatus.MIE/MPIE`, `mie.MTIE`, `mip.MTIP`
@@ -231,10 +234,10 @@ Stage C：性能优化型 CPU core
 
 ## 下一步候选
 
-1. 在 Linux/CI 或本机安装 Verilator/Yosys 后运行 `tools/quality` 的 `lint/synth/all` suite，形成第一版 warning baseline。
-2. 继续补 `docs/RV32I_PIPE_CORE.md` 和 `docs/RV32I_LIMITATIONS.md`，让交付文档更完整。
-3. 根据后续测试增长继续维护自动化回归 suite。
-4. Stage B/C 的 SoC/FPGA demo 和性能优化等 Stage A 更稳后再展开。
+1. Stage B1：建立 agent event loop / tool dispatch / token scan / int8 matvec 的 CPU-only workload baseline。
+2. 在 Linux/CI 或本机安装 Verilator/Yosys 后运行 `tools/quality` 的 `lint/synth/all` suite，形成第一版 warning baseline。
+3. 继续补 `docs/RV32I_PIPE_CORE.md` 和 `docs/RV32I_LIMITATIONS.md`，让交付文档更完整。
+4. 根据后续测试增长继续维护自动化回归 suite。
 
 ## 上下文规则
 

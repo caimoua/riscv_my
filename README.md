@@ -82,6 +82,14 @@ RISC-V GNU 工具链安装说明见 `docs/RISCV_TOOLCHAIN.md`。
 
 这是一个面向学习和面试准备的 RISC-V CPU 项目，目标是系统性练习 CPU 微架构、简单 SoC 集成和验证流程。
 
+中长期方向已经从单纯 CPU/SoC demo 调整为：
+
+```text
+面向本地 AI Agent 调度与轻量推理的 RISC-V Agent Core
+```
+
+路线分析见 `docs/RV32I_XUANTIE_AGENT_ROADMAP.md`。后续会参考玄铁产品路线，把当前 CPU IP 往 agent runtime 的任务调度、工具调用、控制流优化和 int8/matrix 加速方向推进。
+
 ## 项目导航入口
 
 后续维护和协作时，优先阅读这三份文件，避免每次重新扫描大量 RTL：
@@ -89,6 +97,7 @@ RISC-V GNU 工具链安装说明见 `docs/RISCV_TOOLCHAIN.md`。
 - `docs/PROJECT_STATUS.md`：当前完成状态、未完成方向和上下文规则
 - `docs/INTERFACE_INDEX.md`：主要 RTL 模块接口索引
 - `docs/VERIFICATION_MATRIX.md`：testbench、运行命令和 PASS/PENDING 状态
+- `docs/RV32I_XUANTIE_AGENT_ROADMAP.md`：面向 agent 的玄铁式 CPU 路线分析
 
 关键设计决策记录放在 `docs/adr/`。
 
@@ -105,6 +114,7 @@ RISC-V GNU 工具链安装说明见 `docs/RISCV_TOOLCHAIN.md`。
 - 已新增 `rv32i_cached_ahb_master_top`，作为更标准的 CPU subsystem 边界，对外只暴露 AHB-Lite master 接口；directed test 已通过 VCS。交付说明见 `docs/RV32I_CPU_IP_DELIVERY.md`。
 - 已新增 Stage A3 第一版 RV32I/RV32M ISA 基础测试子集，说明见 `docs/RV32I_ISA_TESTS.md`；已通过 VCS。
 - 已新增 Stage A4 第一版质量检查入口，支持 filelist/SDC 检查，并可选接入 Verilator lint、Yosys 综合和 OpenSTA 时序检查。说明见 `docs/RV32I_QUALITY_CHECKS.md`。
+- 已新增玄铁式 Agent Core 路线分析，后续优先建立 agent workload baseline，再做 control-flow、custom ISA 和 matrix accelerator 优化。
 - 已新增最小 MMIO timer 外设，并给 D-cache 增加默认 MMIO uncached bypass。说明见 `docs/RV32I_TIMER.md`。
 - 已把 `timer_irq` 接入 pipeline trap/CSR 框架，新增最小 `mstatus/mie/mip`，支持 machine timer interrupt 和 `mret` 返回。
 - 已把 I/D 侧 bus decode error 接入 pipeline trap/CSR，支持 instruction/load/store access fault，并新增 `rv32i_cached_access_fault_tb` 和 `rv32i_cached_instr_access_fault_tb`。
@@ -264,4 +274,4 @@ make sim TB_FILE=./testcases/rv32i_cached_uart_tb.sv TOP_NAME=rv32i_cached_uart_
 
 ## 后续方向
 
-后续继续完善 Stage A4：固定 lint warning baseline、在 Linux/CI 中接入 Verilator/Yosys，并补充真实综合/时序报告。等 CPU IP 交付质量更稳后，再继续做 Stage B 的 SoC/FPGA demo 或 Stage C 的性能优化。
+后续优先进入 Agent Core 路线的 Stage B1：建立 agent event loop、tool dispatch、token scan 和 int8 matvec 的 CPU-only workload baseline。同时继续完善 Stage A4：固定 lint warning baseline、在 Linux/CI 中接入 Verilator/Yosys，并补充真实综合/时序报告。

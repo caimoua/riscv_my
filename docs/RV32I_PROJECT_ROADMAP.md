@@ -2,7 +2,7 @@
 
 最后更新：2026-05-21
 
-本文记录项目后续的大方向。当前策略是先把已有 CPU 做成可交付 IP，再把它放进可运行 SoC/FPGA demo，最后再进入性能优化。
+本文记录项目后续的大方向。当前策略是先把已有 CPU 做成可交付 IP，再把它推进为面向本地 AI agent 调度与轻量推理的处理器子系统。玄铁式 agent 路线分析见 `docs/RV32I_XUANTIE_AGENT_ROADMAP.md`。
 
 ## 路线总览
 
@@ -18,6 +18,23 @@ Stage C：性能优化型 CPU core
 ```
 
 推荐顺序固定为 A -> B -> C。除非某个功能阻塞当前阶段，否则不优先扩展零散外设或微架构功能。
+
+## Agent Core 定位
+
+项目中长期定位调整为：
+
+```text
+面向本地 AI Agent 调度与轻量推理的 RISC-V Agent Core
+```
+
+这里的 agent workload 不只是矩阵乘法，还包括任务调度、事件循环、工具调用、消息队列、token/string/JSON 解析、小模型控制流和 NPU/DMA 配置同步。后续不再只围绕“CPU 功能完整性”堆功能，而是围绕 agent runtime 建立 workload、性能基线和软硬协同优化。
+
+新方向参考玄铁产品路线的几个特点：
+
+- 处理器 IP 产品化，而不是单个教学 RTL。
+- 面向 AIoT/agent 场景做 ISA 和微架构增强。
+- CPU 控制流优化与矩阵/点积加速协同。
+- 每个优化都保留软件镜像、回归测试和性能数据。
 
 ## Stage A：可交付 CPU IP
 
