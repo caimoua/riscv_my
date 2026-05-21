@@ -1,6 +1,6 @@
 # 接口索引
 
-最后更新：2026-05-20
+最后更新：2026-05-21
 
 本文记录稳定模块边界，后续工作不需要每次重新扫描大量 RTL。
 
@@ -44,6 +44,8 @@ MMIO external port -> optional timer/UART peripheral mux
 用途：推荐的 CPU 子系统边界。内部包含 core、I-cache、D-cache 和 simple-to-AHB master bus，对外只暴露一个 AHB-Lite master interface。
 
 交付说明：详见 `docs/RV32I_CPU_IP_DELIVERY.md`。
+
+质量检查：Stage A4 默认以该模块作为 lint / synthesis / timing 基础检查 top，入口见 `docs/RV32I_QUALITY_CHECKS.md`。
 
 主要参数：
 

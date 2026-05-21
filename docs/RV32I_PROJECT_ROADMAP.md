@@ -167,6 +167,16 @@ software/bin/
 - 有一份当前 warning 清单。
 - 明确哪些 warning 可接受，哪些需要修。
 
+当前状态：
+
+- 已新增 `tools/quality/run_quality_checks.ps1` 和 `tools/quality/run_quality_checks.sh`。
+- 已新增 `project/constraints/rv32i_cached_ahb_master_top.sdc`。
+- 已新增 `docs/RV32I_QUALITY_CHECKS.md`。
+- PowerShell `basic` suite 已通过 filelist / SDC 检查。
+- PowerShell `all -DryRun` 已验证 lint / synth / timing 命令路径。
+- Bash 脚本已通过语法检查。
+- 当前本机缺少 Verilator、Yosys 和 OpenSTA，真实 lint / synth / timing 运行状态为工具缺失导致的 `SKIP`。
+
 ### A5：IP 交付文档
 
 目标：
@@ -307,11 +317,11 @@ AHB matrix
 
 当前仍处于 Stage A。
 
-A1 自动化回归、A2 汇编软件镜像流、A3 第一版项目内 ISA 基础测试子集和 A5 CPU IP 交付文档第一版已经收口。下一步建议把重点转向更系统的验证和交付质量。
+A1 自动化回归、A2 汇编软件镜像流、A3 第一版项目内 ISA 基础测试子集、A4 第一版质量检查入口和 A5 CPU IP 交付文档第一版已经收口。下一步建议把重点转向更系统的验证和交付质量。
 
 Stage A 的推荐近期顺序：
 
-1. A4：建立 lint / 综合 / 时序基础检查流程。
+1. 在 Linux/CI 或本机安装 Verilator/Yosys 后运行 Stage A4 的 `lint/synth/all` suite，形成第一版 warning baseline。
 2. 继续补 `docs/RV32I_PIPE_CORE.md` 和 `docs/RV32I_LIMITATIONS.md`。
 3. 根据后续测试增长继续维护自动化回归 suite。
 4. Stage B/C 的 SoC/FPGA demo 和性能优化等 Stage A 更稳后再展开。

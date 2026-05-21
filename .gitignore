@@ -21,6 +21,7 @@ sim/DVEfiles/
 *.dsn
 
 # EDA generated files
+project/log/
 *.jou
 *.pb
 *.rpt
