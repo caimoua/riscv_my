@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-  [ValidateSet("smoke", "core", "cache", "ahb", "mmio", "soc", "isa", "full")]
+  [ValidateSet("smoke", "core", "cache", "ahb", "mmio", "soc", "isa", "perf", "full")]
   [string]$Suite = "smoke",
 
   [switch]$DryRun,
@@ -77,7 +77,9 @@ function Test-SoftwareImages {
     "software/bin/core_smoke.memh",
     "software/bin/pipe_icache.memh",
     "software/bin/pipe_dcache.memh",
-    "software/bin/pipe_cached_bus.memh"
+    "software/bin/pipe_cached_bus.memh",
+    "software/bin/perf_branch_loop.memh",
+    "software/bin/agent_event_loop.memh"
   )
 
   foreach ($image in $requiredImages) {

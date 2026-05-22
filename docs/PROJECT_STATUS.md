@@ -1,8 +1,8 @@
 # 项目状态
 
-最后更新：2026-05-21
+最后更新：2026-05-22
 
-这是后续 Codex 会话的第一入口。继续工作前先读这个文件，再按需读取 `docs/INTERFACE_INDEX.md` 和 `docs/VERIFICATION_MATRIX.md`，避免每次重新扫描大量 RTL。
+这是后续 Codex 会话的第一入口。继续工作前先读这个文件，再读 `docs/RV32I_WORKLOAD_DRIVEN_ROADMAP.md`，再按需读取 `docs/INTERFACE_INDEX.md` 和 `docs/VERIFICATION_MATRIX.md`，避免每次重新扫描大量 RTL。
 
 ## 当前基线
 
@@ -32,20 +32,26 @@ rv32i_cached_ahb_master_top
 
 ## 项目大路线
 
-后续大方向固定为三阶段，详细路线见 `docs/RV32I_PROJECT_ROADMAP.md`。
+后续大方向已经从“把 toy CPU 收口成交付 IP”调整为“继续把当前 toy RV32IM core 演进成 workload-driven RISC-V Agent Core”。详细路线以 `docs/RV32I_WORKLOAD_DRIVEN_ROADMAP.md` 为准，入口摘要见 `docs/RV32I_PROJECT_ROADMAP.md`。
 
 ```text
-Stage A：可交付 CPU IP
-  先把 rv32i_cached_ahb_master_top 打磨成可集成、可验证、可文档化的 CPU 子系统。
+Stage P0：性能画像基线
+  先建立 benchmark、细分性能计数器和统一性能日志，回答当前 CPU 慢在哪里。
 
-Stage B：可运行 SoC / FPGA demo
-  再把 CPU 子系统放入小型 SoC，形成 boot、UART、timer、SRAM/flash 和 FPGA 展示路径。
+Stage P1：前端与控制流优化
+  优化 BHT/BTB、RAS、JALR target、I-cache prefetch/fetch buffer。
 
-Stage C：性能优化型 CPU core
-  最后基于可测量 workload 做分支、取指、cache、总线和 CPI 优化。
+Stage P2：memory/cache/bus 优化
+  推进 write buffer、critical-word-first、AHB burst、prefetch 等方向。
+
+Stage P3：ISA / runtime 扩展
+  面向 agent runtime 和 tiny inference 增加 bitmanip、轻量同步、compressed、int8 dot/custom ISA。
+
+Stage P4/P5：Agent SoC、小型加速器、FPGA/PPA 闭环
+  从 CPU-only baseline 推进到软硬协同 demo，并记录面积/频率/时序代价。
 ```
 
-当前仍处于 Stage A。A1 自动化回归、A2 汇编/软件镜像测试流、A3 第一版 ISA 基础测试子集、A4 第一版质量检查入口和 A5 CPU IP 交付文档第一版已经收口。中长期方向已调整为面向本地 AI agent 调度与轻量推理的 RISC-V Agent Core，路线分析见 `docs/RV32I_XUANTIE_AGENT_ROADMAP.md`。近期优先级转为：建立 agent workload baseline、固定 lint/综合 warning baseline，以及继续补齐更细的 core/限制说明文档。
+当前应优先进入 Stage P0。旧 Stage A 的自动化回归、软件镜像流、ISA 基础测试、质量检查入口和 AHB master 集成边界仍然作为工程基础保留，但不再定义项目终点。近期优先级是：建立性能画像 baseline、细分 stall reason 计数器、增加 perf/agent workload、接入 `perf` regression suite，然后基于数据决定第一轮优化做前端、cache/bus 还是 ISA/runtime。
 
 ## 已完成
 
@@ -98,6 +104,24 @@ Stage C：性能优化型 CPU core
   - `project/constraints/rv32i_cached_ahb_master_top.sdc`
   - `docs/RV32I_QUALITY_CHECKS.md`
   - 支持 filelist/SDC 基础检查，并可选接入 Verilator lint、Yosys synthesis/check 和 OpenSTA timing。
+- Stage P0.1 性能画像口径文档：
+  - `docs/RV32I_PERF_BASELINE.md`
+  - 定义现有性能指标、派生指标、stall reason 计数器口径、benchmark 分类、统一日志格式和 baseline 表格模板。
+- Stage P0.2 第一批细分性能计数器：
+  - `rv32i_perf_counter` 已新增 `load_use/ifetch/if_discard/mem_wait/muldiv/branch_redirect/commit_redirect` 计数器。
+  - `rv32i_pipe_core` 已把现有流水线原因信号归类成互斥 stall bucket，并透出对应 debug 口。
+  - cached top、AHB master top、AHB matrix SoC top 和 APB SoC top 已透传新 debug 口。
+  - `rv32i_perf_counter_tb` 已更新，并由用户确认新版 VCS PASS。
+- Stage P0.3 第一批 perf/agent workload：
+  - `software/asm/perf_branch_loop.S` 已新增，作为 branch-heavy 性能画像 workload，签名 `0x0b120001`。
+  - `software/asm/agent_event_loop.S` 已新增，作为 CPU-only agent event queue / dispatch loop workload，签名 `0x0a6e0001`。
+  - 两个 workload 已接入 `software/Makefile`，并已生成 `software/bin/perf_branch_loop.memh` 与 `software/bin/agent_event_loop.memh`。
+  - `sim/testcases/rv32i_perf_baseline_tb.sv` 已新增，复用 `rv32i_cached_ahb_master_top` 边界，通过 plusarg 加载 workload 并输出统一 `[PERF]` / `PERF_CSV`。
+  - `sim/regress/regression_list.txt`、PowerShell/Bash 回归入口已接入 `perf` suite；用户已确认 `perf` regression VCS PASS，日志目录为 `sim/log/regress/20260522_171940-perf`。
+  - 当前只确认功能 PASS；baseline 表的 cycle/CPI/stall/cache/bus 数字等待 `PERF_CSV` 日志后再填写。
+- 项目级 Verilog/SystemVerilog 风格规范：
+  - `docs/RV32I_VERILOG_STYLE.md`
+  - 参考 lowRISC/OpenTitan/Verible/Cummings 等公开工程规范，定义本项目 RTL/testbench 的命名、组合/时序逻辑、FSM、握手、reset、实例化、assertion 和 lint 方向。
 - 玄铁式 Agent Core 路线分析：
   - `docs/RV32I_XUANTIE_AGENT_ROADMAP.md`
   - 将后续方向从泛化 CPU/SoC demo 收敛为面向 agent runtime 的调度、控制流、内存访问和轻量 AI 加速。
@@ -168,6 +192,8 @@ Stage C：性能优化型 CPU core
   - `software/asm/pipe_dcache.S`
   - `software/asm/pipe_cached_bus.S`
   - `software/asm/isa_basic.S`
+  - `software/asm/perf_branch_loop.S`
+  - `software/asm/agent_event_loop.S`
   - `software/linker/rv32i_flash.ld`
   - `software/linker/rv32i_rom0.ld`
   - `software/scripts/bin_to_memh.py`
@@ -192,6 +218,8 @@ Stage C：性能优化型 CPU core
   - `software/bin/pipe_dcache.memh`
   - `software/bin/pipe_cached_bus.memh`
   - `software/bin/isa_basic.memh`
+  - `software/bin/perf_branch_loop.memh`
+  - `software/bin/agent_event_loop.memh`
   - `rv32i_ahb_matrix_soc_top_tb` 通过 `$readmemh` 加载 flash 内容。
   - `rv32i_cached_system_top_tb`、`rv32i_cached_system_ahb_top_tb` 和 `rv32i_cached_ahb_master_top_tb` 已改为通过 `$readmemh` 加载 ROM 内容，并已由用户确认 VCS PASS。
   - `rv32i_cached_timer_tb` 和 `rv32i_cached_uart_tb` 已改为通过 `$readmemh` 加载 ROM 内容，并已由用户确认 `mmio` suite VCS PASS。
@@ -218,7 +246,7 @@ Stage C：性能优化型 CPU core
 
 详细状态见 `docs/VERIFICATION_MATRIX.md`。
 
-当前 Phase 6 第一轮 `rv32i_pipe_core` 仿真期 assertion 已加入，并由用户确认 VCS 回归 PASS。Stage A1 自动化回归入口第一版已完成，`smoke/core/cache/soc/full` suite 均已由用户确认 VCS PASS。Stage A2 第一轮已把 cached system / AHB master 相关 directed tests 从手写机器码迁移到软件镜像流，相关 testbench 已由用户确认 VCS PASS。Stage A2 第二轮已迁移 cached timer / UART，并给回归脚本加入软件镜像构建和缺失检查；用户已确认 `mmio` suite VCS PASS。Stage A2 第三轮已迁移 timer IRQ、access fault、instruction access fault 和 misaligned trap 相关 cached directed tests，并已由用户确认 VCS PASS。Stage A2 第四轮已迁移 branch predict 和 RV32M pipeline directed tests，并已由用户确认 VCS PASS。Stage A2 第五轮已迁移 `rv32i_pipe_core_tb` 和 `rv32i_trap_csr_tb` 到软件镜像流，并已由用户确认 VCS PASS。Stage A2 第六轮已把剩余 CPU 程序型 directed tests 一次性迁移到软件镜像流，并已由用户确认 full regression PASS，日志目录为 `sim/log/regress/20260520_173852-full`。Stage A3 第一版项目内 ISA 基础测试子集已新增并接入 `isa/core/full` suite，用户已确认 `rv32i_pipe_isa_basic_tb` VCS PASS：`cycle=476`、`instret=184`、`stall_cycle=190`、`flush_cycle=49`、`branch_count=48`、`branch_mispredict_count=48`。Stage A4 第一版质量检查入口已新增，PowerShell `basic` suite 已通过 filelist/SDC 检查，`all -DryRun` 已验证命令路径，Bash 脚本已通过语法检查；本机未安装 Verilator/Yosys/OpenSTA，真实 lint/synth/timing 运行当前为工具缺失导致的 `SKIP`。Stage A5 CPU IP 交付文档第一版已补齐，新增 `docs/RV32I_CPU_IP_DELIVERY.md` 并把 README、接口索引和 AHB 文档入口统一到 `rv32i_cached_ahb_master_top`。Linux 回归机暂未配置 `riscv-none-elf-gcc`，因此 `--build-software` 会停在工具链预检查；使用已生成 MEMH 的普通 `make sim` 路径已确认通过。
+当前 Phase 6 第一轮 `rv32i_pipe_core` 仿真期 assertion 已加入，并由用户确认 VCS 回归 PASS。Stage A1 自动化回归入口第一版已完成，`smoke/core/cache/soc/full` suite 均已由用户确认 VCS PASS。Stage A2 第一轮已把 cached system / AHB master 相关 directed tests 从手写机器码迁移到软件镜像流，相关 testbench 已由用户确认 VCS PASS。Stage A2 第二轮已迁移 cached timer / UART，并给回归脚本加入软件镜像构建和缺失检查；用户已确认 `mmio` suite VCS PASS。Stage A2 第三轮已迁移 timer IRQ、access fault、instruction access fault 和 misaligned trap 相关 cached directed tests，并已由用户确认 VCS PASS。Stage A2 第四轮已迁移 branch predict 和 RV32M pipeline directed tests，并已由用户确认 VCS PASS。Stage A2 第五轮已迁移 `rv32i_pipe_core_tb` 和 `rv32i_trap_csr_tb` 到软件镜像流，并已由用户确认 VCS PASS。Stage A2 第六轮已把剩余 CPU 程序型 directed tests 一次性迁移到软件镜像流，并已由用户确认 full regression PASS，日志目录为 `sim/log/regress/20260520_173852-full`。Stage A3 第一版项目内 ISA 基础测试子集已新增并接入 `isa/core/full` suite，用户已确认 `rv32i_pipe_isa_basic_tb` VCS PASS：`cycle=476`、`instret=184`、`stall_cycle=190`、`flush_cycle=49`、`branch_count=48`、`branch_mispredict_count=48`。Stage A4 第一版质量检查入口已新增，PowerShell `basic` suite 已通过 filelist/SDC 检查，`all -DryRun` 已验证命令路径，Bash 脚本已通过语法检查；本机未安装 Verilator/Yosys/OpenSTA，真实 lint/synth/timing 运行当前为工具缺失导致的 `SKIP`。Stage A5 CPU IP 交付文档第一版已补齐，新增 `docs/RV32I_CPU_IP_DELIVERY.md` 并把 README、接口索引和 AHB 文档入口统一到 `rv32i_cached_ahb_master_top`。Stage P0.2 第一批 core 内部细分性能计数器已完成 RTL 和 standalone testbench 更新；用户已确认新版 `rv32i_perf_counter_tb` VCS PASS。Stage P0.3 第一批 `perf_branch_loop` 和 `agent_event_loop` workload、`rv32i_perf_baseline_tb`、`perf` suite 入口已新增；用户已确认 `perf` regression VCS PASS，日志目录为 `sim/log/regress/20260522_171940-perf`。Linux 回归机暂未配置 `riscv-none-elf-gcc`，因此 `--build-software` 会停在工具链预检查；使用已生成 MEMH 的普通 `make sim` 路径已确认通过。
 
 ## 设计假设
 
@@ -234,17 +262,19 @@ Stage C：性能优化型 CPU core
 
 ## 下一步候选
 
-1. Stage B1：建立 agent event loop / tool dispatch / token scan / int8 matvec 的 CPU-only workload baseline。
-2. 在 Linux/CI 或本机安装 Verilator/Yosys 后运行 `tools/quality` 的 `lint/synth/all` suite，形成第一版 warning baseline。
-3. 继续补 `docs/RV32I_PIPE_CORE.md` 和 `docs/RV32I_LIMITATIONS.md`，让交付文档更完整。
-4. 根据后续测试增长继续维护自动化回归 suite。
+1. Stage P0.4：把 `perf_branch_loop` 和 `agent_event_loop` 的 `PERF_CSV` 填入 baseline 表。
+2. Stage P0.3 后续扩展：新增 `perf_memcpy`、`perf_pointer_chase`、`agent_token_scan`、`agent_int8_dot`。
+3. 后续 P0.2 扩展项：在 cache/bus 层新增 icache refill、dcache refill、AHB wait-state 级别计数器。
+4. 并行项：在 Linux/CI 或本机安装 Verilator/Yosys 后运行 `tools/quality` 的 `lint/synth/all` suite，形成第一版 warning baseline。
 
 ## 上下文规则
 
 后续 Codex 会话：
 
 1. 先读本文件。
-2. 再读 `docs/INTERFACE_INDEX.md`。
-3. 再按任务读取相关 RTL/testbench。
-4. 新增测试在用户给出 VCS PASS 前只能标记为 `PENDING`。
-5. 用户确认 PASS 后，再更新 `docs/VERIFICATION_MATRIX.md`、本文件，并提交。
+2. 再读 `docs/RV32I_WORKLOAD_DRIVEN_ROADMAP.md`，确认任务是否符合 Stage P0/P1/P2/P3/P4/P5。
+3. 再按任务读取 `docs/INTERFACE_INDEX.md`、`docs/VERIFICATION_MATRIX.md` 和相关 RTL/testbench。
+4. 默认把 `rv32i_cached_ahb_master_top` 当作当前稳定实验边界，而不是最终产品交付目标。
+5. 任何 RTL/testbench 新增或重构都要遵守 `docs/RV32I_VERILOG_STYLE.md`；旧文件在 touched scope 内逐步收敛。
+6. 新增测试在用户给出 VCS PASS 前只能标记为 `PENDING`。
+7. 用户确认 PASS 后，再更新 `docs/VERIFICATION_MATRIX.md`、本文件，并提交。

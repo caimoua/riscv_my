@@ -28,6 +28,13 @@ module rv32i_pipe_core #(
   output wire [31:0] dbg_instret,
   output wire [31:0] dbg_stall_cycle,
   output wire [31:0] dbg_flush_cycle,
+  output wire [31:0] dbg_load_use_stall_cycle,
+  output wire [31:0] dbg_ifetch_wait_cycle,
+  output wire [31:0] dbg_if_discard_cycle,
+  output wire [31:0] dbg_mem_wait_cycle,
+  output wire [31:0] dbg_muldiv_wait_cycle,
+  output wire [31:0] dbg_branch_redirect_cycle,
+  output wire [31:0] dbg_commit_redirect_cycle,
   output wire [31:0] dbg_branch_count,
   output wire [31:0] dbg_branch_mispredict_count,
   output wire [31:0] dbg_btb_hit_count,
@@ -178,12 +185,26 @@ module rv32i_pipe_core #(
   wire        perf_flush_event;
   wire        perf_branch_event;
   wire        perf_branch_mispredict_event;
+  wire        perf_load_use_stall_event;
+  wire        perf_ifetch_wait_event;
+  wire        perf_if_discard_event;
+  wire        perf_mem_wait_event;
+  wire        perf_muldiv_wait_event;
+  wire        perf_branch_redirect_event;
+  wire        perf_commit_redirect_event;
   wire [31:0] perf_cycle_count;
   wire [31:0] perf_instret_count;
   wire [31:0] perf_stall_cycle_count;
   wire [31:0] perf_flush_cycle_count;
   wire [31:0] perf_branch_count;
   wire [31:0] perf_branch_mispredict_count;
+  wire [31:0] perf_load_use_stall_cycle_count;
+  wire [31:0] perf_ifetch_wait_cycle_count;
+  wire [31:0] perf_if_discard_cycle_count;
+  wire [31:0] perf_mem_wait_cycle_count;
+  wire [31:0] perf_muldiv_wait_cycle_count;
+  wire [31:0] perf_branch_redirect_cycle_count;
+  wire [31:0] perf_commit_redirect_cycle_count;
 
   wire [31:0] ex_alu_src_b;
   wire [31:0] ex_alu_result;
@@ -242,6 +263,13 @@ module rv32i_pipe_core #(
   assign dbg_instret       = perf_instret_count;
   assign dbg_stall_cycle   = perf_stall_cycle_count;
   assign dbg_flush_cycle   = perf_flush_cycle_count;
+  assign dbg_load_use_stall_cycle = perf_load_use_stall_cycle_count;
+  assign dbg_ifetch_wait_cycle = perf_ifetch_wait_cycle_count;
+  assign dbg_if_discard_cycle = perf_if_discard_cycle_count;
+  assign dbg_mem_wait_cycle = perf_mem_wait_cycle_count;
+  assign dbg_muldiv_wait_cycle = perf_muldiv_wait_cycle_count;
+  assign dbg_branch_redirect_cycle = perf_branch_redirect_cycle_count;
+  assign dbg_commit_redirect_cycle = perf_commit_redirect_cycle_count;
   assign dbg_branch_count  = perf_branch_count;
   assign dbg_branch_mispredict_count = perf_branch_mispredict_count;
 
@@ -260,6 +288,23 @@ module rv32i_pipe_core #(
   assign perf_branch_event = ex_branch_update;
   assign perf_branch_mispredict_event = ex_branch_update &&
                                         ex_prediction_mismatch;
+  assign perf_commit_redirect_event = commit_redirect;
+  assign perf_branch_redirect_event = perf_flush_event;
+  assign perf_mem_wait_event = mem_stall;
+  assign perf_muldiv_wait_event = ex_muldiv_stall &&
+                                  !mem_stall;
+  assign perf_load_use_stall_event = load_use_stall &&
+                                     !ex_muldiv_stall &&
+                                     !mem_stall;
+  assign perf_ifetch_wait_event = if_stall &&
+                                  !load_use_stall &&
+                                  !ex_muldiv_stall &&
+                                  !mem_stall;
+  assign perf_if_discard_event = if_discard_q &&
+                                 !if_stall &&
+                                 !load_use_stall &&
+                                 !ex_muldiv_stall &&
+                                 !mem_stall;
 
   rv32i_pipe_ctrl u_pipe_ctrl (
     .commit_redirect  (commit_redirect),
@@ -290,12 +335,26 @@ module rv32i_pipe_core #(
     .flush_event              (perf_flush_event),
     .branch_event             (perf_branch_event),
     .branch_mispredict_event  (perf_branch_mispredict_event),
+    .load_use_stall_event     (perf_load_use_stall_event),
+    .ifetch_wait_event        (perf_ifetch_wait_event),
+    .if_discard_event         (perf_if_discard_event),
+    .mem_wait_event           (perf_mem_wait_event),
+    .muldiv_wait_event        (perf_muldiv_wait_event),
+    .branch_redirect_event    (perf_branch_redirect_event),
+    .commit_redirect_event    (perf_commit_redirect_event),
     .cycle_count              (perf_cycle_count),
     .instret_count            (perf_instret_count),
     .stall_cycle_count        (perf_stall_cycle_count),
     .flush_cycle_count        (perf_flush_cycle_count),
     .branch_count             (perf_branch_count),
-    .branch_mispredict_count  (perf_branch_mispredict_count)
+    .branch_mispredict_count  (perf_branch_mispredict_count),
+    .load_use_stall_cycle_count(perf_load_use_stall_cycle_count),
+    .ifetch_wait_cycle_count  (perf_ifetch_wait_cycle_count),
+    .if_discard_cycle_count   (perf_if_discard_cycle_count),
+    .mem_wait_cycle_count     (perf_mem_wait_cycle_count),
+    .muldiv_wait_cycle_count  (perf_muldiv_wait_cycle_count),
+    .branch_redirect_cycle_count(perf_branch_redirect_cycle_count),
+    .commit_redirect_cycle_count(perf_commit_redirect_cycle_count)
   );
 
   rv32i_branch_predictor #(

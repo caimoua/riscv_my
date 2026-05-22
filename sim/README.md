@@ -60,6 +60,8 @@ rv32i_pipe_cached_bus_tb
   -> ../software/bin/pipe_cached_bus.memh
 rv32i_pipe_isa_basic_tb
   -> ../software/bin/isa_basic.memh
+rv32i_perf_baseline_tb
+  -> selected by +ROM_MEMH, for example ../software/bin/perf_branch_loop.memh
 ```
 
 如需覆盖默认镜像，可以传：
@@ -69,6 +71,28 @@ make sim TB_FILE=./testcases/rv32i_cached_ahb_master_top_tb.sv TOP_NAME=rv32i_ca
 ```
 
 pipeline core 类 testbench 使用 `+IMEM_MEMH=<path>` 覆盖默认指令镜像。
+
+## Perf Baseline Workload Testbench
+
+```text
+sim/testcases/rv32i_perf_baseline_tb.sv
+```
+
+这个测试复用 `rv32i_cached_ahb_master_top` 边界，默认走 AHB master + ROM/SRAM/MMIO testbench memory model。它不会把 cycle 精确值作为 PASS 条件，只检查 workload 是否正确跑到 `ebreak`、`x30 == 0`、`x31 == 1`、`x29 == expected signature`，然后打印统一 `[PERF]` 和 `PERF_CSV` 行。
+
+单独运行：
+
+```bash
+make sim TB_FILE=./testcases/rv32i_perf_baseline_tb.sv TOP_NAME=rv32i_perf_baseline_tb SIM_PLUSARGS="+WORKLOAD=perf_branch_loop +ROM_MEMH=../software/bin/perf_branch_loop.memh +SIGNATURE=0b120001"
+make sim TB_FILE=./testcases/rv32i_perf_baseline_tb.sv TOP_NAME=rv32i_perf_baseline_tb SIM_PLUSARGS="+WORKLOAD=agent_event_loop +ROM_MEMH=../software/bin/agent_event_loop.memh +SIGNATURE=0a6e0001"
+```
+
+回归入口：
+
+```bash
+bash ./regress/run_regression.sh --suite perf --dry-run
+bash ./regress/run_regression.sh --suite perf --keep-going
+```
 
 这个目录是 VCS/Verdi 仿真的统一入口。
 
@@ -103,7 +127,7 @@ bash ./regress/run_regression.sh --suite smoke
 当前 suite：
 
 ```text
-smoke, core, cache, ahb, mmio, soc, isa, full
+smoke, core, cache, ahb, mmio, soc, isa, perf, full
 ```
 
 ISA 基础子集：

@@ -1,6 +1,6 @@
 # 接口索引
 
-最后更新：2026-05-21
+最后更新：2026-05-22
 
 本文记录稳定模块边界，后续工作不需要每次重新扫描大量 RTL。
 
@@ -20,6 +20,7 @@
 - MMIO passthrough：`mmio_valid`, `mmio_write`, `mmio_addr`, `mmio_wdata`, `mmio_wstrb`, `mmio_ready`, `mmio_rdata`
 - Debug 输出：
   - core 性能计数器
+  - core 细分 stall/redirect 计数器
   - branch / mispredict / BTB / BHT 计数器
   - cache hit/miss 计数器
   - bus grant 计数器
@@ -76,6 +77,7 @@ AHB 行为：
 Debug 输出：
 
 - core 性能计数器：`dbg_pc`, `dbg_cycle`, `dbg_instret`, `dbg_stall_cycle`, `dbg_flush_cycle`
+- core 细分性能计数器：`dbg_load_use_stall_cycle`, `dbg_ifetch_wait_cycle`, `dbg_if_discard_cycle`, `dbg_mem_wait_cycle`, `dbg_muldiv_wait_cycle`, `dbg_branch_redirect_cycle`, `dbg_commit_redirect_cycle`
 - 分支预测计数器：`dbg_branch_count`, `dbg_branch_mispredict_count`, `dbg_btb_hit_count`, `dbg_btb_miss_count`, `dbg_bht_update_count`
 - cache hit/miss 计数器。
 - bus grant/error 计数器。
@@ -142,6 +144,13 @@ Debug interface：
 - `dbg_instret`
 - `dbg_stall_cycle`
 - `dbg_flush_cycle`
+- `dbg_load_use_stall_cycle`
+- `dbg_ifetch_wait_cycle`
+- `dbg_if_discard_cycle`
+- `dbg_mem_wait_cycle`
+- `dbg_muldiv_wait_cycle`
+- `dbg_branch_redirect_cycle`
+- `dbg_commit_redirect_cycle`
 - `dbg_branch_count`
 - `dbg_branch_mispredict_count`
 - `dbg_btb_hit_count`
@@ -259,6 +268,13 @@ M 扩展输出：
 - `flush_event`：本周期发生预测错误/控制流重定向统计事件。
 - `branch_event`：一条有效 B-type branch 在 EX 阶段被解析并更新 predictor。
 - `branch_mispredict_event`：该 B-type branch 发生预测错误。
+- `load_use_stall_event`：load-use hazard 归类后的 stall 周期。
+- `ifetch_wait_event`：取指侧等待归类后的 stall 周期。
+- `if_discard_event`：redirect 后丢弃旧取指返回归类后的 stall 周期。
+- `mem_wait_event`：D-side memory/cache/bus 等待归类后的 stall 周期。
+- `muldiv_wait_event`：多周期乘除法等待归类后的 stall 周期。
+- `branch_redirect_event`：EX redirect 实际 flush 周期，当前与 `flush_event` 同口径。
+- `commit_redirect_event`：trap / interrupt / mret 等 commit redirect 周期。
 
 计数器输出：
 
@@ -268,6 +284,13 @@ M 扩展输出：
 - `flush_cycle_count`
 - `branch_count`
 - `branch_mispredict_count`
+- `load_use_stall_cycle_count`
+- `ifetch_wait_cycle_count`
+- `if_discard_cycle_count`
+- `mem_wait_cycle_count`
+- `muldiv_wait_cycle_count`
+- `branch_redirect_cycle_count`
+- `commit_redirect_cycle_count`
 
 ### `rv32i_pipe_ctrl`
 

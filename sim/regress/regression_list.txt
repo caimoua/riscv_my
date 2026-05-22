@@ -22,6 +22,8 @@ rv32i_pipe_cached_bus_tb|./testcases/rv32i_pipe_cached_bus_tb.sv|rv32i_pipe_cach
 rv32i_cached_system_top_tb|./testcases/rv32i_cached_system_top_tb.sv|rv32i_cached_system_top_tb|cache,full|
 rv32i_cached_system_ahb_top_tb|./testcases/rv32i_cached_system_ahb_top_tb.sv|rv32i_cached_system_ahb_top_tb|ahb,cache,full|
 rv32i_cached_ahb_master_top_tb|./testcases/rv32i_cached_ahb_master_top_tb.sv|rv32i_cached_ahb_master_top_tb|smoke,ahb,soc,full|
+perf_branch_loop|./testcases/rv32i_perf_baseline_tb.sv|rv32i_perf_baseline_tb|perf|+WORKLOAD=perf_branch_loop +ROM_MEMH=../software/bin/perf_branch_loop.memh +SIGNATURE=0b120001
+agent_event_loop|./testcases/rv32i_perf_baseline_tb.sv|rv32i_perf_baseline_tb|perf|+WORKLOAD=agent_event_loop +ROM_MEMH=../software/bin/agent_event_loop.memh +SIGNATURE=0a6e0001
 rv32i_cached_access_fault_tb|./testcases/rv32i_cached_access_fault_tb.sv|rv32i_cached_access_fault_tb|cache,full|
 rv32i_cached_instr_access_fault_tb|./testcases/rv32i_cached_instr_access_fault_tb.sv|rv32i_cached_instr_access_fault_tb|cache,full|
 rv32i_timer_tb|./testcases/rv32i_timer_tb.sv|rv32i_timer_tb|mmio,full|

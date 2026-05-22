@@ -1,6 +1,6 @@
 # 验证矩阵
 
-最后更新：2026-05-21
+最后更新：2026-05-22
 
 状态含义：
 
@@ -23,6 +23,8 @@
 | RV32M 乘除法扩展 | `testcases/rv32i_pipe_muldiv_tb.sv` | `make sim TB_FILE=./testcases/rv32i_pipe_muldiv_tb.sv TOP_NAME=rv32i_pipe_muldiv_tb` | PASS |
 | RV32M decoder 译码边界 | `testcases/rv32i_decoder_muldiv_tb.sv` | `make sim TB_FILE=./testcases/rv32i_decoder_muldiv_tb.sv TOP_NAME=rv32i_decoder_muldiv_tb` | PASS |
 | RV32I/RV32M ISA 基础子集 | `testcases/rv32i_pipe_isa_basic_tb.sv` | `make sim TB_FILE=./testcases/rv32i_pipe_isa_basic_tb.sv TOP_NAME=rv32i_pipe_isa_basic_tb` | PASS |
+| Perf branch loop workload | `testcases/rv32i_perf_baseline_tb.sv` | `make sim TB_FILE=./testcases/rv32i_perf_baseline_tb.sv TOP_NAME=rv32i_perf_baseline_tb SIM_PLUSARGS="+WORKLOAD=perf_branch_loop +ROM_MEMH=../software/bin/perf_branch_loop.memh +SIGNATURE=0b120001"` | PASS |
+| Agent event loop workload | `testcases/rv32i_perf_baseline_tb.sv` | `make sim TB_FILE=./testcases/rv32i_perf_baseline_tb.sv TOP_NAME=rv32i_perf_baseline_tb SIM_PLUSARGS="+WORKLOAD=agent_event_loop +ROM_MEMH=../software/bin/agent_event_loop.memh +SIGNATURE=0a6e0001"` | PASS |
 | Trap/CSR | `testcases/rv32i_trap_csr_tb.sv` | `make sim TB_FILE=./testcases/rv32i_trap_csr_tb.sv TOP_NAME=rv32i_trap_csr_tb` | PASS |
 | I-cache | `testcases/rv32i_icache_tb.sv` | `make sim TB_FILE=./testcases/rv32i_icache_tb.sv TOP_NAME=rv32i_icache_tb` | PASS |
 | D-cache | `testcases/rv32i_dcache_tb.sv` | `make sim TB_FILE=./testcases/rv32i_dcache_tb.sv TOP_NAME=rv32i_dcache_tb` | PASS |
@@ -56,12 +58,14 @@ bash ./regress/run_regression.sh --suite isa --keep-going
 bash ./regress/run_regression.sh --suite core --keep-going
 bash ./regress/run_regression.sh --suite cache --keep-going
 bash ./regress/run_regression.sh --suite soc --keep-going
+bash ./regress/run_regression.sh --suite perf --keep-going
 ```
 
 Windows PowerShell：
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\sim\regress\run_regression.ps1 -Suite smoke
+powershell -NoProfile -ExecutionPolicy Bypass -File .\sim\regress\run_regression.ps1 -Suite perf
 ```
 
 RTL 接口或 core 控制流改动后，至少运行：
@@ -115,6 +119,9 @@ MMIO 改动后，至少运行：
 
 ## 最近人工更新
 
+- 2026-05-22：用户确认 Stage P0.3 第一批真实 perf/agent workload 的 `perf` regression suite VCS PASS，日志目录为 `sim/log/regress/20260522_171940-perf`；`perf_branch_loop` 和 `agent_event_loop` 验证状态更新为 `PASS`。
+- 2026-05-22：新增 Stage P0.3 第一批真实 perf/agent workload：`perf_branch_loop` 和 `agent_event_loop`；新增 `rv32i_perf_baseline_tb`，接入 `perf` regression suite。
+- 2026-05-22：用户确认 Stage P0.2 第一批 core 内部细分性能计数器新版 `rv32i_perf_counter_tb` VCS PASS；日志包含 `load_use/ifetch_wait/if_discard/mem_wait/muldiv_wait/branch_redirect/commit_redirect` 新计数器输出。
 - 2026-05-21：Stage A4 第一版质量检查入口已新增，包含 PowerShell/Bash 脚本、`rv32i_cached_ahb_master_top` 初始 SDC 和 `docs/RV32I_QUALITY_CHECKS.md`。本机已通过 filelist/SDC 基础检查、`all -DryRun` 和 Bash 语法检查；Verilator/Yosys/OpenSTA 真实运行因本机缺工具标记为 `SKIP`。
 - 2026-05-21：用户确认 Stage A3 第一版 `rv32i_pipe_isa_basic_tb` VCS PASS：`cycle=476`、`instret=184`、`stall_cycle=190`、`flush_cycle=49`、`branch_count=48`、`branch_mispredict_count=48`。该测试覆盖 RV32I arithmetic/branch/jump/load-store 以及 RV32M mul/div/rem 基础和边界行为，并已接入 `isa/core/full` 回归 suite。
 - 2026-05-20：Stage A5 CPU IP 交付文档第一版已补齐，新增 `docs/RV32I_CPU_IP_DELIVERY.md`，并把 README、接口索引和 AHB 文档入口统一到推荐交付边界 `rv32i_cached_ahb_master_top`。本轮只改文档，不需要新增 VCS 测试。

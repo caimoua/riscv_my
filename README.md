@@ -1,8 +1,8 @@
 # CPU_PRJ
 
-## 推荐 CPU IP 交付边界
+## 当前稳定实验/集成边界
 
-后续如果把这个项目当作 CPU IP 集成到外部 SoC，优先使用：
+当前项目不会把“交付 CPU IP”当作终点。后续主线是把这个 toy RV32IM core 继续演进为 workload-driven RISC-V Agent Core。当前如果需要一个稳定的集成壳、性能画像入口或外部 SoC 连接边界，优先使用：
 
 ```text
 rv32i_cached_ahb_master_top
@@ -13,7 +13,7 @@ rv32i_cached_ahb_master_top
   external AHB-Lite master interface
 ```
 
-它对外只暴露一个 AHB-Lite master port，外部 SoC 负责 boot ROM/flash、SRAM、MMIO 外设和 default error slave。交付说明见 `docs/RV32I_CPU_IP_DELIVERY.md`。
+它对外只暴露一个 AHB-Lite master port，外部 SoC 负责 boot ROM/flash、SRAM、MMIO 外设和 default error slave。这个边界是当前最干净的实验边界，不代表项目已经接近产品级交付。接口说明见 `docs/RV32I_CPU_IP_DELIVERY.md`。
 
 ## 当前 AHB Matrix SoC 工作
 
@@ -74,6 +74,10 @@ software/asm/pipe_cached_bus.S
   -> software/bin/pipe_cached_bus.memh
 software/asm/isa_basic.S
   -> software/bin/isa_basic.memh
+software/asm/perf_branch_loop.S
+  -> software/bin/perf_branch_loop.memh
+software/asm/agent_event_loop.S
+  -> software/bin/agent_event_loop.memh
 ```
 
 对应 testbench 默认使用 `+ROM_MEMH` 或 `+IMEM_MEMH` 可覆盖的软件镜像，不再在 SystemVerilog 里直接手写程序机器码。
@@ -82,19 +86,23 @@ RISC-V GNU 工具链安装说明见 `docs/RISCV_TOOLCHAIN.md`。
 
 这是一个面向学习和面试准备的 RISC-V CPU 项目，目标是系统性练习 CPU 微架构、简单 SoC 集成和验证流程。
 
-中长期方向已经从单纯 CPU/SoC demo 调整为：
+中长期方向已经从单纯 CPU/SoC demo 或交付收口调整为：
 
 ```text
-面向本地 AI Agent 调度与轻量推理的 RISC-V Agent Core
+从 toy RV32IM core 演进为 workload-driven RISC-V Agent Core
 ```
 
-路线分析见 `docs/RV32I_XUANTIE_AGENT_ROADMAP.md`。后续会参考玄铁产品路线，把当前 CPU IP 往 agent runtime 的任务调度、工具调用、控制流优化和 int8/matrix 加速方向推进。
+主路线见 `docs/RV32I_WORKLOAD_DRIVEN_ROADMAP.md`，入口摘要见 `docs/RV32I_PROJECT_ROADMAP.md`。玄铁式 agent 背景分析见 `docs/RV32I_XUANTIE_AGENT_ROADMAP.md`。后续会先建立性能画像 baseline，再基于数据推进前端、cache/bus、ISA/runtime 和 int8/matrix 加速方向。
 
 ## 项目导航入口
 
 后续维护和协作时，优先阅读这三份文件，避免每次重新扫描大量 RTL：
 
 - `docs/PROJECT_STATUS.md`：当前完成状态、未完成方向和上下文规则
+- `docs/RV32I_WORKLOAD_DRIVEN_ROADMAP.md`：后续所有性能驱动演进的主路线图
+- `docs/RV32I_PROJECT_ROADMAP.md`：路线图入口摘要
+- `docs/RV32I_PERF_BASELINE.md`：Stage P0 性能指标、benchmark 和日志口径
+- `docs/RV32I_VERILOG_STYLE.md`：RTL/testbench 统一写法规范
 - `docs/INTERFACE_INDEX.md`：主要 RTL 模块接口索引
 - `docs/VERIFICATION_MATRIX.md`：testbench、运行命令和 PASS/PENDING 状态
 - `docs/RV32I_XUANTIE_AGENT_ROADMAP.md`：面向 agent 的玄铁式 CPU 路线分析
@@ -114,7 +122,8 @@ RISC-V GNU 工具链安装说明见 `docs/RISCV_TOOLCHAIN.md`。
 - 已新增 `rv32i_cached_ahb_master_top`，作为更标准的 CPU subsystem 边界，对外只暴露 AHB-Lite master 接口；directed test 已通过 VCS。交付说明见 `docs/RV32I_CPU_IP_DELIVERY.md`。
 - 已新增 Stage A3 第一版 RV32I/RV32M ISA 基础测试子集，说明见 `docs/RV32I_ISA_TESTS.md`；已通过 VCS。
 - 已新增 Stage A4 第一版质量检查入口，支持 filelist/SDC 检查，并可选接入 Verilator lint、Yosys 综合和 OpenSTA 时序检查。说明见 `docs/RV32I_QUALITY_CHECKS.md`。
-- 已新增玄铁式 Agent Core 路线分析，后续优先建立 agent workload baseline，再做 control-flow、custom ISA 和 matrix accelerator 优化。
+- 已新增 workload-driven Agent Core 主路线图，并新增 Stage P0.1 性能画像口径文档 `docs/RV32I_PERF_BASELINE.md`；Stage P0.2 第一批 core 内部细分性能计数器已经接入 RTL/top/testbench；Stage P0.3 第一批 `perf_branch_loop` 和 `agent_event_loop` workload、`rv32i_perf_baseline_tb`、`perf` regression suite 入口已经新增，并已由用户确认 VCS PASS。
+- 已新增项目级 Verilog/SystemVerilog 风格规范 `docs/RV32I_VERILOG_STYLE.md`，后续 RTL/testbench 新增和重构按该规范执行。
 - 已新增最小 MMIO timer 外设，并给 D-cache 增加默认 MMIO uncached bypass。说明见 `docs/RV32I_TIMER.md`。
 - 已把 `timer_irq` 接入 pipeline trap/CSR 框架，新增最小 `mstatus/mie/mip`，支持 machine timer interrupt 和 `mret` 返回。
 - 已把 I/D 侧 bus decode error 接入 pipeline trap/CSR，支持 instruction/load/store access fault，并新增 `rv32i_cached_access_fault_tb` 和 `rv32i_cached_instr_access_fault_tb`。
@@ -148,6 +157,7 @@ make sim
 cd sim
 bash ./regress/run_regression.sh --suite smoke --dry-run
 bash ./regress/run_regression.sh --suite smoke
+bash ./regress/run_regression.sh --suite perf --dry-run
 ```
 
 Windows PowerShell 也可以从仓库根目录运行：
@@ -155,9 +165,18 @@ Windows PowerShell 也可以从仓库根目录运行：
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\sim\regress\run_regression.ps1 -Suite smoke -DryRun
 powershell -NoProfile -ExecutionPolicy Bypass -File .\sim\regress\run_regression.ps1 -Suite smoke
+powershell -NoProfile -ExecutionPolicy Bypass -File .\sim\regress\run_regression.ps1 -Suite perf -DryRun
 ```
 
-当前支持 `smoke/core/cache/ahb/mmio/soc/isa/full` 几个回归集合，日志保存在 `sim/log/regress/`。
+当前支持 `smoke/core/cache/ahb/mmio/soc/isa/perf/full` 几个回归集合，日志保存在 `sim/log/regress/`。
+
+Perf workload 单独运行示例：
+
+```bash
+cd sim
+make sim TB_FILE=./testcases/rv32i_perf_baseline_tb.sv TOP_NAME=rv32i_perf_baseline_tb SIM_PLUSARGS="+WORKLOAD=perf_branch_loop +ROM_MEMH=../software/bin/perf_branch_loop.memh +SIGNATURE=0b120001"
+make sim TB_FILE=./testcases/rv32i_perf_baseline_tb.sv TOP_NAME=rv32i_perf_baseline_tb SIM_PLUSARGS="+WORKLOAD=agent_event_loop +ROM_MEMH=../software/bin/agent_event_loop.memh +SIGNATURE=0a6e0001"
+```
 
 基础质量检查：
 
@@ -274,4 +293,4 @@ make sim TB_FILE=./testcases/rv32i_cached_uart_tb.sv TOP_NAME=rv32i_cached_uart_
 
 ## 后续方向
 
-后续优先进入 Agent Core 路线的 Stage B1：建立 agent event loop、tool dispatch、token scan 和 int8 matvec 的 CPU-only workload baseline。同时继续完善 Stage A4：固定 lint warning baseline、在 Linux/CI 中接入 Verilator/Yosys，并补充真实综合/时序报告。
+Stage P0.1 性能画像口径文档已经建立，Stage P0.2 第一批 core 内部细分性能计数器已经完成 RTL 和 standalone testbench 更新且已由用户确认 VCS PASS。Stage P0.3 第一批 `perf_branch_loop` 和 `agent_event_loop` workload 已经新增，`perf` regression suite 已接入，并已由用户确认 VCS PASS。后续优先用 `PERF_CSV` 填出第一张 baseline 表，再补 memory/cache 与 agent/int8 类 workload，并在 cache/bus 层继续补 icache refill、dcache refill、AHB wait-state 计数器。同时继续完善质量检查：固定 lint warning baseline，在 Linux/CI 中接入 Verilator/Yosys，并补充真实综合/时序报告。

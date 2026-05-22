@@ -13,7 +13,7 @@ usage() {
 Usage: ./regress/run_regression.sh [options]
 
 Options:
-  --suite <name>   smoke, core, cache, ahb, mmio, soc, isa, or full. Default: smoke
+  --suite <name>   smoke, core, cache, ahb, mmio, soc, isa, perf, or full. Default: smoke
   --dry-run        Print selected make commands without running VCS
   --keep-going     Continue after a failed test
   --build-software Run make -C software before launching simulations
@@ -74,7 +74,7 @@ if [ ! -f "$list_path" ]; then
 fi
 
 case "$suite" in
-  smoke|core|cache|ahb|mmio|soc|isa|full) ;;
+  smoke|core|cache|ahb|mmio|soc|isa|perf|full) ;;
   *)
     echo "ERROR: unsupported suite: $suite" >&2
     exit 2
@@ -135,6 +135,8 @@ required_images=(
   "software/bin/pipe_icache.memh"
   "software/bin/pipe_dcache.memh"
   "software/bin/pipe_cached_bus.memh"
+  "software/bin/perf_branch_loop.memh"
+  "software/bin/agent_event_loop.memh"
 )
 
 if [ "$build_software" -eq 1 ]; then
