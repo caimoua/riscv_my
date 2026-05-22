@@ -191,13 +191,28 @@ P0 早期可以直接由 SystemVerilog `$display` 打印。后续再加脚本汇
 | workload | config | cycle | instret | CPI | stall | flush | br | mispred | ic miss | dc miss | notes |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
 | `rv32i_pipe_isa_basic_tb` | current directed test | 476 | 184 | 2.59 | 190 | 49 | 48 | 48 | NA | NA | 用户已确认 VCS PASS，非专用 perf workload |
-| `perf_branch_loop` | baseline-ahb-master | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | VCS PASS，等待 `PERF_CSV` 填数 |
+| `perf_branch_loop` | baseline-ahb-master | 1393 | 495 | 2.814 | 828 | 68 | 193 | 68 | 7 | 0 | VCS PASS，log `20260522_171940-perf` |
 | `perf_memcpy` | baseline | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TODO |
-| `agent_event_loop` | baseline-ahb-master | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | VCS PASS，等待 `PERF_CSV` 填数 |
+| `agent_event_loop` | baseline-ahb-master | 1045 | 217 | 4.816 | 809 | 18 | 54 | 18 | 18 | 25 | VCS PASS，log `20260522_171940-perf` |
 | `agent_token_scan` | baseline | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TODO |
 | `agent_int8_dot` | baseline | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TODO |
 
 `rv32i_pipe_isa_basic_tb` 只作为已有数据锚点，不作为后续性能优化的主 benchmark。
+
+### 8.1 第一批 PERF_CSV 原始记录
+
+来源：用户在 VCS 环境运行 `perf` regression suite，日志目录 `sim/log/regress/20260522_171940-perf`。
+
+```text
+PERF_CSV,perf_branch_loop,baseline-ahb-master,1393,495,2.814,828,68,0,760,68,0,0,68,1,193,68,189,4,193,633,7,0,0,28,0
+PERF_CSV,agent_event_loop,baseline-ahb-master,1045,217,4.816,809,18,16,544,18,231,0,18,1,54,18,45,9,54,352,18,17,25,69,40
+```
+
+第一批观察：
+
+- `perf_branch_loop` 的 CPI 为 2.814，主要停顿来自 `ifetch_wait=760`，控制流相关 `branch_redirect=68`，分支预测错误率约 `68/193 = 35.2%`。
+- `agent_event_loop` 的 CPI 为 4.816，主要停顿来自 `ifetch_wait=544` 和 `mem_wait=231`，D-cache 行为已经开始显现：`dc_hit=17`、`dc_miss=25`。
+- 两个 workload 都出现 `commit_redirect=1`，这是结尾 `ebreak` 触发的提交阶段重定向观测项，后续分析时应和普通 branch redirect 分开看。
 
 ## 9. 推荐 testbench 配置记录
 
@@ -246,7 +261,7 @@ P0.3 第一批已经新增两个 workload 和统一 perf testbench：
 3. `software/bin/perf_branch_loop.memh` 和 `software/bin/agent_event_loop.memh` 已由 `make -C software` 生成。
 4. `sim/testcases/rv32i_perf_baseline_tb.sv` 已新增，通过 `+WORKLOAD/+ROM_MEMH/+SIGNATURE/+TIMEOUT` 选择 workload，并打印 `[PERF]` 与 `PERF_CSV`。
 5. `sim/regress/regression_list.txt` 已接入 `perf` suite；用户已确认 `perf` regression VCS PASS，日志目录为 `sim/log/regress/20260522_171940-perf`。
-6. 当前只确认功能 PASS；baseline 表的 cycle/CPI/stall/cache/bus 数字等待 `PERF_CSV` 日志后再填写。
+6. 用户已提供两条 `PERF_CSV`，第一张 `baseline-ahb-master` 性能表已填写。
 
 单独运行示例：
 
@@ -256,4 +271,4 @@ make sim TB_FILE=./testcases/rv32i_perf_baseline_tb.sv TOP_NAME=rv32i_perf_basel
 make sim TB_FILE=./testcases/rv32i_perf_baseline_tb.sv TOP_NAME=rv32i_perf_baseline_tb SIM_PLUSARGS="+WORKLOAD=agent_event_loop +ROM_MEMH=../software/bin/agent_event_loop.memh +SIGNATURE=0a6e0001"
 ```
 
-下一步 P0.4 是在 VCS 环境运行 `perf` suite，拿到第一张真实 baseline 表；随后再补 `perf_memcpy`、`perf_pointer_chase`、`agent_token_scan` 和 `agent_int8_dot`。
+下一步继续补 `perf_memcpy`、`perf_pointer_chase`、`agent_token_scan` 和 `agent_int8_dot`，让 baseline 覆盖 memory/cache、parser/dispatch 和 int8 计算类 workload。

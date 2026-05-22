@@ -123,7 +123,7 @@ docs/RV32I_PERF_BASELINE.md
 - 两个 workload 已接入 `software/Makefile`，并已生成对应 `software/bin/*.memh`。
 - `rv32i_perf_baseline_tb.sv` 已新增，可通过 plusarg 选择 workload 并输出统一 `[PERF]` / `PERF_CSV` 日志。
 - 用户已确认 `perf` regression VCS PASS，日志目录为 `sim/log/regress/20260522_171940-perf`。
-- 当前只确认功能 PASS；baseline 表的 cycle/CPI/stall/cache/bus 数字等待 `PERF_CSV` 日志后再填写。
+- 用户已提供 `PERF_CSV` 数据，`docs/RV32I_PERF_BASELINE.md` 已填入第一张 `baseline-ahb-master` 表。
 
 ### P0.4 perf regression suite
 
@@ -245,11 +245,10 @@ rv32i_agent_matrix_accel
 
 当前最推荐的下一步仍然沿 Stage P0 推进，但前两个 workload 与 perf 入口已经落地：
 
-1. 把两条 `PERF_CSV` 记录填入 `docs/RV32I_PERF_BASELINE.md`，形成第一张 baseline 表。
-2. 新增 memory/cache 侧 workload：`perf_memcpy` 和 `perf_pointer_chase`。
-3. 新增 agent 侧 workload：`agent_token_scan` 和 `agent_int8_dot`。
-4. 在 cache/bus 层补 icache refill、dcache refill、AHB wait-state 计数器。
-5. 有了 branch/memory/agent/int8 四类数据后，再决定 P1/P2/P3 的第一刀。
+1. 新增 memory/cache 侧 workload：`perf_memcpy` 和 `perf_pointer_chase`。
+2. 新增 agent 侧 workload：`agent_token_scan` 和 `agent_int8_dot`。
+3. 在 cache/bus 层补 icache refill、dcache refill、AHB wait-state 计数器。
+4. 有了 branch/memory/agent/int8 四类数据后，再决定 P1/P2/P3 的第一刀。
 
 ## 9. 暂不优先做
 

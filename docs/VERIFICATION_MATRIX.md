@@ -120,6 +120,7 @@ MMIO 改动后，至少运行：
 ## 最近人工更新
 
 - 2026-05-22：用户确认 Stage P0.3 第一批真实 perf/agent workload 的 `perf` regression suite VCS PASS，日志目录为 `sim/log/regress/20260522_171940-perf`；`perf_branch_loop` 和 `agent_event_loop` 验证状态更新为 `PASS`。
+- 2026-05-22：用户提供 `perf` regression 的 `PERF_CSV` 记录，`perf_branch_loop` baseline 为 `cycle=1393, instret=495, CPI=2.814`，`agent_event_loop` baseline 为 `cycle=1045, instret=217, CPI=4.816`；第一张性能 baseline 表已填入 `docs/RV32I_PERF_BASELINE.md`。
 - 2026-05-22：新增 Stage P0.3 第一批真实 perf/agent workload：`perf_branch_loop` 和 `agent_event_loop`；新增 `rv32i_perf_baseline_tb`，接入 `perf` regression suite。
 - 2026-05-22：用户确认 Stage P0.2 第一批 core 内部细分性能计数器新版 `rv32i_perf_counter_tb` VCS PASS；日志包含 `load_use/ifetch_wait/if_discard/mem_wait/muldiv_wait/branch_redirect/commit_redirect` 新计数器输出。
 - 2026-05-21：Stage A4 第一版质量检查入口已新增，包含 PowerShell/Bash 脚本、`rv32i_cached_ahb_master_top` 初始 SDC 和 `docs/RV32I_QUALITY_CHECKS.md`。本机已通过 filelist/SDC 基础检查、`all -DryRun` 和 Bash 语法检查；Verilator/Yosys/OpenSTA 真实运行因本机缺工具标记为 `SKIP`。

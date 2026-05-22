@@ -293,4 +293,4 @@ make sim TB_FILE=./testcases/rv32i_cached_uart_tb.sv TOP_NAME=rv32i_cached_uart_
 
 ## 后续方向
 
-Stage P0.1 性能画像口径文档已经建立，Stage P0.2 第一批 core 内部细分性能计数器已经完成 RTL 和 standalone testbench 更新且已由用户确认 VCS PASS。Stage P0.3 第一批 `perf_branch_loop` 和 `agent_event_loop` workload 已经新增，`perf` regression suite 已接入，并已由用户确认 VCS PASS。后续优先用 `PERF_CSV` 填出第一张 baseline 表，再补 memory/cache 与 agent/int8 类 workload，并在 cache/bus 层继续补 icache refill、dcache refill、AHB wait-state 计数器。同时继续完善质量检查：固定 lint warning baseline，在 Linux/CI 中接入 Verilator/Yosys，并补充真实综合/时序报告。
+Stage P0.1 性能画像口径文档已经建立，Stage P0.2 第一批 core 内部细分性能计数器已经完成 RTL 和 standalone testbench 更新且已由用户确认 VCS PASS。Stage P0.3 第一批 `perf_branch_loop` 和 `agent_event_loop` workload 已经新增，`perf` regression suite 已接入，并已由用户确认 VCS PASS；第一张 `baseline-ahb-master` 性能表已经根据 `PERF_CSV` 填入 `docs/RV32I_PERF_BASELINE.md`。后续优先补 memory/cache 与 agent/int8 类 workload，并在 cache/bus 层继续补 icache refill、dcache refill、AHB wait-state 计数器。同时继续完善质量检查：固定 lint warning baseline，在 Linux/CI 中接入 Verilator/Yosys，并补充真实综合/时序报告。
