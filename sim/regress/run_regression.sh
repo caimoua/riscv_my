@@ -136,6 +136,8 @@ required_images=(
   "software/bin/pipe_dcache.memh"
   "software/bin/pipe_cached_bus.memh"
   "software/bin/perf_branch_loop.memh"
+  "software/bin/perf_memcpy.memh"
+  "software/bin/perf_pointer_chase.memh"
   "software/bin/agent_event_loop.memh"
 )
 

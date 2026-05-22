@@ -19,7 +19,8 @@ ROM0_PROGRAMS    += pipe_branch_predict_param pipe_muldiv
 ROM0_PROGRAMS    += pipe_core trap_csr
 ROM0_PROGRAMS    += core_smoke pipe_icache pipe_dcache pipe_cached_bus
 ROM0_PROGRAMS    += isa_basic
-ROM0_PROGRAMS    += perf_branch_loop agent_event_loop
+ROM0_PROGRAMS    += perf_branch_loop perf_memcpy perf_pointer_chase
+ROM0_PROGRAMS    += agent_event_loop
 PROGRAMS         := $(FLASH_PROGRAMS) $(ROM0_PROGRAMS)
 
 COMMON_FLAGS     := -march=$(ARCH) -mabi=$(ABI) -nostdlib -nostartfiles -ffreestanding

@@ -24,6 +24,8 @@
 | RV32M decoder 译码边界 | `testcases/rv32i_decoder_muldiv_tb.sv` | `make sim TB_FILE=./testcases/rv32i_decoder_muldiv_tb.sv TOP_NAME=rv32i_decoder_muldiv_tb` | PASS |
 | RV32I/RV32M ISA 基础子集 | `testcases/rv32i_pipe_isa_basic_tb.sv` | `make sim TB_FILE=./testcases/rv32i_pipe_isa_basic_tb.sv TOP_NAME=rv32i_pipe_isa_basic_tb` | PASS |
 | Perf branch loop workload | `testcases/rv32i_perf_baseline_tb.sv` | `make sim TB_FILE=./testcases/rv32i_perf_baseline_tb.sv TOP_NAME=rv32i_perf_baseline_tb SIM_PLUSARGS="+WORKLOAD=perf_branch_loop +ROM_MEMH=../software/bin/perf_branch_loop.memh +SIGNATURE=0b120001"` | PASS |
+| Perf memcpy workload | `testcases/rv32i_perf_baseline_tb.sv` | `make sim TB_FILE=./testcases/rv32i_perf_baseline_tb.sv TOP_NAME=rv32i_perf_baseline_tb SIM_PLUSARGS="+WORKLOAD=perf_memcpy +ROM_MEMH=../software/bin/perf_memcpy.memh +SIGNATURE=0c0f0001"` | PASS |
+| Perf pointer chase workload | `testcases/rv32i_perf_baseline_tb.sv` | `make sim TB_FILE=./testcases/rv32i_perf_baseline_tb.sv TOP_NAME=rv32i_perf_baseline_tb SIM_PLUSARGS="+WORKLOAD=perf_pointer_chase +ROM_MEMH=../software/bin/perf_pointer_chase.memh +SIGNATURE=0c450001"` | PASS |
 | Agent event loop workload | `testcases/rv32i_perf_baseline_tb.sv` | `make sim TB_FILE=./testcases/rv32i_perf_baseline_tb.sv TOP_NAME=rv32i_perf_baseline_tb SIM_PLUSARGS="+WORKLOAD=agent_event_loop +ROM_MEMH=../software/bin/agent_event_loop.memh +SIGNATURE=0a6e0001"` | PASS |
 | Trap/CSR | `testcases/rv32i_trap_csr_tb.sv` | `make sim TB_FILE=./testcases/rv32i_trap_csr_tb.sv TOP_NAME=rv32i_trap_csr_tb` | PASS |
 | I-cache | `testcases/rv32i_icache_tb.sv` | `make sim TB_FILE=./testcases/rv32i_icache_tb.sv TOP_NAME=rv32i_icache_tb` | PASS |
@@ -119,6 +121,9 @@ MMIO 改动后，至少运行：
 
 ## 最近人工更新
 
+- 2026-05-22：用户确认 Stage P0.3 第二批 memory/cache perf workload 的 `perf` regression suite VCS PASS，日志目录为 `sim/log/regress/20260522_175530-perf`；`perf_memcpy` 和 `perf_pointer_chase` 验证状态更新为 `PASS`。
+- 2026-05-22：用户提供第二批 `perf` regression 的 `PERF_CSV` 记录，`perf_memcpy` baseline 为 `cycle=4037, instret=1111, CPI=3.634`，`perf_pointer_chase` baseline 为 `cycle=2667, instret=446, CPI=5.980`；memory/cache 性能 baseline 已填入 `docs/RV32I_PERF_BASELINE.md`。
+- 2026-05-22：新增 Stage P0.3 第二批 memory/cache perf workload：`perf_memcpy` 和 `perf_pointer_chase`；两者已接入 `perf` regression suite。
 - 2026-05-22：用户确认 Stage P0.3 第一批真实 perf/agent workload 的 `perf` regression suite VCS PASS，日志目录为 `sim/log/regress/20260522_171940-perf`；`perf_branch_loop` 和 `agent_event_loop` 验证状态更新为 `PASS`。
 - 2026-05-22：用户提供 `perf` regression 的 `PERF_CSV` 记录，`perf_branch_loop` baseline 为 `cycle=1393, instret=495, CPI=2.814`，`agent_event_loop` baseline 为 `cycle=1045, instret=217, CPI=4.816`；第一张性能 baseline 表已填入 `docs/RV32I_PERF_BASELINE.md`。
 - 2026-05-22：新增 Stage P0.3 第一批真实 perf/agent workload：`perf_branch_loop` 和 `agent_event_loop`；新增 `rv32i_perf_baseline_tb`，接入 `perf` regression suite。

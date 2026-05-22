@@ -120,10 +120,13 @@ docs/RV32I_PERF_BASELINE.md
 
 - `perf_branch_loop.S` 已新增，覆盖固定循环中的条件分支、跳转和 backward branch，签名 `0x0b120001`。
 - `agent_event_loop.S` 已新增，覆盖 CPU-only event queue 初始化、load-dispatch-store 循环和 checksum，签名 `0x0a6e0001`。
-- 两个 workload 已接入 `software/Makefile`，并已生成对应 `software/bin/*.memh`。
+- `perf_memcpy.S` 已新增，覆盖顺序初始化、顺序拷贝和顺序校验，签名 `0x0c0f0001`，并由用户确认 VCS PASS。
+- `perf_pointer_chase.S` 已新增，覆盖同 index 节点 ring 上的 dependent load 和 conflict miss 行为，签名 `0x0c450001`，并由用户确认 VCS PASS。
+- 四个 workload 已接入 `software/Makefile`，并已生成对应 `software/bin/*.memh`。
 - `rv32i_perf_baseline_tb.sv` 已新增，可通过 plusarg 选择 workload 并输出统一 `[PERF]` / `PERF_CSV` 日志。
-- 用户已确认 `perf` regression VCS PASS，日志目录为 `sim/log/regress/20260522_171940-perf`。
-- 用户已提供 `PERF_CSV` 数据，`docs/RV32I_PERF_BASELINE.md` 已填入第一张 `baseline-ahb-master` 表。
+- 用户已确认第一版 `perf` regression VCS PASS，日志目录为 `sim/log/regress/20260522_171940-perf`。
+- 用户已确认第二版 `perf` regression VCS PASS，日志目录为 `sim/log/regress/20260522_175530-perf`。
+- 用户已提供 `PERF_CSV` 数据，`docs/RV32I_PERF_BASELINE.md` 已填入 branch、memory/cache 和 agent event loop 的 `baseline-ahb-master` 表。
 
 ### P0.4 perf regression suite
 
@@ -138,8 +141,8 @@ docs/RV32I_PERF_BASELINE.md
 当前状态：
 
 - `perf` suite 已接入 PowerShell/Bash 回归入口。
-- 当前 suite 包含 `perf_branch_loop` 和 `agent_event_loop` 两项。
-- 本地完成 dry-run 和脚本检查；用户已在 VCS 环境确认 `perf` regression PASS。
+- 当前 suite 包含 `perf_branch_loop`、`perf_memcpy`、`perf_pointer_chase` 和 `agent_event_loop` 四项。
+- 本地完成 dry-run 和脚本检查；用户已在 VCS 环境确认包含四个 workload 的 `perf` regression PASS。
 
 ## 3. Stage P1：前端与控制流优化
 
@@ -245,10 +248,9 @@ rv32i_agent_matrix_accel
 
 当前最推荐的下一步仍然沿 Stage P0 推进，但前两个 workload 与 perf 入口已经落地：
 
-1. 新增 memory/cache 侧 workload：`perf_memcpy` 和 `perf_pointer_chase`。
-2. 新增 agent 侧 workload：`agent_token_scan` 和 `agent_int8_dot`。
-3. 在 cache/bus 层补 icache refill、dcache refill、AHB wait-state 计数器。
-4. 有了 branch/memory/agent/int8 四类数据后，再决定 P1/P2/P3 的第一刀。
+1. 新增 agent 侧 workload：`agent_token_scan` 和 `agent_int8_dot`。
+2. 在 cache/bus 层补 icache refill、dcache refill、AHB wait-state 计数器。
+3. 有了 branch/memory/agent/int8 四类数据后，再决定 P1/P2/P3 的第一刀。
 
 ## 9. 暂不优先做
 

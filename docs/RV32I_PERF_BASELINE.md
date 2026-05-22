@@ -128,18 +128,20 @@ dbg_commit_redirect_cycle
 | 分类 | 建议镜像 | 主要观察点 | 状态 |
 | --- | --- | --- | --- |
 | branch loop | `software/asm/perf_branch_loop.S` | branch、mispredict、flush、BTB/BHT | VCS PASS |
-| memcpy/memset | `software/asm/perf_memcpy.S` | D-cache、bus、store/load stall | TODO |
-| pointer chase | `software/asm/perf_pointer_chase.S` | 不规则 load、D-cache miss penalty | TODO |
+| memcpy/memset | `software/asm/perf_memcpy.S` | D-cache、bus、store/load stall | VCS PASS |
+| pointer chase | `software/asm/perf_pointer_chase.S` | 不规则 load、D-cache miss penalty | VCS PASS |
 | agent event loop | `software/asm/agent_event_loop.S` | 分支、队列、调度循环 | VCS PASS |
 | tool dispatch | `software/asm/agent_tool_dispatch.S` | JAL/JALR、dispatch table、branch predictor | TODO |
 | token scan | `software/asm/agent_token_scan.S` | byte load、branch-heavy parser | TODO |
 | int8 dot | `software/asm/agent_int8_dot.S` | load、sign extension、mul/macc pattern | TODO |
 | int8 matvec | `software/asm/agent_int8_matvec.S` | nested loop、memory bandwidth、muldiv | TODO |
 
-P0.3 第一批先落地两个镜像：
+P0.3 第一批先落地 branch/agent 两个镜像，第二批继续补 memory/cache 两个镜像：
 
 - `perf_branch_loop`：纯分支压力测试，用固定 64 次循环制造 backward branch、条件分支和跳转路径，主要看 branch/mispredict/flush/BTB/BHT。
 - `agent_event_loop`：CPU-only agent 调度循环雏形，在 SRAM 初始化事件队列，循环 load 事件、按类型分派、更新 checksum 和 store signature，主要看分支密集调度循环、load/store 与 cache/bus 行为。
+- `perf_memcpy`：顺序初始化、顺序拷贝、顺序校验 64 个 word，主要看连续 load/store、D-cache hit/miss 和 bus grant。
+- `perf_pointer_chase`：构造 16 个 64B 间隔的 SRAM 节点并循环追踪指针，当前 cache 配置下这些节点映射到同一个 D-cache index，用来暴露 dependent load、conflict miss 和 refill 行为。
 
 ## 6. benchmark 结束和签名约定
 
@@ -192,7 +194,8 @@ P0 早期可以直接由 SystemVerilog `$display` 打印。后续再加脚本汇
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
 | `rv32i_pipe_isa_basic_tb` | current directed test | 476 | 184 | 2.59 | 190 | 49 | 48 | 48 | NA | NA | 用户已确认 VCS PASS，非专用 perf workload |
 | `perf_branch_loop` | baseline-ahb-master | 1393 | 495 | 2.814 | 828 | 68 | 193 | 68 | 7 | 0 | VCS PASS，log `20260522_171940-perf` |
-| `perf_memcpy` | baseline | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TODO |
+| `perf_memcpy` | baseline-ahb-master | 4037 | 1111 | 3.634 | 2921 | 3 | 194 | 3 | 11 | 160 | VCS PASS，log `20260522_175530-perf` |
+| `perf_pointer_chase` | baseline-ahb-master | 2667 | 446 | 5.980 | 2217 | 2 | 80 | 2 | 9 | 96 | VCS PASS，log `20260522_175530-perf` |
 | `agent_event_loop` | baseline-ahb-master | 1045 | 217 | 4.816 | 809 | 18 | 54 | 18 | 18 | 25 | VCS PASS，log `20260522_171940-perf` |
 | `agent_token_scan` | baseline | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TODO |
 | `agent_int8_dot` | baseline | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TODO |
@@ -213,6 +216,21 @@ PERF_CSV,agent_event_loop,baseline-ahb-master,1045,217,4.816,809,18,16,544,18,23
 - `perf_branch_loop` 的 CPI 为 2.814，主要停顿来自 `ifetch_wait=760`，控制流相关 `branch_redirect=68`，分支预测错误率约 `68/193 = 35.2%`。
 - `agent_event_loop` 的 CPI 为 4.816，主要停顿来自 `ifetch_wait=544` 和 `mem_wait=231`，D-cache 行为已经开始显现：`dc_hit=17`、`dc_miss=25`。
 - 两个 workload 都出现 `commit_redirect=1`，这是结尾 `ebreak` 触发的提交阶段重定向观测项，后续分析时应和普通 branch redirect 分开看。
+
+### 8.2 第二批 PERF_CSV 原始记录
+
+来源：用户在 VCS 环境运行 `perf` regression suite，日志目录 `sim/log/regress/20260522_175530-perf`。
+
+```text
+PERF_CSV,perf_memcpy,baseline-ahb-master,4037,1111,3.634,2921,3,128,1446,3,1344,0,3,1,194,3,189,5,194,1919,11,128,160,44,256
+PERF_CSV,perf_pointer_chase,baseline-ahb-master,2667,446,5.980,2217,2,64,711,2,1440,0,2,1,80,2,77,3,80,1252,9,128,96,36,288
+```
+
+第二批观察：
+
+- `perf_memcpy` 的 CPI 为 3.634，`stall=2921`，主要来自 `ifetch_wait=1446` 和 `mem_wait=1344`；D-cache `dc_hit=128`、`dc_miss=160`，说明顺序访问仍被 blocking refill/write-through 路径明显拖慢。
+- `perf_pointer_chase` 的 CPI 为 5.980，`mem_wait=1440` 高于 `ifetch_wait=711`，符合 dependent load + conflict miss workload 的预期；D-cache `dc_hit=128`、`dc_miss=96`，且 `bus_d_grant=288`，说明 D-side traffic 已经成为主瓶颈。
+- 两个 memory/cache workload 都有明显 `load_use_stall`，`perf_memcpy=128`、`perf_pointer_chase=64`，后续分析时需要把真实 memory wait 和 load-use 依赖分开看。
 
 ## 9. 推荐 testbench 配置记录
 
@@ -263,12 +281,22 @@ P0.3 第一批已经新增两个 workload 和统一 perf testbench：
 5. `sim/regress/regression_list.txt` 已接入 `perf` suite；用户已确认 `perf` regression VCS PASS，日志目录为 `sim/log/regress/20260522_171940-perf`。
 6. 用户已提供两条 `PERF_CSV`，第一张 `baseline-ahb-master` 性能表已填写。
 
+P0.3 第二批 memory/cache workload 已新增，并由用户确认 VCS PASS：
+
+1. `software/asm/perf_memcpy.S` 已新增，签名为 `0x0c0f0001`。
+2. `software/asm/perf_pointer_chase.S` 已新增，签名为 `0x0c450001`。
+3. `software/bin/perf_memcpy.memh` 和 `software/bin/perf_pointer_chase.memh` 已由 `make -C software` 生成。
+4. 两个 workload 已接入 `perf` regression suite，验证矩阵状态为 `PASS`。
+5. 用户已提供两条 `PERF_CSV`，memory/cache 侧 baseline 表已填写。
+
 单独运行示例：
 
 ```bash
 cd sim
 make sim TB_FILE=./testcases/rv32i_perf_baseline_tb.sv TOP_NAME=rv32i_perf_baseline_tb SIM_PLUSARGS="+WORKLOAD=perf_branch_loop +ROM_MEMH=../software/bin/perf_branch_loop.memh +SIGNATURE=0b120001"
+make sim TB_FILE=./testcases/rv32i_perf_baseline_tb.sv TOP_NAME=rv32i_perf_baseline_tb SIM_PLUSARGS="+WORKLOAD=perf_memcpy +ROM_MEMH=../software/bin/perf_memcpy.memh +SIGNATURE=0c0f0001"
+make sim TB_FILE=./testcases/rv32i_perf_baseline_tb.sv TOP_NAME=rv32i_perf_baseline_tb SIM_PLUSARGS="+WORKLOAD=perf_pointer_chase +ROM_MEMH=../software/bin/perf_pointer_chase.memh +SIGNATURE=0c450001"
 make sim TB_FILE=./testcases/rv32i_perf_baseline_tb.sv TOP_NAME=rv32i_perf_baseline_tb SIM_PLUSARGS="+WORKLOAD=agent_event_loop +ROM_MEMH=../software/bin/agent_event_loop.memh +SIGNATURE=0a6e0001"
 ```
 
-下一步继续补 `perf_memcpy`、`perf_pointer_chase`、`agent_token_scan` 和 `agent_int8_dot`，让 baseline 覆盖 memory/cache、parser/dispatch 和 int8 计算类 workload。
+下一步继续补 `agent_token_scan` 和 `agent_int8_dot`，让 baseline 覆盖 parser/dispatch 和 int8 计算类 workload；同时准备在 cache/bus 层补 icache refill、dcache refill、AHB wait-state 计数器。

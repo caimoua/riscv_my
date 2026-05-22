@@ -115,11 +115,13 @@ Stage P4/P5：Agent SoC、小型加速器、FPGA/PPA 闭环
 - Stage P0.3 第一批 perf/agent workload：
   - `software/asm/perf_branch_loop.S` 已新增，作为 branch-heavy 性能画像 workload，签名 `0x0b120001`。
   - `software/asm/agent_event_loop.S` 已新增，作为 CPU-only agent event queue / dispatch loop workload，签名 `0x0a6e0001`。
-  - 两个 workload 已接入 `software/Makefile`，并已生成 `software/bin/perf_branch_loop.memh` 与 `software/bin/agent_event_loop.memh`。
+  - `software/asm/perf_memcpy.S` 已新增，作为顺序 load/store stream 性能画像 workload，签名 `0x0c0f0001`，并由用户确认 VCS PASS。
+  - `software/asm/perf_pointer_chase.S` 已新增，作为 dependent load / conflict miss 性能画像 workload，签名 `0x0c450001`，并由用户确认 VCS PASS。
+  - 四个 workload 已接入 `software/Makefile`，并已生成 `software/bin/perf_branch_loop.memh`、`software/bin/perf_memcpy.memh`、`software/bin/perf_pointer_chase.memh` 与 `software/bin/agent_event_loop.memh`。
   - `sim/testcases/rv32i_perf_baseline_tb.sv` 已新增，复用 `rv32i_cached_ahb_master_top` 边界，通过 plusarg 加载 workload 并输出统一 `[PERF]` / `PERF_CSV`。
   - `sim/regress/regression_list.txt`、PowerShell/Bash 回归入口已接入 `perf` suite；用户已确认 `perf` regression VCS PASS，日志目录为 `sim/log/regress/20260522_171940-perf`。
   - 用户已提供 `PERF_CSV` 数据，第一张 `baseline-ahb-master` 性能表已填入 `docs/RV32I_PERF_BASELINE.md`。
-  - 当前 baseline：`perf_branch_loop` 为 `cycle=1393`、`instret=495`、`CPI=2.814`；`agent_event_loop` 为 `cycle=1045`、`instret=217`、`CPI=4.816`。
+  - 当前 baseline：`perf_branch_loop` 为 `cycle=1393`、`instret=495`、`CPI=2.814`；`perf_memcpy` 为 `cycle=4037`、`instret=1111`、`CPI=3.634`；`perf_pointer_chase` 为 `cycle=2667`、`instret=446`、`CPI=5.980`；`agent_event_loop` 为 `cycle=1045`、`instret=217`、`CPI=4.816`。
 - 项目级 Verilog/SystemVerilog 风格规范：
   - `docs/RV32I_VERILOG_STYLE.md`
   - 参考 lowRISC/OpenTitan/Verible/Cummings 等公开工程规范，定义本项目 RTL/testbench 的命名、组合/时序逻辑、FSM、握手、reset、实例化、assertion 和 lint 方向。
@@ -194,6 +196,8 @@ Stage P4/P5：Agent SoC、小型加速器、FPGA/PPA 闭环
   - `software/asm/pipe_cached_bus.S`
   - `software/asm/isa_basic.S`
   - `software/asm/perf_branch_loop.S`
+  - `software/asm/perf_memcpy.S`
+  - `software/asm/perf_pointer_chase.S`
   - `software/asm/agent_event_loop.S`
   - `software/linker/rv32i_flash.ld`
   - `software/linker/rv32i_rom0.ld`
@@ -220,6 +224,8 @@ Stage P4/P5：Agent SoC、小型加速器、FPGA/PPA 闭环
   - `software/bin/pipe_cached_bus.memh`
   - `software/bin/isa_basic.memh`
   - `software/bin/perf_branch_loop.memh`
+  - `software/bin/perf_memcpy.memh`
+  - `software/bin/perf_pointer_chase.memh`
   - `software/bin/agent_event_loop.memh`
   - `rv32i_ahb_matrix_soc_top_tb` 通过 `$readmemh` 加载 flash 内容。
   - `rv32i_cached_system_top_tb`、`rv32i_cached_system_ahb_top_tb` 和 `rv32i_cached_ahb_master_top_tb` 已改为通过 `$readmemh` 加载 ROM 内容，并已由用户确认 VCS PASS。
@@ -247,7 +253,7 @@ Stage P4/P5：Agent SoC、小型加速器、FPGA/PPA 闭环
 
 详细状态见 `docs/VERIFICATION_MATRIX.md`。
 
-当前 Phase 6 第一轮 `rv32i_pipe_core` 仿真期 assertion 已加入，并由用户确认 VCS 回归 PASS。Stage A1 自动化回归入口第一版已完成，`smoke/core/cache/soc/full` suite 均已由用户确认 VCS PASS。Stage A2 第一轮已把 cached system / AHB master 相关 directed tests 从手写机器码迁移到软件镜像流，相关 testbench 已由用户确认 VCS PASS。Stage A2 第二轮已迁移 cached timer / UART，并给回归脚本加入软件镜像构建和缺失检查；用户已确认 `mmio` suite VCS PASS。Stage A2 第三轮已迁移 timer IRQ、access fault、instruction access fault 和 misaligned trap 相关 cached directed tests，并已由用户确认 VCS PASS。Stage A2 第四轮已迁移 branch predict 和 RV32M pipeline directed tests，并已由用户确认 VCS PASS。Stage A2 第五轮已迁移 `rv32i_pipe_core_tb` 和 `rv32i_trap_csr_tb` 到软件镜像流，并已由用户确认 VCS PASS。Stage A2 第六轮已把剩余 CPU 程序型 directed tests 一次性迁移到软件镜像流，并已由用户确认 full regression PASS，日志目录为 `sim/log/regress/20260520_173852-full`。Stage A3 第一版项目内 ISA 基础测试子集已新增并接入 `isa/core/full` suite，用户已确认 `rv32i_pipe_isa_basic_tb` VCS PASS：`cycle=476`、`instret=184`、`stall_cycle=190`、`flush_cycle=49`、`branch_count=48`、`branch_mispredict_count=48`。Stage A4 第一版质量检查入口已新增，PowerShell `basic` suite 已通过 filelist/SDC 检查，`all -DryRun` 已验证命令路径，Bash 脚本已通过语法检查；本机未安装 Verilator/Yosys/OpenSTA，真实 lint/synth/timing 运行当前为工具缺失导致的 `SKIP`。Stage A5 CPU IP 交付文档第一版已补齐，新增 `docs/RV32I_CPU_IP_DELIVERY.md` 并把 README、接口索引和 AHB 文档入口统一到 `rv32i_cached_ahb_master_top`。Stage P0.2 第一批 core 内部细分性能计数器已完成 RTL 和 standalone testbench 更新；用户已确认新版 `rv32i_perf_counter_tb` VCS PASS。Stage P0.3 第一批 `perf_branch_loop` 和 `agent_event_loop` workload、`rv32i_perf_baseline_tb`、`perf` suite 入口已新增；用户已确认 `perf` regression VCS PASS，并已提供 `PERF_CSV`，第一张 `baseline-ahb-master` 性能表已形成。Linux 回归机暂未配置 `riscv-none-elf-gcc`，因此 `--build-software` 会停在工具链预检查；使用已生成 MEMH 的普通 `make sim` 路径已确认通过。
+当前 Phase 6 第一轮 `rv32i_pipe_core` 仿真期 assertion 已加入，并由用户确认 VCS 回归 PASS。Stage A1 自动化回归入口第一版已完成，`smoke/core/cache/soc/full` suite 均已由用户确认 VCS PASS。Stage A2 第一轮已把 cached system / AHB master 相关 directed tests 从手写机器码迁移到软件镜像流，相关 testbench 已由用户确认 VCS PASS。Stage A2 第二轮已迁移 cached timer / UART，并给回归脚本加入软件镜像构建和缺失检查；用户已确认 `mmio` suite VCS PASS。Stage A2 第三轮已迁移 timer IRQ、access fault、instruction access fault 和 misaligned trap 相关 cached directed tests，并已由用户确认 VCS PASS。Stage A2 第四轮已迁移 branch predict 和 RV32M pipeline directed tests，并已由用户确认 VCS PASS。Stage A2 第五轮已迁移 `rv32i_pipe_core_tb` 和 `rv32i_trap_csr_tb` 到软件镜像流，并已由用户确认 VCS PASS。Stage A2 第六轮已把剩余 CPU 程序型 directed tests 一次性迁移到软件镜像流，并已由用户确认 full regression PASS，日志目录为 `sim/log/regress/20260520_173852-full`。Stage A3 第一版项目内 ISA 基础测试子集已新增并接入 `isa/core/full` suite，用户已确认 `rv32i_pipe_isa_basic_tb` VCS PASS：`cycle=476`、`instret=184`、`stall_cycle=190`、`flush_cycle=49`、`branch_count=48`、`branch_mispredict_count=48`。Stage A4 第一版质量检查入口已新增，PowerShell `basic` suite 已通过 filelist/SDC 检查，`all -DryRun` 已验证命令路径，Bash 脚本已通过语法检查；本机未安装 Verilator/Yosys/OpenSTA，真实 lint/synth/timing 运行当前为工具缺失导致的 `SKIP`。Stage A5 CPU IP 交付文档第一版已补齐，新增 `docs/RV32I_CPU_IP_DELIVERY.md` 并把 README、接口索引和 AHB 文档入口统一到 `rv32i_cached_ahb_master_top`。Stage P0.2 第一批 core 内部细分性能计数器已完成 RTL 和 standalone testbench 更新；用户已确认新版 `rv32i_perf_counter_tb` VCS PASS。Stage P0.3 第一批 `perf_branch_loop` 和 `agent_event_loop` workload、`rv32i_perf_baseline_tb`、`perf` suite 入口已新增；用户已确认第一版 `perf` regression VCS PASS，并已提供 `PERF_CSV`，第一张 `baseline-ahb-master` 性能表已形成。Stage P0.3 第二批 `perf_memcpy` 和 `perf_pointer_chase` memory/cache workload 已新增并接入 `perf` suite；用户已确认新版 `perf` regression VCS PASS，并已提供 `PERF_CSV`，memory/cache 性能 baseline 已形成。Linux 回归机暂未配置 `riscv-none-elf-gcc`，因此 `--build-software` 会停在工具链预检查；使用已生成 MEMH 的普通 `make sim` 路径已确认通过。
 
 ## 设计假设
 
@@ -263,7 +269,7 @@ Stage P4/P5：Agent SoC、小型加速器、FPGA/PPA 闭环
 
 ## 下一步候选
 
-1. Stage P0.3 后续扩展：新增 `perf_memcpy`、`perf_pointer_chase`、`agent_token_scan`、`agent_int8_dot`。
+1. Stage P0.3 后续扩展：新增 `agent_token_scan`、`agent_int8_dot`。
 2. 后续 P0.2 扩展项：在 cache/bus 层新增 icache refill、dcache refill、AHB wait-state 级别计数器。
 3. 并行项：在 Linux/CI 或本机安装 Verilator/Yosys 后运行 `tools/quality` 的 `lint/synth/all` suite，形成第一版 warning baseline。
 

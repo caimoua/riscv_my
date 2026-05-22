@@ -66,7 +66,8 @@ Stage P5：FPGA / PPA 闭环
 3. P0.3 第一批 `perf_branch_loop` 和 `agent_event_loop` workload 已新增，对应 MEMH 已生成。
 4. `rv32i_perf_baseline_tb` 已新增，可通过 plusarg 选择 workload 并输出统一 `[PERF]` / `PERF_CSV`。
 5. `perf` suite 已接入回归列表，并已由用户确认 VCS PASS。
-6. 继续补 cache/bus 层的 refill、wait-state 计数器。
-7. 用当前 CPU 跑出第一张 baseline 表，再决定第一轮优化做前端、cache/bus 还是 ISA/runtime。
+6. 第二批 `perf_memcpy` 和 `perf_pointer_chase` workload 已新增，对应 MEMH 已生成，并已由用户确认 VCS PASS。
+7. 继续补 cache/bus 层的 refill、wait-state 计数器。
+8. 有了 branch/memory/agent/int8 baseline 后，再决定第一轮优化做前端、cache/bus 还是 ISA/runtime。
 
 旧的 Stage A/A1-A5 成果仍然保留为工程基础：自动化回归、软件镜像流、ISA 基础测试、质量检查入口和 AHB master 集成边界都继续使用。但它们不再定义项目终点。
