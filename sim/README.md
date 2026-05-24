@@ -78,7 +78,7 @@ pipeline core 类 testbench 使用 `+IMEM_MEMH=<path>` 覆盖默认指令镜像�
 sim/testcases/rv32i_perf_baseline_tb.sv
 ```
 
-这个测试复用 `rv32i_cached_ahb_master_top` 边界，默认走 AHB master + ROM/SRAM/MMIO testbench memory model。它不会把 cycle 精确值作为 PASS 条件，只检查 workload 是否正确跑到 `ebreak`、`x30 == 0`、`x31 == 1`、`x29 == expected signature`，然后打印统一 `[PERF]` 和 `PERF_CSV` 行。
+这个测试复用 `rv32i_cached_ahb_master_top` 边界，默认走 AHB master + ROM/SRAM/MMIO testbench memory model。它不会把 cycle 精确值作为 PASS 条件，只检查 workload 是否正确跑到 `ebreak`、`x30 == 0`、`x31 == 1`、`x29 == expected signature`，然后打印统一 `[PERF]` 和 `PERF_CSV` 行。当前 `PERF_CSV` 末尾追加了 `ic_refill_cycle`、`dc_refill_cycle` 和 `bus_wait_cycle`，用于拆分 cache refill 与 bus wait 对 CPI 的贡献。
 
 单独运行：
 

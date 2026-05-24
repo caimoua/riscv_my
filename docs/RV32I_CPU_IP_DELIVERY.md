@@ -1,6 +1,6 @@
 # RV32I CPU IP 交付说明
 
-最后更新：2026-05-20
+最后更新：2026-05-24
 
 本文说明当前项目推荐交付给外部 SoC 集成的 CPU 子系统边界。目标是让后来的人不用重新阅读完整 RTL，也能知道应该实例化哪个 top、怎么接总线、当前支持什么、还有哪些限制。
 
@@ -86,8 +86,8 @@ rv32i_cached_ahb_master_top
 | 分支预测 | `dbg_branch_count`, `dbg_branch_mispredict_count`, `dbg_btb_hit_count`, `dbg_btb_miss_count`, `dbg_bht_update_count` |
 | 寄存器调试读 | `dbg_reg_addr`, `dbg_reg_rdata` |
 | system 指令事件 | `dbg_illegal_instr`, `dbg_ecall`, `dbg_ebreak` |
-| cache 统计 | `dbg_icache_hit_count`, `dbg_icache_miss_count`, `dbg_dcache_hit_count`, `dbg_dcache_miss_count` |
-| bus 统计 | `dbg_bus_i_grant_count`, `dbg_bus_d_grant_count`, `dbg_bus_error` |
+| cache 统计 | `dbg_icache_hit_count`, `dbg_icache_miss_count`, `dbg_icache_refill_cycle`, `dbg_dcache_hit_count`, `dbg_dcache_miss_count`, `dbg_dcache_refill_cycle` |
+| bus 统计 | `dbg_bus_i_grant_count`, `dbg_bus_d_grant_count`, `dbg_bus_wait_cycle`, `dbg_bus_error` |
 
 这些信号目前主要用于仿真和 bring-up，不建议直接作为软件可见寄存器接口。若后续需要软件读取性能计数器，可以再加 CSR 或 MMIO 形式的性能寄存器。
 

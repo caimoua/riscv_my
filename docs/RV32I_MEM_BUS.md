@@ -246,6 +246,7 @@ make sim TB_FILE=./testcases/rv32i_mem_bus_tb.sv TOP_NAME=rv32i_mem_bus_tb
 - I/D 同时请求时 D 优先
 - unmapped 地址触发 `dbg_decode_error`，I/D 侧分别返回 `i_error` / `d_error`
 - grant 计数器递增
+- `dbg_wait_cycle_count` 统计 transaction active 但目标 slave `ready` 尚未返回的周期
 
 ## 10. Pipeline + Cache + Bus 集成 Testbench
 

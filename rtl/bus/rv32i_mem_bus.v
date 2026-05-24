@@ -53,7 +53,8 @@ module rv32i_mem_bus #(
   output wire [1:0]  dbg_target,
   output wire        dbg_decode_error,
   output wire [31:0] dbg_i_grant_count,
-  output wire [31:0] dbg_d_grant_count
+  output wire [31:0] dbg_d_grant_count,
+  output wire [31:0] dbg_wait_cycle_count
 );
 
   localparam MASTER_I = 1'b0;
@@ -73,6 +74,7 @@ module rv32i_mem_bus #(
   reg [3:0]  wstrb_q;
   reg [31:0] i_grant_count_q;
   reg [31:0] d_grant_count_q;
+  reg [31:0] wait_cycle_count_q;
 
   wire [31:0] req_addr;
   wire        req_write;
@@ -146,6 +148,7 @@ module rv32i_mem_bus #(
   assign dbg_decode_error  = active_q && (target_q == TARGET_ERROR);
   assign dbg_i_grant_count = i_grant_count_q;
   assign dbg_d_grant_count = d_grant_count_q;
+  assign dbg_wait_cycle_count = wait_cycle_count_q;
 
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
@@ -158,7 +161,12 @@ module rv32i_mem_bus #(
       wstrb_q         <= 4'b0000;
       i_grant_count_q <= 32'd0;
       d_grant_count_q <= 32'd0;
+      wait_cycle_count_q <= 32'd0;
     end else if (active_q) begin
+      if (!selected_ready) begin
+        wait_cycle_count_q <= wait_cycle_count_q + 32'd1;
+      end
+
       if (selected_ready) begin
         active_q <= 1'b0;
       end

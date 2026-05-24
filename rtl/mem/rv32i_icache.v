@@ -19,7 +19,8 @@ module rv32i_icache #(
   output wire        dbg_hit,
   output wire        dbg_miss,
   output wire [31:0] dbg_hit_count,
-  output wire [31:0] dbg_miss_count
+  output wire [31:0] dbg_miss_count,
+  output wire [31:0] dbg_refill_cycle_count
 );
 
   localparam LINE_NUM = (1 << INDEX_BITS);
@@ -49,6 +50,7 @@ module rv32i_icache #(
   reg                  replace_way_q [0:LINE_NUM-1];
   reg [31:0]           hit_count_q;
   reg [31:0]           miss_count_q;
+  reg [31:0]           refill_cycle_count_q;
 
   wire [INDEX_BITS-1:0] cpu_index;
   wire [TAG_BITS-1:0]   cpu_tag;
@@ -119,6 +121,7 @@ module rv32i_icache #(
   assign dbg_miss       = (state_q == STATE_LOOKUP) && !cache_hit;
   assign dbg_hit_count  = hit_count_q;
   assign dbg_miss_count = miss_count_q;
+  assign dbg_refill_cycle_count = refill_cycle_count_q;
 
   assign way0_tag_we  = (state_q == STATE_REFILL) && mem_ready && !mem_error && (refill_word_q == 2'd3) && !refill_way_q;
   assign way1_tag_we  = (state_q == STATE_REFILL) && mem_ready && !mem_error && (refill_word_q == 2'd3) &&  refill_way_q;
@@ -198,6 +201,7 @@ module rv32i_icache #(
 
       hit_count_q    <= 32'd0;
       miss_count_q   <= 32'd0;
+      refill_cycle_count_q <= 32'd0;
 
       for (i = 0; i < LINE_NUM; i = i + 1) begin
         way0_valid[i]    <= 1'b0;
@@ -205,6 +209,10 @@ module rv32i_icache #(
         replace_way_q[i] <= 1'b0;
       end
     end else begin
+      if (state_q == STATE_REFILL) begin
+        refill_cycle_count_q <= refill_cycle_count_q + 32'd1;
+      end
+
       case (state_q)
         STATE_IDLE: begin
           if (cpu_valid) begin

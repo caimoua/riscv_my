@@ -126,7 +126,7 @@ RISC-V GNU 工具链安装说明见 `docs/RISCV_TOOLCHAIN.md`。
 - 已新增 `rv32i_cached_ahb_master_top`，作为更标准的 CPU subsystem 边界，对外只暴露 AHB-Lite master 接口；directed test 已通过 VCS。交付说明见 `docs/RV32I_CPU_IP_DELIVERY.md`。
 - 已新增 Stage A3 第一版 RV32I/RV32M ISA 基础测试子集，说明见 `docs/RV32I_ISA_TESTS.md`；已通过 VCS。
 - 已新增 Stage A4 第一版质量检查入口，支持 filelist/SDC 检查，并可选接入 Verilator lint、Yosys 综合和 OpenSTA 时序检查。说明见 `docs/RV32I_QUALITY_CHECKS.md`。
-- 已新增 workload-driven Agent Core 主路线图，并新增 Stage P0.1 性能画像口径文档 `docs/RV32I_PERF_BASELINE.md`；Stage P0.2 第一批 core 内部细分性能计数器已经接入 RTL/top/testbench；Stage P0.3 第一批 `perf_branch_loop` 和 `agent_event_loop` workload 已由用户确认 VCS PASS，第二批 `perf_memcpy` 和 `perf_pointer_chase` 也已由用户确认 VCS PASS。
+- 已新增 workload-driven Agent Core 主路线图，并新增 Stage P0.1 性能画像口径文档 `docs/RV32I_PERF_BASELINE.md`；Stage P0.2 第一批 core 内部细分性能计数器已经接入 RTL/top/testbench，cache/bus 扩展计数器已接入并等待新版 `perf` regression 确认；Stage P0.3 第一批 `perf_branch_loop` 和 `agent_event_loop` workload 已由用户确认 VCS PASS，第二批 `perf_memcpy` 和 `perf_pointer_chase` 也已由用户确认 VCS PASS。
 - 已新增项目级 Verilog/SystemVerilog 风格规范 `docs/RV32I_VERILOG_STYLE.md`，后续 RTL/testbench 新增和重构按该规范执行。
 - 已新增最小 MMIO timer 外设，并给 D-cache 增加默认 MMIO uncached bypass。说明见 `docs/RV32I_TIMER.md`。
 - 已把 `timer_irq` 接入 pipeline trap/CSR 框架，新增最小 `mstatus/mie/mip`，支持 machine timer interrupt 和 `mret` 返回。
@@ -299,4 +299,4 @@ make sim TB_FILE=./testcases/rv32i_cached_uart_tb.sv TOP_NAME=rv32i_cached_uart_
 
 ## 后续方向
 
-Stage P0.1 性能画像口径文档已经建立，Stage P0.2 第一批 core 内部细分性能计数器已经完成 RTL 和 standalone testbench 更新且已由用户确认 VCS PASS。Stage P0.3 第一批 `perf_branch_loop` 和 `agent_event_loop` workload 已经新增，`perf` regression suite 已接入，并已由用户确认 VCS PASS；第一张 `baseline-ahb-master` 性能表已经根据 `PERF_CSV` 填入 `docs/RV32I_PERF_BASELINE.md`。第二批 `perf_memcpy` 和 `perf_pointer_chase` memory/cache workload 也已由用户确认 VCS PASS，memory/cache 性能 baseline 已形成。后续继续补 agent/int8 类 workload，并在 cache/bus 层继续补 icache refill、dcache refill、AHB wait-state 计数器。同时继续完善质量检查：固定 lint warning baseline，在 Linux/CI 中接入 Verilator/Yosys，并补充真实综合/时序报告。
+Stage P0.1 性能画像口径文档已经建立，Stage P0.2 第一批 core 内部细分性能计数器已经完成 RTL 和 standalone testbench 更新且已由用户确认 VCS PASS。cache/bus 扩展计数器已新增 `ic_refill_cycle`、`dc_refill_cycle`、`bus_wait_cycle` 三个 perf 输出字段，当前等待重新运行 `perf` regression 确认。Stage P0.3 第一批 `perf_branch_loop` 和 `agent_event_loop` workload 已经新增，`perf` regression suite 已接入，并已由用户确认 VCS PASS；第一张 `baseline-ahb-master` 性能表已经根据 `PERF_CSV` 填入 `docs/RV32I_PERF_BASELINE.md`。第二批 `perf_memcpy` 和 `perf_pointer_chase` memory/cache workload 也已由用户确认 VCS PASS，memory/cache 性能 baseline 已形成。后续继续补 agent/int8 类 workload。同时继续完善质量检查：固定 lint warning baseline，在 Linux/CI 中接入 Verilator/Yosys，并补充真实综合/时序报告。

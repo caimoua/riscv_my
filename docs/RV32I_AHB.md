@@ -113,6 +113,8 @@ rv32i_pipe_core
   -> rv32i_ahb_master_bus
 ```
 
+`rv32i_ahb_master_bus` 额外透出 `dbg_wait_cycle_count`，统计 AHB master transaction 已经 active 但 `rv32i_simple_to_ahb` 尚未返回 ready 的周期。顶层对应信号为 `dbg_bus_wait_cycle`，用于和 `ifetch_wait/mem_wait/cache_refill` 一起分析 CPI。
+
 外部 memory interface 是一个 AHB-Lite master port：
 
 ```text

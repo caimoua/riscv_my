@@ -105,10 +105,13 @@ module rv32i_perf_baseline_tb;
   wire        dbg_ebreak;
   wire [31:0] dbg_icache_hit_count;
   wire [31:0] dbg_icache_miss_count;
+  wire [31:0] dbg_icache_refill_cycle;
   wire [31:0] dbg_dcache_hit_count;
   wire [31:0] dbg_dcache_miss_count;
+  wire [31:0] dbg_dcache_refill_cycle;
   wire [31:0] dbg_bus_i_grant_count;
   wire [31:0] dbg_bus_d_grant_count;
+  wire [31:0] dbg_bus_wait_cycle;
   wire        dbg_bus_error;
 
   logic [31:0] rom [0:4095];
@@ -172,12 +175,14 @@ module rv32i_perf_baseline_tb;
                dbg_branch_redirect_cycle, dbg_commit_redirect_cycle,
                dbg_branch_count, dbg_branch_mispredict_count,
                dbg_btb_hit_count, dbg_btb_miss_count, dbg_bht_update_count);
-      $display("[PERF] cache_bus ic_hit=%0d ic_miss=%0d dc_hit=%0d dc_miss=%0d bus_i=%0d bus_d=%0d",
+      $display("[PERF] cache_bus ic_hit=%0d ic_miss=%0d dc_hit=%0d dc_miss=%0d bus_i=%0d bus_d=%0d ic_refill=%0d dc_refill=%0d bus_wait=%0d",
                dbg_icache_hit_count, dbg_icache_miss_count,
                dbg_dcache_hit_count, dbg_dcache_miss_count,
-               dbg_bus_i_grant_count, dbg_bus_d_grant_count);
-      $display("PERF_CSV_HEADER,name,config,cycle,instret,cpi,stall_cycle,flush_cycle,load_use_stall,ifetch_wait,if_discard,mem_wait,muldiv_wait,branch_redirect,commit_redirect,branch_count,branch_mispredict,btb_hit,btb_miss,bht_update,ic_hit,ic_miss,dc_hit,dc_miss,bus_i_grant,bus_d_grant");
-      $display("PERF_CSV,%s,%s,%0d,%0d,%0.3f,%0d,%0d,%0d,%0d,%0d,%0d,%0d,%0d,%0d,%0d,%0d,%0d,%0d,%0d,%0d,%0d,%0d,%0d,%0d,%0d",
+               dbg_bus_i_grant_count, dbg_bus_d_grant_count,
+               dbg_icache_refill_cycle, dbg_dcache_refill_cycle,
+               dbg_bus_wait_cycle);
+      $display("PERF_CSV_HEADER,name,config,cycle,instret,cpi,stall_cycle,flush_cycle,load_use_stall,ifetch_wait,if_discard,mem_wait,muldiv_wait,branch_redirect,commit_redirect,branch_count,branch_mispredict,btb_hit,btb_miss,bht_update,ic_hit,ic_miss,dc_hit,dc_miss,bus_i_grant,bus_d_grant,ic_refill_cycle,dc_refill_cycle,bus_wait_cycle");
+      $display("PERF_CSV,%s,%s,%0d,%0d,%0.3f,%0d,%0d,%0d,%0d,%0d,%0d,%0d,%0d,%0d,%0d,%0d,%0d,%0d,%0d,%0d,%0d,%0d,%0d,%0d,%0d,%0d,%0d,%0d",
                workload_name, config_name, dbg_cycle, dbg_instret, cpi,
                dbg_stall_cycle, dbg_flush_cycle, dbg_load_use_stall_cycle,
                dbg_ifetch_wait_cycle, dbg_if_discard_cycle, dbg_mem_wait_cycle,
@@ -187,7 +192,9 @@ module rv32i_perf_baseline_tb;
                dbg_btb_miss_count, dbg_bht_update_count,
                dbg_icache_hit_count, dbg_icache_miss_count,
                dbg_dcache_hit_count, dbg_dcache_miss_count,
-               dbg_bus_i_grant_count, dbg_bus_d_grant_count);
+               dbg_bus_i_grant_count, dbg_bus_d_grant_count,
+               dbg_icache_refill_cycle, dbg_dcache_refill_cycle,
+               dbg_bus_wait_cycle);
     end
   endtask
 
@@ -300,10 +307,13 @@ module rv32i_perf_baseline_tb;
     .dbg_ebreak             (dbg_ebreak),
     .dbg_icache_hit_count   (dbg_icache_hit_count),
     .dbg_icache_miss_count  (dbg_icache_miss_count),
+    .dbg_icache_refill_cycle (dbg_icache_refill_cycle),
     .dbg_dcache_hit_count   (dbg_dcache_hit_count),
     .dbg_dcache_miss_count  (dbg_dcache_miss_count),
+    .dbg_dcache_refill_cycle (dbg_dcache_refill_cycle),
     .dbg_bus_i_grant_count  (dbg_bus_i_grant_count),
     .dbg_bus_d_grant_count  (dbg_bus_d_grant_count),
+    .dbg_bus_wait_cycle     (dbg_bus_wait_cycle),
     .dbg_bus_error          (dbg_bus_error)
   );
 

@@ -1,6 +1,6 @@
 # RV32I Performance Baseline
 
-最后更新：2026-05-22
+最后更新：2026-05-24
 
 本文定义 Stage P0 的性能画像口径。当前目标不是立刻优化，而是先保证后续 benchmark、testbench 日志和 RTL 性能计数器使用同一套定义。
 
@@ -37,10 +37,13 @@
 | `bht_update_count` | `dbg_bht_update_count` | BHT 更新数 | 已有 |
 | `icache_hit_count` | cached top debug | I-cache 命中数 | 已有 |
 | `icache_miss_count` | cached top debug | I-cache miss 数 | 已有 |
+| `icache_refill_cycle` | `dbg_icache_refill_cycle` | I-cache 处于 line refill 状态的周期数 | PENDING |
 | `dcache_hit_count` | cached top debug | D-cache 命中数 | 已有 |
 | `dcache_miss_count` | cached top debug | D-cache miss 数 | 已有 |
+| `dcache_refill_cycle` | `dbg_dcache_refill_cycle` | D-cache 处于 load miss line refill 状态的周期数 | PENDING |
 | `bus_i_grant_count` | cached top debug | AHB master bus 授权 I 侧请求次数 | 已有 |
 | `bus_d_grant_count` | cached top debug | AHB master bus 授权 D 侧请求次数 | 已有 |
+| `bus_wait_cycle` | `dbg_bus_wait_cycle` | bus transaction 已经 active 但下游 ready 尚未返回的周期数 | PENDING |
 | `bus_error` | cached top debug | 当前或最近总线错误观测 | 已有 |
 
 ## 3. 派生指标
@@ -103,7 +106,7 @@ other_stall
 | `muldiv_wait_cycle` | `ex_muldiv_stall` | EX 阶段等待 `rv32i_muldiv.ready` 的周期 |
 | `branch_redirect_cycle` | `ex_redirect && !mem_stall && !commit_redirect` | EX 阶段控制流纠正导致的实际 flush 周期 |
 | `commit_redirect_cycle` | `commit_redirect` | trap / interrupt / mret 导致的 flush 周期 |
-| `bus_wait_cycle` | AHB transaction active and `!hready` | AHB wait-state 周期 |
+| `bus_wait_cycle` | bus transaction active and downstream ready not returned | CPU/cache 侧看到的 bus 等待周期 |
 | `icache_refill_cycle` | I-cache refill state | I-cache refill 占用周期 |
 | `dcache_refill_cycle` | D-cache refill state | D-cache refill 占用周期 |
 
@@ -120,6 +123,16 @@ dbg_commit_redirect_cycle
 ```
 
 其中 `rv32i_pipe_core` 内部的 stall reason 计数按 `mem_wait > muldiv_wait > load_use > ifetch_wait > if_discard` 的优先级做互斥归类，避免这些细分计数相加后超过粗粒度 `dbg_stall_cycle`。`dbg_branch_redirect_cycle` 复用原有 `dbg_flush_cycle` 的 EX redirect 口径；`dbg_commit_redirect_cycle` 单独统计 trap / interrupt / mret 这类 commit 阶段重定向，不改变旧 `dbg_flush_cycle` 的含义。
+
+P0.2 cache/bus 扩展新增 RTL 输出端口为：
+
+```text
+dbg_icache_refill_cycle
+dbg_dcache_refill_cycle
+dbg_bus_wait_cycle
+```
+
+这些信号已经接入 cached top / AHB master top / SoC wrapper 和 `rv32i_perf_baseline_tb` 的 `[PERF]` / `PERF_CSV` 输出。当前状态为 `PENDING`，需要重新运行 `perf` regression 后才能记录新版 baseline。
 
 ## 5. benchmark 分类
 
@@ -174,14 +187,14 @@ testbench 推荐打印两类行。
 [PERF] name=agent_event_loop status=PASS
 [PERF] cycle=... instret=... cpi=...
 [PERF] stall=... flush=... branch=... mispredict=...
-[PERF] ic_hit=... ic_miss=... dc_hit=... dc_miss=... bus_i=... bus_d=...
+[PERF] ic_hit=... ic_miss=... dc_hit=... dc_miss=... bus_i=... bus_d=... ic_refill=... dc_refill=... bus_wait=...
 ```
 
 脚本友好的单行：
 
 ```text
-PERF_CSV_HEADER,name,config,cycle,instret,cpi,stall_cycle,flush_cycle,load_use_stall,ifetch_wait,if_discard,mem_wait,muldiv_wait,branch_redirect,commit_redirect,branch_count,branch_mispredict,btb_hit,btb_miss,bht_update,ic_hit,ic_miss,dc_hit,dc_miss,bus_i_grant,bus_d_grant
-PERF_CSV,agent_event_loop,baseline-ahb-master,0,0,0.000,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+PERF_CSV_HEADER,name,config,cycle,instret,cpi,stall_cycle,flush_cycle,load_use_stall,ifetch_wait,if_discard,mem_wait,muldiv_wait,branch_redirect,commit_redirect,branch_count,branch_mispredict,btb_hit,btb_miss,bht_update,ic_hit,ic_miss,dc_hit,dc_miss,bus_i_grant,bus_d_grant,ic_refill_cycle,dc_refill_cycle,bus_wait_cycle
+PERF_CSV,agent_event_loop,baseline-ahb-master,0,0,0.000,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 ```
 
 P0 早期可以直接由 SystemVerilog `$display` 打印。后续再加脚本汇总到 CSV/Markdown。
@@ -272,6 +285,14 @@ P0.2 第一批已经完成 RTL / wrapper / standalone testbench 改动：
 4. `rv32i_perf_counter_tb` 已覆盖新计数器的累加和 reset。
 5. 用户已确认新版 `rv32i_perf_counter_tb` VCS PASS，`docs/VERIFICATION_MATRIX.md` 中 standalone performance counter 状态已恢复为 `PASS`。
 
+P0.2 cache/bus 扩展已经完成 RTL / wrapper / perf testbench 改动，等待 VCS 验证：
+
+1. `rv32i_icache` 已新增 `dbg_refill_cycle_count`，统计 I-cache refill state 周期。
+2. `rv32i_dcache` 已新增 `dbg_refill_cycle_count`，统计 D-cache load miss refill state 周期。
+3. `rv32i_mem_bus`、`rv32i_mem_bus_ahb` 和 `rv32i_ahb_master_bus` 已新增 `dbg_wait_cycle_count`，统计 bus transaction active 但下游 ready 尚未返回的周期。
+4. cached top、AHB master top、AHB matrix SoC top 和 APB SoC top 已透传 `dbg_icache_refill_cycle`、`dbg_dcache_refill_cycle`、`dbg_bus_wait_cycle`。
+5. `rv32i_perf_baseline_tb` 已把三个新字段追加到 `[PERF] cache_bus` 和 `PERF_CSV` 行末尾。
+
 P0.3 第一批已经新增两个 workload 和统一 perf testbench：
 
 1. `software/asm/perf_branch_loop.S` 已新增，签名为 `0x0b120001`。
@@ -299,4 +320,4 @@ make sim TB_FILE=./testcases/rv32i_perf_baseline_tb.sv TOP_NAME=rv32i_perf_basel
 make sim TB_FILE=./testcases/rv32i_perf_baseline_tb.sv TOP_NAME=rv32i_perf_baseline_tb SIM_PLUSARGS="+WORKLOAD=agent_event_loop +ROM_MEMH=../software/bin/agent_event_loop.memh +SIGNATURE=0a6e0001"
 ```
 
-下一步继续补 `agent_token_scan` 和 `agent_int8_dot`，让 baseline 覆盖 parser/dispatch 和 int8 计算类 workload；同时准备在 cache/bus 层补 icache refill、dcache refill、AHB wait-state 计数器。
+下一步先重新运行 `perf` regression，确认新版 cache/bus 计数器输出，然后再补 `agent_token_scan` 和 `agent_int8_dot`，让 baseline 覆盖 parser/dispatch 和 int8 计算类 workload。

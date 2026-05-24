@@ -44,10 +44,13 @@ module rv32i_cached_ahb_master_top #(
 
   output wire [31:0] dbg_icache_hit_count,
   output wire [31:0] dbg_icache_miss_count,
+  output wire [31:0] dbg_icache_refill_cycle,
   output wire [31:0] dbg_dcache_hit_count,
   output wire [31:0] dbg_dcache_miss_count,
+  output wire [31:0] dbg_dcache_refill_cycle,
   output wire [31:0] dbg_bus_i_grant_count,
   output wire [31:0] dbg_bus_d_grant_count,
+  output wire [31:0] dbg_bus_wait_cycle,
   output wire        dbg_bus_error
 );
 
@@ -150,7 +153,8 @@ module rv32i_cached_ahb_master_top #(
     .dbg_hit        (unused_icache_dbg_hit),
     .dbg_miss       (unused_icache_dbg_miss),
     .dbg_hit_count  (dbg_icache_hit_count),
-    .dbg_miss_count (dbg_icache_miss_count)
+    .dbg_miss_count (dbg_icache_miss_count),
+    .dbg_refill_cycle_count (dbg_icache_refill_cycle)
   );
 
   rv32i_dcache #(
@@ -177,7 +181,8 @@ module rv32i_cached_ahb_master_top #(
     .dbg_hit        (unused_dcache_dbg_hit),
     .dbg_miss       (unused_dcache_dbg_miss),
     .dbg_hit_count  (dbg_dcache_hit_count),
-    .dbg_miss_count (dbg_dcache_miss_count)
+    .dbg_miss_count (dbg_dcache_miss_count),
+    .dbg_refill_cycle_count (dbg_dcache_refill_cycle)
   );
 
   rv32i_ahb_master_bus u_bus (
@@ -210,7 +215,8 @@ module rv32i_cached_ahb_master_top #(
     .dbg_grant_is_d    (unused_bus_dbg_grant_is_d),
     .dbg_bus_error     (dbg_bus_error),
     .dbg_i_grant_count (dbg_bus_i_grant_count),
-    .dbg_d_grant_count (dbg_bus_d_grant_count)
+    .dbg_d_grant_count (dbg_bus_d_grant_count),
+    .dbg_wait_cycle_count   (dbg_bus_wait_cycle)
   );
 
 endmodule

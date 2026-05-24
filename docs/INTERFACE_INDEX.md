@@ -1,6 +1,6 @@
 # 接口索引
 
-最后更新：2026-05-22
+最后更新：2026-05-24
 
 本文记录稳定模块边界，后续工作不需要每次重新扫描大量 RTL。
 
@@ -79,8 +79,8 @@ Debug 输出：
 - core 性能计数器：`dbg_pc`, `dbg_cycle`, `dbg_instret`, `dbg_stall_cycle`, `dbg_flush_cycle`
 - core 细分性能计数器：`dbg_load_use_stall_cycle`, `dbg_ifetch_wait_cycle`, `dbg_if_discard_cycle`, `dbg_mem_wait_cycle`, `dbg_muldiv_wait_cycle`, `dbg_branch_redirect_cycle`, `dbg_commit_redirect_cycle`
 - 分支预测计数器：`dbg_branch_count`, `dbg_branch_mispredict_count`, `dbg_btb_hit_count`, `dbg_btb_miss_count`, `dbg_bht_update_count`
-- cache hit/miss 计数器。
-- bus grant/error 计数器。
+- cache hit/miss/refill 计数器。
+- bus grant/wait/error 计数器。
 - debug regfile read port 和 system instruction event。
 
 ### `rv32i_ahb_matrix_soc_top`
@@ -377,6 +377,7 @@ commit exception inputs：
 - CPU side：`cpu_valid`, `cpu_addr`, `cpu_ready`, `cpu_rdata`, `cpu_error`
 - Memory side：`mem_valid`, `mem_addr`, `mem_ready`, `mem_rdata`, `mem_error`
 - `mem_error` 会终止 refill 并返回给 core。
+- Debug：`dbg_hit`, `dbg_miss`, `dbg_hit_count`, `dbg_miss_count`, `dbg_refill_cycle_count`
 
 ### `rv32i_dcache`
 
@@ -391,6 +392,7 @@ commit exception inputs：
 - 默认 MMIO uncached bypass。
 - CPU side：`cpu_valid`, `cpu_write`, `cpu_addr`, `cpu_wdata`, `cpu_wstrb`, `cpu_ready`, `cpu_rdata`, `cpu_error`
 - Memory side：`mem_valid`, `mem_write`, `mem_addr`, `mem_wdata`, `mem_wstrb`, `mem_ready`, `mem_rdata`, `mem_error`
+- Debug：`dbg_hit`, `dbg_miss`, `dbg_hit_count`, `dbg_miss_count`, `dbg_refill_cycle_count`
 
 ## Bus / SoC
 
@@ -405,12 +407,15 @@ commit exception inputs：
 - slaves：ROM、SRAM、MMIO。
 - arbitration：D 侧优先。
 - unmapped 地址返回 decode error。
+- Debug：`dbg_i_grant_count`, `dbg_d_grant_count`, `dbg_wait_cycle_count`
 
 ### `rv32i_ahb_master_bus`
 
 文件：`rtl/bus/rv32i_ahb_master_bus.v`
 
 用途：把 core/cache 的 simple blocking memory request 转成单 outstanding AHB-Lite master transaction。
+
+- Debug：`dbg_i_grant_count`, `dbg_d_grant_count`, `dbg_wait_cycle_count`, `dbg_bus_error`
 
 ### `rv32i_ahb_lite_matrix_1m4s`
 

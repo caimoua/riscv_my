@@ -85,10 +85,13 @@ module rv32i_ahb_matrix_soc_top #(
 
   output wire [31:0] dbg_icache_hit_count,
   output wire [31:0] dbg_icache_miss_count,
+  output wire [31:0] dbg_icache_refill_cycle,
   output wire [31:0] dbg_dcache_hit_count,
   output wire [31:0] dbg_dcache_miss_count,
+  output wire [31:0] dbg_dcache_refill_cycle,
   output wire [31:0] dbg_bus_i_grant_count,
   output wire [31:0] dbg_bus_d_grant_count,
+  output wire [31:0] dbg_bus_wait_cycle,
   output wire        dbg_cpu_bus_error,
   output wire        dbg_matrix_decode_error
 );
@@ -147,10 +150,13 @@ module rv32i_ahb_matrix_soc_top #(
     .dbg_ebreak             (dbg_ebreak),
     .dbg_icache_hit_count   (dbg_icache_hit_count),
     .dbg_icache_miss_count  (dbg_icache_miss_count),
+    .dbg_icache_refill_cycle (dbg_icache_refill_cycle),
     .dbg_dcache_hit_count   (dbg_dcache_hit_count),
     .dbg_dcache_miss_count  (dbg_dcache_miss_count),
+    .dbg_dcache_refill_cycle (dbg_dcache_refill_cycle),
     .dbg_bus_i_grant_count  (dbg_bus_i_grant_count),
     .dbg_bus_d_grant_count  (dbg_bus_d_grant_count),
+    .dbg_bus_wait_cycle     (dbg_bus_wait_cycle),
     .dbg_bus_error          (dbg_cpu_bus_error)
   );
 

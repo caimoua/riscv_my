@@ -32,7 +32,8 @@ module rv32i_ahb_master_bus (
   output wire        dbg_grant_is_d,
   output wire        dbg_bus_error,
   output wire [31:0] dbg_i_grant_count,
-  output wire [31:0] dbg_d_grant_count
+  output wire [31:0] dbg_d_grant_count,
+  output wire [31:0] dbg_wait_cycle_count
 );
 
   localparam MASTER_I = 1'b0;
@@ -46,6 +47,7 @@ module rv32i_ahb_master_bus (
   reg [3:0]  wstrb_q;
   reg [31:0] i_grant_count_q;
   reg [31:0] d_grant_count_q;
+  reg [31:0] wait_cycle_count_q;
 
   wire [31:0] req_addr;
   wire        req_write;
@@ -76,6 +78,7 @@ module rv32i_ahb_master_bus (
   assign dbg_bus_error     = active_done && simple_error;
   assign dbg_i_grant_count = i_grant_count_q;
   assign dbg_d_grant_count = d_grant_count_q;
+  assign dbg_wait_cycle_count = wait_cycle_count_q;
 
   rv32i_simple_to_ahb u_simple_to_ahb (
     .clk    (clk),
@@ -110,7 +113,12 @@ module rv32i_ahb_master_bus (
       wstrb_q         <= 4'b0000;
       i_grant_count_q <= 32'd0;
       d_grant_count_q <= 32'd0;
+      wait_cycle_count_q <= 32'd0;
     end else if (active_q) begin
+      if (!simple_ready) begin
+        wait_cycle_count_q <= wait_cycle_count_q + 32'd1;
+      end
+
       if (simple_ready) begin
         active_q <= 1'b0;
       end

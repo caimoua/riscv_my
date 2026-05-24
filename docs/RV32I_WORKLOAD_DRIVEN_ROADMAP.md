@@ -1,6 +1,6 @@
 # RV32I Workload-Driven Roadmap
 
-最后更新：2026-05-22
+最后更新：2026-05-24
 
 本文是后续项目推进的主路线图。它替代“先收口交付、再考虑性能”的旧叙事，把当前 CPU 明确定位为一个仍然很简单的教学/实验核，并把后续目标改为：
 
@@ -31,7 +31,7 @@
 - cache blocking，miss 期间前后端都容易停住。
 - AHB 路径无 burst、无多个 outstanding transaction。
 - 分支预测没有 RAS、indirect branch/JALR target cache。
-- 性能计数刚开始细分，core 内部原因已有第一批计数器，但 cache/bus 层 penalty 和稳定 benchmark 仍不完整。
+- 性能计数已经覆盖 core 内部第一批 stall reason，cache/bus 层 refill/wait 计数器已接入 RTL，等待 VCS 验证和新版 baseline。
 - 还没有稳定 benchmark 和 before/after 性能报告。
 
 ## 1. 路线原则
@@ -86,7 +86,7 @@
 - 第一批 core 内部细分计数器已实现：`load_use_stall_cycle`、`ifetch_wait_cycle`、`if_discard_cycle`、`mem_wait_cycle`、`muldiv_wait_cycle`、`branch_redirect_cycle`、`commit_redirect_cycle`。
 - 新计数器已从 `rv32i_pipe_core` 透传到 cached top、AHB master top、AHB matrix SoC top 和 APB SoC top。
 - `rv32i_perf_counter_tb` 已更新为覆盖新计数器，并由用户确认新版 VCS PASS。
-- cache refill、D-cache miss penalty、AHB wait-state 级别计数器尚未实现，后续在 cache/bus 层继续扩展。
+- cache/bus 扩展计数器已接入：`dbg_icache_refill_cycle`、`dbg_dcache_refill_cycle`、`dbg_bus_wait_cycle`。当前等待重新运行 `perf` regression 后记录新版 baseline。
 
 ### P0.3 benchmark / workload 镜像
 
@@ -246,10 +246,10 @@ rv32i_agent_matrix_accel
 
 ## 8. 近期执行顺序
 
-当前最推荐的下一步仍然沿 Stage P0 推进，但前两个 workload 与 perf 入口已经落地：
+当前最推荐的下一步仍然沿 Stage P0 推进，先把新增 cache/bus 计数器跑出新版数据：
 
-1. 新增 agent 侧 workload：`agent_token_scan` 和 `agent_int8_dot`。
-2. 在 cache/bus 层补 icache refill、dcache refill、AHB wait-state 计数器。
+1. 重新运行 `perf` regression，确认 `ic_refill_cycle`、`dc_refill_cycle`、`bus_wait_cycle` 字段。
+2. 新增 agent 侧 workload：`agent_token_scan` 和 `agent_int8_dot`。
 3. 有了 branch/memory/agent/int8 四类数据后，再决定 P1/P2/P3 的第一刀。
 
 ## 9. 暂不优先做
